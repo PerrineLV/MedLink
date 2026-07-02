@@ -1,0 +1,44 @@
+services:
+  app:
+    build:
+      context: ./backend
+    container_name: medlink_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./backend:/var/www/html
+    env_file:
+      - path: ./backend/.env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 5
+
+  db:
+    image: postgres:16-alpine
+    container_name: medlink_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medlink}
+      POSTGRES_USER: ${POSTGRES_USER:-medlink}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - medlink_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medlink} -d ${POSTGRES_DB:-medlink}"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 5
+
+volumes:
+  medlink_db_data:
