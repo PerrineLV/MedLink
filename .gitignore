@@ -1,0 +1,33 @@
+# PHP / Symfony
+/backend/vendor/
+/backend/.env.local
+/backend/.env.*.local
+/backend/var/
+/backend/public/bundles/
+/backend/config/jwt/
+
+# Node / React
+/frontend-web/node_modules/
+/frontend-web/dist/
+/frontend-web/.env.local
+
+# React Native / Expo
+/frontend-mobile/node_modules/
+/frontend-mobile/.expo/
+/frontend-mobile/dist/
+/frontend-mobile/.env.local
+
+# Docker
+.env
+.env.production
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+CLAUDE.md
