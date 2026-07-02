@@ -5,8 +5,8 @@ Application web et mobile de coordination du suivi médical entre patients, aida
 ## Stack technique
 
 - **Backend** : Symfony 7 + API Platform
-- **Front web** : React 18 (professionnels de santé)
-- **Front mobile** : React Native (patients et aidants)
+- **Front web** : React 18
+- **Front mobile** : React Native
 - **Base de données** : PostgreSQL 16
 - **CI/CD** : GitHub Actions + Docker
 
