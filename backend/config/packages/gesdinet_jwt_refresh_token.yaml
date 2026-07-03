@@ -1,0 +1,6 @@
+gesdinet_jwt_refresh_token:
+    refresh_token_class: App\Entity\RefreshToken
+    manager_type: orm
+    # 7 days, matches ML-18's requirement for the refresh token lifetime.
+    ttl: 604800
+    single_use: true

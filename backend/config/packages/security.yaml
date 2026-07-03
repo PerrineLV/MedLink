@@ -17,18 +17,34 @@ security:
             security: false
         main:
             lazy: true
+            stateless: true
             provider: app_user_provider
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
+            json_login:
+                check_path: api_auth_login
+                username_path: email
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+            entry_point: jwt
+
+            jwt: ~
+
+            refresh_jwt:
+                check_path: api_auth_refresh
+                invalidate_token_on_logout: true
+
+            logout:
+                path: api_auth_logout
 
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/api/auth/(login|refresh|logout), roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
