@@ -27,6 +27,9 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
+            login_throttling:
+                limiter: App\Security\RateLimiter\IpLoginRateLimiter
+
             entry_point: jwt
 
             jwt: ~

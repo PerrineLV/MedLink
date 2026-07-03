@@ -1,0 +1,8 @@
+framework:
+    rate_limiter:
+        # 5 attempts per minute, keyed by client IP — see App\Security\RateLimiter\IpLoginRateLimiter,
+        # wired into the "main" firewall's login_throttling (config/packages/security.yaml).
+        login_by_ip:
+            policy: fixed_window
+            limit: 5
+            interval: '1 minute'
