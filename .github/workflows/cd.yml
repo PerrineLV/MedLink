@@ -1,0 +1,92 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Compute image name
+        id: image
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          sha=${{ github.event.workflow_run.head_sha }}
+          echo "image=ghcr.io/${owner}/medlink-backend:${sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ steps.image.outputs.image }}
+            ghcr.io/${{ github.repository_owner }}/medlink-backend:latest
+
+  deploy:
+    name: Deploy to production
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy new image over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            docker inspect --format='{{.Config.Image}}' medlink_app > .previous_image 2>/dev/null || echo "" > .previous_image
+            echo "BACKEND_IMAGE=${{ needs.build-and-push.outputs.image }}" > .env.deploy
+            docker compose --env-file .env.deploy -f docker-compose.prod.yml pull app
+            docker compose --env-file .env.deploy -f docker-compose.prod.yml up -d
+
+      - name: Healthcheck
+        run: |
+          curl --fail --silent --show-error --retry 6 --retry-delay 5 --retry-all-errors "${{ secrets.HEALTHCHECK_URL }}"
+
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            previous=$(cat .previous_image)
+            if [ -n "$previous" ]; then
+              echo "BACKEND_IMAGE=${previous}" > .env.deploy
+              docker compose --env-file .env.deploy -f docker-compose.prod.yml up -d
+              echo "Rolled back to ${previous}"
+            else
+              echo "No previous image recorded, manual intervention required" >&2
+              exit 1
+            fi

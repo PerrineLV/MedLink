@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "develop", "epic*"]
+  pull_request:
+    branches: [main, develop]
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: medlink_test
+          POSTGRES_USER: medlink
+          POSTGRES_PASSWORD: changeme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U medlink -d medlink_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: test
+      DATABASE_URL: "postgresql://medlink:changeme@127.0.0.1:5432/medlink_test?serverVersion=16&charset=utf8"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: ctype, iconv, intl, pdo_pgsql, opcache, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: PHP CS Fixer (dry-run)
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.dist.php
+
+      - name: Warm up container for PHPStan
+        run: php bin/console cache:warmup --env=dev
+
+      - name: PHPStan (level 6)
+        run: vendor/bin/phpstan analyse --configuration=phpstan.dist.neon --no-progress
+
+      - name: PHPUnit
+        run: vendor/bin/phpunit --configuration=phpunit.dist.xml
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: false
+          tags: medlink-backend:ci
