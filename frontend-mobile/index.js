@@ -1,3 +1,7 @@
+// Must be the very first import — react-navigation's stack navigator relies
+// on it, and it needs to patch touch handling before anything else runs.
+import 'react-native-gesture-handler';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';

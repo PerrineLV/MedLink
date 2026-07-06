@@ -21,6 +21,45 @@ services:
       start_period: 20s
       retries: 5
 
+  web:
+    build:
+      context: ./frontend-web
+      dockerfile: Dockerfile.dev
+    container_name: medlink_web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    environment:
+      # Reached from inside this container, "localhost" would be the
+      # container itself — go through the compose network instead.
+      VITE_API_PROXY_TARGET: http://app:80
+    volumes:
+      - ./frontend-web:/app
+      - medlink_web_node_modules:/app/node_modules
+    depends_on:
+      - app
+
+  mobile:
+    build:
+      context: ./frontend-mobile
+      dockerfile: Dockerfile.dev
+    container_name: medlink_mobile
+    restart: unless-stopped
+    # Expo Go on a physical phone must reach the Metro bundler over the LAN.
+    # host networking is the simplest way to make that work reliably from a
+    # container (Linux only — see the note in .env.example).
+    network_mode: host
+    environment:
+      # Without this, Expo advertises the container's own hostname/IP in the
+      # QR code and dev server URL, which the phone can't reach.
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${HOST_LAN_IP}
+      EXPO_PUBLIC_API_URL: http://${HOST_LAN_IP}:${APP_PORT:-8080}/api
+    volumes:
+      - ./frontend-mobile:/app
+      - medlink_mobile_node_modules:/app/node_modules
+    depends_on:
+      - app
+
   db:
     image: postgres:16-alpine
     container_name: medlink_db
@@ -42,3 +81,5 @@ services:
 
 volumes:
   medlink_db_data:
+  medlink_web_node_modules:
+  medlink_mobile_node_modules:
