@@ -19,3 +19,12 @@ export const ROLE_LABELS = {
 export function getPrimaryRole(roles = []) {
   return ROLE_PRIORITY.find((role) => roles.includes(role)) ?? null
 }
+
+/**
+ * Where to land right after login. A soignant goes straight to their
+ * patient list (ML-24); other roles keep the generic dashboard until their
+ * own dedicated page exists (patient/aidant: ML-41, not built yet).
+ */
+export function getHomeRoute(roles = []) {
+  return roles.includes(ROLE_SOIGNANT) ? '/patients' : '/dashboard'
+}

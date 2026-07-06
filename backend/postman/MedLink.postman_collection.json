@@ -632,6 +632,158 @@
           }
         }
       ]
+    },
+    {
+      "name": "ML-24 - Commentaires soignant (journal)",
+      "description": "POST /api/journal_entry_comments : un soignant peut commenter une entree du journal d'un patient dont il est le referent actif (PatientSoignant.active = true) ; ni le patient ni son aidant ne le peuvent. Le controle d'acces sur la liste/detail d'un patient non rattache (403) est deja couvert par 'GET - 403 filtre sur patient inexistant' du dossier ML-22 (meme chemin de code : patientId hors de la liste des patients visibles).",
+      "item": [
+        {
+          "name": "POST - Soignant commente une entree (nominal, patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('le commentaire est associe au bon auteur', () => pm.expect(json.text).to.eql('A surveiller de pres.'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{soignant_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"A surveiller de pres.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
+          }
+        },
+        {
+          "name": "GET - Le commentaire apparait dans le fil (patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "const entry = json.find((e) => e.id === pm.collectionVariables.get('entry_id'));",
+                  "pm.test(\"le commentaire du soignant est visible dans l'entree\", () => pm.expect(entry.comments.some((c) => c.text === 'A surveiller de pres.')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
+          }
+        },
+        {
+          "name": "POST - 403 patient tente de commenter sa propre entree",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"test\"\n}" },
+            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
+          }
+        },
+        {
+          "name": "POST - 403 aidant tente de commenter",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{aidant1_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"test\"\n}" },
+            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
+          }
+        },
+        {
+          "name": "POST - 422 commentaire vide",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('status 422', () => pm.response.to.have.status(422));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{soignant_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"   \"\n}" },
+            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
+          }
+        },
+        {
+          "name": "POST - 422 commentaire trop long (>1000 car.)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["pm.collectionVariables.set('long_note', 'a'.repeat(1001));"] }
+            },
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('status 422', () => pm.response.to.have.status(422));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{soignant_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"{{long_note}}\"\n}" },
+            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
+          }
+        },
+        {
+          "name": "POST - 404 entree de journal introuvable",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('status 404', () => pm.response.to.have.status(404));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{soignant_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": 999999,\n  \"text\": \"test\"\n}" },
+            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
+          }
+        }
+      ]
     }
   ]
 }
