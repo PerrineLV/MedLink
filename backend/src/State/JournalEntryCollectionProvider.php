@@ -9,8 +9,7 @@ use ApiPlatform\State\ProviderInterface;
 use App\Entity\JournalEntry;
 use App\Entity\User;
 use App\Repository\JournalEntryRepository;
-use App\Repository\PatientAidantRepository;
-use App\Repository\PatientSoignantRepository;
+use App\Security\VisiblePatientIds;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
@@ -22,8 +21,7 @@ final class JournalEntryCollectionProvider implements ProviderInterface
 {
     public function __construct(
         private readonly JournalEntryRepository $journalEntryRepository,
-        private readonly PatientAidantRepository $patientAidantRepository,
-        private readonly PatientSoignantRepository $patientSoignantRepository,
+        private readonly VisiblePatientIds $visiblePatientIds,
         private readonly Security $security,
         private readonly RequestStack $requestStack,
     ) {
@@ -39,7 +37,7 @@ final class JournalEntryCollectionProvider implements ProviderInterface
             return [];
         }
 
-        $visiblePatientIds = $this->visiblePatientIds($currentUser);
+        $visiblePatientIds = $this->visiblePatientIds->forUser($currentUser);
         if ([] === $visiblePatientIds) {
             return [];
         }
@@ -55,25 +53,5 @@ final class JournalEntryCollectionProvider implements ProviderInterface
         }
 
         return $this->journalEntryRepository->findByPatientIds($visiblePatientIds);
-    }
-
-    /**
-     * @return list<int>
-     */
-    private function visiblePatientIds(User $user): array
-    {
-        if (in_array(User::ROLE_PATIENT, $user->getRoles(), true)) {
-            return [$user->getId()];
-        }
-
-        if (in_array(User::ROLE_AIDANT, $user->getRoles(), true)) {
-            return $this->patientAidantRepository->findActivePatientIdsForAidant($user);
-        }
-
-        if (in_array(User::ROLE_SOIGNANT, $user->getRoles(), true)) {
-            return $this->patientSoignantRepository->findActivePatientIdsForSoignant($user);
-        }
-
-        return [];
     }
 }

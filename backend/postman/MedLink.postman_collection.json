@@ -532,6 +532,106 @@
           }
         }
       ]
+    },
+    {
+      "name": "ML-23 - Selection patient (aidant)",
+      "description": "GET /api/patients : liste les patients pour lesquels l'utilisateur connecte peut saisir/consulter une entree (lui-meme pour un patient, ses patients actifs pour un aidant/soignant). Utilise par l'app mobile pour proposer le bon patient a l'aidant avant de creer une entree (ML-23).",
+      "item": [
+        {
+          "name": "GET - Liste patients (aidant1, voit patient1 + patient2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('2 patients rattaches actifs', () => pm.expect(json.length).to.eql(2));",
+                  "pm.test('expose uniquement id/prenom/nom', () => json.forEach((patient) => pm.expect(Object.keys(patient).sort()).to.eql(['firstName', 'id', 'lastName'])));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{aidant1_token}}" }],
+            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
+          }
+        },
+        {
+          "name": "GET - Liste patients (aidant2, relation desactivee => vide)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('aucun patient (relation avec patient3 desactivee)', () => pm.expect(pm.response.json().length).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{aidant2_token}}" }],
+            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
+          }
+        },
+        {
+          "name": "GET - Liste patients (patient1, se voit lui-meme)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('un seul patient : lui-meme', () => pm.expect(json.length).to.eql(1));",
+                  "pm.test('id correspond a patient1_id', () => pm.expect(json[0].id).to.eql(pm.collectionVariables.get('patient1_id')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{patient1_token}}" }],
+            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
+          }
+        },
+        {
+          "name": "GET - Liste patients (soignant, voit patient1/2/3)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('3 patients rattaches actifs', () => pm.expect(pm.response.json().length).to.eql(3));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{soignant_token}}" }],
+            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
+          }
+        },
+        {
+          "name": "GET - 401 sans authentification",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('status 401', () => pm.response.to.have.status(401));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
+          }
+        }
+      ]
     }
   ]
 }
