@@ -32,4 +32,20 @@ class PatientSoignantRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * @return list<int>
+     */
+    public function findActivePatientIdsForSoignant(User $soignant): array
+    {
+        $result = $this->createQueryBuilder('ps')
+            ->select('IDENTITY(ps.patient) AS patientId')
+            ->andWhere('ps.soignant = :soignant')
+            ->andWhere('ps.active = true')
+            ->setParameter('soignant', $soignant)
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_map(static fn (array $row): int => (int) $row['patientId'], $result);
+    }
 }

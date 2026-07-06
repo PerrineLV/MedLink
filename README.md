@@ -24,6 +24,23 @@ cp .env.example .env
 docker compose up -d
 ```
 
+## Jeu de données de développement
+
+Un jeu de fixtures Doctrine (`backend/src/DataFixtures/AppFixtures.php`) fournit des comptes
+et données réalistes pour les tests manuels : 1 soignant, 4 patients, 2 aidants, avec des
+relations Patient↔Aidant et Patient↔Soignant actives/inactives et des entrées de journal de
+suivi réparties sur plusieurs dates.
+
+```bash
+docker compose exec app php bin/console doctrine:fixtures:load
+```
+
+Mot de passe commun à tous les comptes : `MedLink2026!` (identifiants : `patient1@medlink.test`,
+`aidant1@medlink.test`, `soignant@medlink.test`, `admin@medlink.test`, etc.).
+
+**⚠️ Ne jamais charger ces fixtures en production** : ce sont des données de santé fictives,
+réservées au développement local et aux démonstrations.
+
 ## Certification
 
 Projet réalisé dans le cadre de la certification RNCP 39583 — Expert en développement logiciel (YNOV Connect).
