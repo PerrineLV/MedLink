@@ -53,7 +53,7 @@ final class TreatmentCollectionProvider implements ProviderInterface
             throw new AccessDeniedException("Vous n'avez pas accès aux traitements de ce patient.");
         }
 
-        $dateFilter = $request?->query->get('date');
+        $dateFilter = $request->query->get('date');
         $date = null !== $dateFilter
             ? new \DateTimeImmutable($dateFilter)
             : new \DateTimeImmutable('today');
