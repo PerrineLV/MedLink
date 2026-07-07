@@ -4,6 +4,33 @@
   flex-direction: column;
 }
 
+.app-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10;
+  background: white;
+  color: var(--color-primary);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.app-skip-link:focus {
+  left: 16px;
+  top: 16px;
+}
+
+.app-security-banner {
+  background: #e6f1fb;
+  color: #0c447c;
+  margin: 0;
+  padding: 10px 24px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 .app-header {
   background: var(--color-primary);
   color: white;
@@ -116,6 +143,10 @@
 }
 
 @media (max-width: 900px) {
+  .app-security-banner {
+    padding: 8px 16px;
+  }
+
   .app-body {
     flex-direction: column;
   }

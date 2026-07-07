@@ -11,3 +11,15 @@ export async function createComment(journalEntryId, text) {
 
   return response.data
 }
+
+export async function createJournalEntry({ patientId, mood, painLevel, bloodPressure, note }) {
+  const response = await httpClient.post('/journal_entries', {
+    patientId,
+    mood,
+    painLevel,
+    bloodPressure,
+    note: note || null,
+  })
+
+  return response.data
+}

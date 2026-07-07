@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { getHomeRoute } from '../services/roles'
 
 export default function ProtectedRoute({ roles }) {
   const { isAuthenticated, roles: userRoles } = useAuth()
@@ -9,7 +10,7 @@ export default function ProtectedRoute({ roles }) {
   }
 
   if (roles && !roles.some((role) => userRoles.includes(role))) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to={getHomeRoute(userRoles)} replace />
   }
 
   return <Outlet />
