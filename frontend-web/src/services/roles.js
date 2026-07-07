@@ -22,9 +22,13 @@ export function getPrimaryRole(roles = []) {
 
 /**
  * Where to land right after login. A soignant goes straight to their
- * patient list (ML-24); other roles keep the generic dashboard until their
- * own dedicated page exists (patient/aidant: ML-41, not built yet).
+ * patient list (ML-24), a patient/aidant to their own journal (ML-41);
+ * other roles (admin) keep the generic dashboard until their own dedicated
+ * page exists.
  */
 export function getHomeRoute(roles = []) {
-  return roles.includes(ROLE_SOIGNANT) ? '/patients' : '/dashboard'
+  if (roles.includes(ROLE_SOIGNANT)) return '/patients'
+  if (roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT)) return '/journal'
+
+  return '/dashboard'
 }
