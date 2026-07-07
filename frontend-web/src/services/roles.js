@@ -32,3 +32,30 @@ export function getHomeRoute(roles = []) {
 
   return '/dashboard'
 }
+
+const SOIGNANT_SIDEBAR_ITEMS = [
+  { key: 'dashboard', label: 'Tableau de bord', to: '/dashboard' },
+  { key: 'patients', label: 'Patients', to: '/patients' },
+  { key: 'messages', label: 'Messages', to: null },
+  { key: 'agenda', label: 'Agenda', to: null },
+  { key: 'parametres', label: 'Paramètres', to: null },
+]
+
+const PATIENT_SIDEBAR_ITEMS = [
+  { key: 'journal', label: 'Journal', to: '/journal' },
+  { key: 'traitements', label: 'Traitements', to: null },
+  { key: 'messagerie', label: 'Messagerie', to: null },
+  { key: 'rdv', label: 'Rendez-vous', to: null },
+  { key: 'export', label: 'Export PDF', to: null },
+]
+
+/**
+ * Sidebar menu for AppLayout: patient/aidant get their own shortcuts
+ * (Journal/Traitements/Messagerie/Rendez-vous/Export PDF, ML-41), everyone
+ * else keeps the soignant/admin menu.
+ */
+export function getSidebarItems(roles = []) {
+  if (roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT)) return PATIENT_SIDEBAR_ITEMS
+
+  return SOIGNANT_SIDEBAR_ITEMS
+}

@@ -1,34 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import AppLayout from '../components/AppLayout'
 import Badge from '../components/Badge'
 import { createJournalEntry, fetchJournalEntries } from '../services/journalEntryService'
 import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
 import { fetchPatients } from '../services/patientService'
-import { ROLE_LABELS, getPrimaryRole } from '../services/roles'
 import './JournalPage.css'
 
 const MOOD_OPTIONS = [1, 2, 3, 4, 5]
 const PAIN_OPTIONS = Array.from({ length: 11 }, (_, painLevel) => painLevel)
 const BLOOD_PRESSURE_PATTERN = /^\d{1,3}$/
 const GENERIC_CREATE_ERROR = "Impossible d'enregistrer cette entrée, réessayez."
-
-const NAV_ITEMS = [
-  { key: 'journal', label: 'Journal' },
-  { key: 'traitements', label: 'Traitements' },
-  { key: 'messagerie', label: 'Messagerie' },
-  { key: 'rdv', label: 'Rendez-vous' },
-  { key: 'export', label: 'Export PDF' },
-]
-
-function notifyComingSoon() {
-  window.alert('Cette fonctionnalité arrive dans une prochaine version de MedLink.')
-}
+const SECURITY_BANNER_TEXT = "Données chiffrées — accessibles uniquement à l'équipe soignante désignée"
 
 export default function JournalPage() {
-  const { roles, firstName } = useAuth()
-  const primaryRole = getPrimaryRole(roles)
-  const displayName = firstName ?? (primaryRole ? ROLE_LABELS[primaryRole] : 'Utilisateur')
-
   const [entries, setEntries] = useState(null)
   const [patients, setPatients] = useState([])
   const [error, setError] = useState(null)
@@ -59,73 +43,29 @@ export default function JournalPage() {
   }, [])
 
   return (
-    <div className="journal-page">
-      <a href="#journal-main" className="journal-skip-link">
-        Aller au contenu principal
-      </a>
+    <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
+      <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
 
-      <header className="journal-header">
-        <div className="journal-header-brand">
-          <span className="journal-header-logo" aria-hidden="true">
-            🛡️
-          </span>
-          <div>
-            <p className="journal-header-title">MedLink</p>
-            <p className="journal-header-name">{displayName}</p>
-          </div>
-        </div>
-        <span
-          className="journal-header-lock"
-          role="img"
-          aria-label="Connexion sécurisée"
-          title="Connexion sécurisée"
-        >
-          🔒
-        </span>
-      </header>
+      {error && (
+        <p className="journal-error" role="alert">
+          {error}
+        </p>
+      )}
 
-      <p className="journal-security-banner">
-        Données chiffrées — accessibles uniquement à l'équipe soignante désignée
-      </p>
+      {!error && entries === null && <p className="journal-loading">Chargement…</p>}
 
-      <nav className="journal-nav" aria-label="Navigation principale">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className={item.key === 'journal' ? 'active' : undefined}
-            aria-current={item.key === 'journal' ? 'page' : undefined}
-            onClick={item.key === 'journal' ? undefined : notifyComingSoon}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      {!error && entries !== null && entries.length === 0 && (
+        <p className="journal-empty">Aucune entrée pour le moment.</p>
+      )}
 
-      <main id="journal-main" className="journal-main">
-        <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
-
-        {error && (
-          <p className="journal-error" role="alert">
-            {error}
-          </p>
-        )}
-
-        {!error && entries === null && <p className="journal-loading">Chargement…</p>}
-
-        {!error && entries !== null && entries.length === 0 && (
-          <p className="journal-empty">Aucune entrée pour le moment.</p>
-        )}
-
-        {!error && entries !== null && entries.length > 0 && (
-          <ul className="journal-feed">
-            {entries.map((entry) => (
-              <JournalEntryCard key={entry.id} entry={entry} />
-            ))}
-          </ul>
-        )}
-      </main>
-    </div>
+      {!error && entries !== null && entries.length > 0 && (
+        <ul className="journal-feed">
+          {entries.map((entry) => (
+            <JournalEntryCard key={entry.id} entry={entry} />
+          ))}
+        </ul>
+      )}
+    </AppLayout>
   )
 }
 
