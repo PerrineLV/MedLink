@@ -11,3 +11,4 @@ api_platform:
     exception_to_status:
         App\Exception\InvalidJournalEntryException: 422
         App\Exception\InvalidJournalEntryCommentException: 422
+        App\Exception\InvalidTreatmentException: 422
