@@ -12,8 +12,6 @@ use App\Dto\JournalEntryInput;
 use App\Repository\JournalEntryRepository;
 use App\State\JournalEntryCollectionProvider;
 use App\State\JournalEntryProcessor;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -64,14 +62,6 @@ class JournalEntry
     #[Groups(['journal_entry:read'])]
     private \DateTimeImmutable $createdAt;
 
-    /**
-     * @var Collection<int, JournalEntryComment>
-     */
-    #[ORM\OneToMany(mappedBy: 'journalEntry', targetEntity: JournalEntryComment::class)]
-    #[ORM\OrderBy(['createdAt' => 'ASC'])]
-    #[Groups(['journal_entry:read'])]
-    private Collection $comments;
-
     public function __construct(
         User $patient,
         User $author,
@@ -87,7 +77,6 @@ class JournalEntry
         $this->bloodPressure = $bloodPressure;
         $this->note = $note;
         $this->createdAt = new \DateTimeImmutable();
-        $this->comments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -146,13 +135,5 @@ class JournalEntry
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
-    }
-
-    /**
-     * @return Collection<int, JournalEntryComment>
-     */
-    public function getComments(): Collection
-    {
-        return $this->comments;
     }
 }

@@ -1,20 +1,19 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getHomeRoute } from '../services/roles'
 import './LoginPage.css'
 
 const GENERIC_ERROR = 'Identifiants incorrects'
 
 export default function LoginPage() {
-  const { login, isAuthenticated, roles } = useAuth()
+  const { login, isAuthenticated } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (isAuthenticated) {
-    return <Navigate to={getHomeRoute(roles)} replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   const handleSubmit = async (event) => {
