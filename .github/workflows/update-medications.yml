@@ -1,0 +1,49 @@
+name: Update medications reference data
+
+on:
+  schedule:
+    # Chaque lundi à 3h UTC.
+    - cron: "0 3 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-medications:
+    name: Refresh medications.json from BDPM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: iconv, mbstring
+          coverage: none
+
+      - name: Regenerate medications.json
+        run: php backend/bin/update-medications.php
+
+      - name: Open pull request if data changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(data): update medications.json from BDPM"
+          title: "chore(data): mise à jour hebdomadaire de medications.json (BDPM)"
+          body: |
+            Régénération automatique du référentiel de médicaments (ML-51) à
+            partir du "Fichier des spécialités" de la Base de Données Publique
+            des Médicaments, publiée par l'ANSM en licence ouverte :
+            https://base-donnees-publique.medicaments.gouv.fr/
+
+            Générée automatiquement par `.github/workflows/update-medications.yml` — à relire avant de merger.
+          branch: chore/update-medications
+          base: develop
+          add-paths: backend/resources/medications.json
+          labels: automated
