@@ -5,7 +5,7 @@ import Badge from '../components/Badge'
 import { createJournalEntry, fetchJournalEntries } from '../services/journalEntryService'
 import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
 import { fetchPatients } from '../services/patientService'
-import { fetchTreatments, toggleTreatmentIntake } from '../services/treatmentService'
+import { fetchTreatments, scheduleLabel, toggleTreatmentIntake } from '../services/treatmentService'
 import './JournalPage.css'
 
 const MOOD_OPTIONS = [1, 2, 3, 4, 5]
@@ -56,91 +56,159 @@ export default function JournalPage() {
     [entries, treatments],
   )
 
-  const patientNamesById = useMemo(
-    () => Object.fromEntries(patients.map((patient) => [patient.id, `${patient.firstName} ${patient.lastName}`])),
-    [patients],
-  )
+  const entriesByPatientId = useMemo(() => groupByPatientId(entries ?? []), [entries])
+  const treatmentsByPatientId = useMemo(() => groupByPatientId(treatments ?? []), [treatments])
 
-  const handleToggleIntake = useCallback((treatment) => {
-    const previousIntake = treatment.todayIntake
-    const optimisticIntake = {
-      ...previousIntake,
-      taken: !previousIntake.taken,
-      takenAt: previousIntake.taken ? null : new Date().toISOString(),
-    }
-
+  const applyScheduleIntake = useCallback((treatmentId, scheduleId, todayIntake) => {
     setTreatments((current) =>
-      current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: optimisticIntake } : item)),
+      current.map((treatment) =>
+        treatment.id !== treatmentId
+          ? treatment
+          : {
+              ...treatment,
+              schedules: treatment.schedules.map((schedule) =>
+                schedule.id === scheduleId ? { ...schedule, todayIntake } : schedule,
+              ),
+            },
+      ),
     )
-
-    toggleTreatmentIntake(previousIntake.id)
-      .then((updatedIntake) => {
-        setTreatments((current) =>
-          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: updatedIntake } : item)),
-        )
-      })
-      .catch(() => {
-        setTreatments((current) =>
-          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: previousIntake } : item)),
-        )
-        setError('Impossible de mettre à jour ce traitement. Réessayez.')
-      })
   }, [])
+
+  const handleToggleIntake = useCallback(
+    (treatment, schedule) => {
+      const previousIntake = schedule.todayIntake
+      const optimisticIntake = {
+        ...previousIntake,
+        taken: !previousIntake.taken,
+        takenAt: previousIntake.taken ? null : new Date().toISOString(),
+      }
+
+      applyScheduleIntake(treatment.id, schedule.id, optimisticIntake)
+
+      toggleTreatmentIntake(previousIntake.id)
+        .then((updatedIntake) => {
+          applyScheduleIntake(treatment.id, schedule.id, updatedIntake)
+        })
+        .catch(() => {
+          applyScheduleIntake(treatment.id, schedule.id, previousIntake)
+          setError('Impossible de mettre à jour ce traitement. Réessayez.')
+        })
+    },
+    [applyScheduleIntake],
+  )
 
   return (
     <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
-      <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
-
       {error && (
         <p className="journal-error" role="alert">
           {error}
         </p>
       )}
 
-      {!error && entries === null && <p className="journal-loading">Chargement…</p>}
-
-      {!error && entries !== null && entries.length === 0 && (
-        <p className="journal-empty">Aucune entrée pour le moment.</p>
-      )}
-
-      {!error && entries !== null && entries.length > 0 && (
-        <ul className="journal-feed">
-          {entries.map((entry) => (
-            <JournalEntryCard key={entry.id} entry={entry} />
-          ))}
-        </ul>
-      )}
-
       {!error && (
-        <TreatmentsPanel
-          treatments={treatments}
-          patientNamesById={patientNamesById}
-          showPatientName={showPatientName}
-          onToggle={handleToggleIntake}
-        />
+        <>
+          <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
+
+          {entries === null ? (
+            <p className="journal-loading">Chargement…</p>
+          ) : showPatientName ? (
+            <PatientGroupedJournal
+              patients={patients}
+              entriesByPatientId={entriesByPatientId}
+              treatmentsByPatientId={treatmentsByPatientId}
+              onToggle={handleToggleIntake}
+            />
+          ) : (
+            <div className="journal-layout">
+              <div className="journal-column">
+                {entries.length === 0 ? (
+                  <p className="journal-empty">Aucune entrée pour le moment.</p>
+                ) : (
+                  <ul className="journal-feed">
+                    {entries.map((entry) => (
+                      <JournalEntryCard key={entry.id} entry={entry} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="journal-column">
+                <TreatmentsPanel treatments={treatments} onToggle={handleToggleIntake} />
+              </div>
+            </div>
+          )}
+        </>
       )}
     </AppLayout>
   )
 }
 
-function TreatmentsPanel({ treatments, patientNamesById, showPatientName, onToggle }) {
+function groupByPatientId(items) {
+  return items.reduce((groups, item) => {
+    const group = groups[item.patientId] ?? []
+    group.push(item)
+    groups[item.patientId] = group
+
+    return groups
+  }, {})
+}
+
+function PatientGroupedJournal({ patients, entriesByPatientId, treatmentsByPatientId, onToggle }) {
+  const patientsWithData = patients.filter(
+    (patient) => entriesByPatientId[patient.id]?.length > 0 || treatmentsByPatientId[patient.id]?.length > 0,
+  )
+
+  if (patientsWithData.length === 0) {
+    return <p className="journal-empty">Aucune entrée pour le moment.</p>
+  }
+
+  return (
+    <div className="journal-patient-groups">
+      {patientsWithData.map((patient) => {
+        const patientEntries = entriesByPatientId[patient.id] ?? []
+        const patientTreatments = treatmentsByPatientId[patient.id] ?? []
+
+        return (
+          <section key={patient.id} className="journal-patient-group">
+            <h2 className="journal-patient-group-heading">
+              {patient.firstName} {patient.lastName}
+            </h2>
+
+            <div className="journal-layout">
+              <div className="journal-column">
+                {patientEntries.length === 0 ? (
+                  <p className="journal-empty">Aucune entrée pour le moment.</p>
+                ) : (
+                  <ul className="journal-feed">
+                    {patientEntries.map((entry) => (
+                      <JournalEntryCard key={entry.id} entry={entry} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="journal-column">
+                <TreatmentsPanel treatments={patientTreatments} onToggle={onToggle} />
+              </div>
+            </div>
+          </section>
+        )
+      })}
+    </div>
+  )
+}
+
+function TreatmentsPanel({ treatments, onToggle }) {
   return (
     <section className="treatments-panel">
       <h2 className="treatments-heading">Traitements du jour</h2>
 
-      {treatments === null ? (
-        <p className="journal-loading">Chargement…</p>
-      ) : treatments.length === 0 ? (
+      {treatments.length === 0 ? (
         <p className="journal-empty">Aucun traitement en cours.</p>
       ) : (
         <ul className="treatments-list">
           {treatments.map((treatment) => (
-            <TreatmentRow
-              key={treatment.id}
-              treatment={treatment}
-              patientName={showPatientName ? patientNamesById[treatment.patientId] : null}
-              onToggle={onToggle}
-            />
+            <TreatmentCard key={treatment.id} treatment={treatment} onToggle={onToggle} />
           ))}
         </ul>
       )}
@@ -148,18 +216,56 @@ function TreatmentsPanel({ treatments, patientNamesById, showPatientName, onTogg
   )
 }
 
-function TreatmentRow({ treatment, patientName, onToggle }) {
-  const { taken, takenAt } = treatment.todayIntake ?? { taken: false, takenAt: null }
+function TreatmentCard({ treatment, onToggle }) {
+  const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken)
+
+  return (
+    <li className="treatment-card">
+      <div className={`treatment-card-header ${allTaken ? 'treatment-row-taken' : 'treatment-row-pending'}`}>
+        <span
+          role="img"
+          aria-label={allTaken ? 'Tous les horaires du jour sont pris' : 'Certains horaires du jour restent à prendre'}
+        >
+          {allTaken ? (
+            <CheckCircle2 className="treatment-icon" aria-hidden="true" />
+          ) : (
+            <Circle className="treatment-icon" aria-hidden="true" />
+          )}
+        </span>
+
+        <span className="treatment-info">
+          <span className="treatment-name">
+            {treatment.name} · {treatment.dosage}
+          </span>
+        </span>
+      </div>
+
+      <ul className="treatment-schedule-list">
+        {treatment.schedules.map((schedule) => (
+          <TreatmentScheduleRow
+            key={schedule.id}
+            treatment={treatment}
+            schedule={schedule}
+            onToggle={onToggle}
+          />
+        ))}
+      </ul>
+    </li>
+  )
+}
+
+function TreatmentScheduleRow({ treatment, schedule, onToggle }) {
+  const { taken, takenAt } = schedule.todayIntake ?? { taken: false, takenAt: null }
   const label = taken
     ? `${treatment.name} ${treatment.dosage}, pris à ${formatTime(takenAt)}`
-    : `${treatment.name} ${treatment.dosage}, à prendre à ${treatment.scheduledTime} — appuyer pour marquer comme pris`
+    : `${treatment.name} ${treatment.dosage}, à prendre : ${scheduleLabel(schedule)} — appuyer pour marquer comme pris`
 
   return (
     <li>
       <button
         type="button"
         className={`treatment-row ${taken ? 'treatment-row-taken' : 'treatment-row-pending'}`}
-        onClick={() => onToggle(treatment)}
+        onClick={() => onToggle(treatment, schedule)}
         aria-label={label}
       >
         {taken ? (
@@ -168,14 +274,8 @@ function TreatmentRow({ treatment, patientName, onToggle }) {
           <Circle className="treatment-icon" aria-hidden="true" />
         )}
 
-        <span className="treatment-info">
-          {patientName && <span className="treatment-patient-name">{patientName}</span>}
-          <span className="treatment-name">
-            {treatment.name} · {treatment.dosage}
-          </span>
-          <span className="treatment-status">
-            {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre à ${treatment.scheduledTime}`}
-          </span>
+        <span className="treatment-status">
+          {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre : ${scheduleLabel(schedule)}`}
         </span>
       </button>
     </li>

@@ -1,3 +1,39 @@
+.journal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.journal-column {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .journal-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .journal-column {
+    flex: 1 1 0;
+  }
+}
+
+.journal-patient-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.journal-patient-group-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0 0 16px;
+  padding-left: 12px;
+  border-left: 4px solid var(--color-primary);
+}
+
 .journal-new-entry {
   margin-bottom: 24px;
 }
@@ -218,7 +254,6 @@
 }
 
 .treatments-panel {
-  margin-top: 24px;
   max-width: 720px;
 }
 
@@ -233,9 +268,29 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.treatment-card {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   overflow: hidden;
+}
+
+.treatment-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.treatment-schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .treatment-row {
@@ -253,7 +308,7 @@
   cursor: pointer;
 }
 
-.treatments-list li:last-child .treatment-row {
+.treatment-schedule-list li:last-child .treatment-row {
   border-bottom: none;
 }
 
@@ -274,12 +329,6 @@
 .treatment-info {
   display: flex;
   flex-direction: column;
-}
-
-.treatment-patient-name {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--color-primary);
 }
 
 .treatment-name {

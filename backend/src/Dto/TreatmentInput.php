@@ -6,11 +6,14 @@ namespace App\Dto;
 
 final class TreatmentInput
 {
+    /**
+     * @param list<array<string, mixed>> $schedules
+     */
     public function __construct(
         public readonly int $patientId,
         public readonly string $name,
         public readonly string $dosage,
-        public readonly string $scheduledTime,
+        public readonly array $schedules,
     ) {
     }
 }

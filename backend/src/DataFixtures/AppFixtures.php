@@ -9,6 +9,7 @@ use App\Entity\PatientAidant;
 use App\Entity\PatientSoignant;
 use App\Entity\Treatment;
 use App\Entity\TreatmentIntake;
+use App\Entity\TreatmentSchedule;
 use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -69,33 +70,42 @@ class AppFixtures extends Fixture
 
         // patient4 : aucune entrée de journal (cas "aucune donnée")
 
-        // Traitements patient1 : couvre les 3 statuts visuels du jour (pris,
-        // à prendre, en retard) + un traitement arrêté qui ne doit plus
-        // apparaître dans la liste du jour.
-        $bisoprolol = $this->createTreatment($manager, $patient1, $soignant, 'Bisoprolol', '5 mg', '08:00');
-        $this->createTreatmentIntake($manager, $bisoprolol, taken: true, takenAtModifier: 'today 08:05');
+        // Traitements patient1 : couvre les statuts visuels du jour (pris, à
+        // prendre) + un traitement arrêté qui ne doit plus apparaître dans la
+        // liste du jour. Bisoprolol est pris 3 fois par jour (matin/midi/
+        // soir), pour exercer la carte à plusieurs horaires (ML-50).
+        $bisoprolol = $this->createTreatment($manager, $patient1, $soignant, 'Bisoprolol', '5 mg', [
+            $this->morning(),
+            $this->noon(),
+            $this->evening(),
+        ]);
+        $bisoprololSchedules = $bisoprolol->getSchedules();
+        $this->createTreatmentIntake($manager, $bisoprololSchedules[0], taken: true, takenAtModifier: 'today 08:05');
+        $this->createTreatmentIntake($manager, $bisoprololSchedules[1], taken: false);
+        $this->createTreatmentIntake($manager, $bisoprololSchedules[2], taken: false);
 
-        $ramipril1 = $this->createTreatment($manager, $patient1, $soignant, 'Ramipril', '10 mg', $this->hoursFromNow(3));
-        $this->createTreatmentIntake($manager, $ramipril1, taken: false);
+        $ramipril1 = $this->createTreatment($manager, $patient1, $soignant, 'Ramipril', '10 mg', [$this->evening()]);
+        $this->createTreatmentIntake($manager, $ramipril1->getSchedules()[0], taken: false);
 
-        $furosemide = $this->createTreatment($manager, $patient1, $soignant, 'Furosémide', '20 mg', $this->hoursFromNow(-3));
-        $this->createTreatmentIntake($manager, $furosemide, taken: false);
+        $furosemide = $this->createTreatment($manager, $patient1, $soignant, 'Furosémide', '20 mg', [$this->morning()]);
+        $this->createTreatmentIntake($manager, $furosemide->getSchedules()[0], taken: false);
 
-        $this->createTreatment($manager, $patient1, $soignant, 'Paracétamol', '500 mg', '12:00', active: false);
+        $this->createTreatment($manager, $patient1, $soignant, 'Paracétamol', '500 mg', [$this->noon()], active: false);
 
         // Traitements patient2
-        $metformine = $this->createTreatment($manager, $patient2, $soignant, 'Metformine', '850 mg', '08:00');
-        $this->createTreatmentIntake($manager, $metformine, taken: true, takenAtModifier: 'today 08:10');
+        $metformine = $this->createTreatment($manager, $patient2, $soignant, 'Metformine', '850 mg', [$this->morning()]);
+        $this->createTreatmentIntake($manager, $metformine->getSchedules()[0], taken: true, takenAtModifier: 'today 08:10');
 
-        $levothyrox = $this->createTreatment($manager, $patient2, $soignant, 'Levothyrox', '75 µg', $this->hoursFromNow(-2));
-        $this->createTreatmentIntake($manager, $levothyrox, taken: false);
+        $levothyrox = $this->createTreatment($manager, $patient2, $soignant, 'Levothyrox', '75 µg', [$this->morning()]);
+        $this->createTreatmentIntake($manager, $levothyrox->getSchedules()[0], taken: false);
 
         // Traitements patient3 (relation aidant désactivée, relation soignant active)
-        $aspirine = $this->createTreatment($manager, $patient3, $soignant, 'Aspirine', '75 mg', '08:00');
-        $this->createTreatmentIntake($manager, $aspirine, taken: true, takenAtModifier: 'today 08:00');
+        $aspirine = $this->createTreatment($manager, $patient3, $soignant, 'Aspirine', '75 mg', [$this->morning()]);
+        $this->createTreatmentIntake($manager, $aspirine->getSchedules()[0], taken: true, takenAtModifier: 'today 08:00');
 
-        $ramipril3 = $this->createTreatment($manager, $patient3, $soignant, 'Ramipril', '10 mg', $this->hoursFromNow(4));
-        $this->createTreatmentIntake($manager, $ramipril3, taken: false);
+        // Ramipril3 démontre l'horaire "Personnalisé" (libellé libre).
+        $ramipril3 = $this->createTreatment($manager, $patient3, $soignant, 'Ramipril', '10 mg', [$this->custom('Avant le coucher')]);
+        $this->createTreatmentIntake($manager, $ramipril3->getSchedules()[0], taken: false);
 
         // patient4 : aucun traitement (cas "aucune donnée")
 
@@ -133,32 +143,41 @@ class AppFixtures extends Fixture
         $manager->persist($entry);
     }
 
+    /**
+     * @param list<array{moment: string, label?: ?string}> $schedules
+     */
     private function createTreatment(
         ObjectManager $manager,
         User $patient,
         User $soignant,
         string $name,
         string $dosage,
-        string $scheduledTime,
+        array $schedules,
         bool $active = true,
     ): Treatment {
-        $treatment = new Treatment($patient, $name, $dosage, $scheduledTime, $soignant);
+        $treatment = new Treatment($patient, $name, $dosage, $soignant);
         if (!$active) {
             $treatment->setActive(false);
         }
 
         $manager->persist($treatment);
 
+        foreach ($schedules as $item) {
+            $schedule = new TreatmentSchedule($treatment, $item['moment'], $item['label'] ?? null);
+            $treatment->addSchedule($schedule);
+            $manager->persist($schedule);
+        }
+
         return $treatment;
     }
 
     private function createTreatmentIntake(
         ObjectManager $manager,
-        Treatment $treatment,
+        TreatmentSchedule $schedule,
         bool $taken,
         ?string $takenAtModifier = null,
     ): void {
-        $intake = new TreatmentIntake($treatment, new \DateTimeImmutable('today'));
+        $intake = new TreatmentIntake($schedule, new \DateTimeImmutable('today'));
         if ($taken) {
             $intake->markTaken(new \DateTimeImmutable($takenAtModifier ?? 'now'));
         }
@@ -167,12 +186,34 @@ class AppFixtures extends Fixture
     }
 
     /**
-     * Heure du jour décalée de $hours par rapport à maintenant, au format
-     * "HH:MM" — permet aux fixtures de rester "en retard"/"à prendre" de
-     * façon stable quelle que soit l'heure de chargement.
+     * @return array{moment: string}
      */
-    private function hoursFromNow(int $hours): string
+    private function morning(): array
     {
-        return (new \DateTimeImmutable(sprintf('%+d hours', $hours)))->format('H:i');
+        return ['moment' => TreatmentSchedule::MOMENT_MORNING];
+    }
+
+    /**
+     * @return array{moment: string}
+     */
+    private function noon(): array
+    {
+        return ['moment' => TreatmentSchedule::MOMENT_NOON];
+    }
+
+    /**
+     * @return array{moment: string}
+     */
+    private function evening(): array
+    {
+        return ['moment' => TreatmentSchedule::MOMENT_EVENING];
+    }
+
+    /**
+     * @return array{moment: string, label: string}
+     */
+    private function custom(string $label): array
+    {
+        return ['moment' => TreatmentSchedule::MOMENT_CUSTOM, 'label' => $label];
     }
 }

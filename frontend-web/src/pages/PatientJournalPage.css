@@ -38,6 +38,27 @@
   margin-bottom: 24px;
 }
 
+.journal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.journal-column {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .journal-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .journal-column {
+    flex: 1 1 0;
+  }
+}
+
 .patient-journal-filters button {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
@@ -240,9 +261,29 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.treatment-card {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   overflow: hidden;
+}
+
+.treatment-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.treatment-schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .treatment-row {
@@ -259,7 +300,7 @@
   padding: 12px 16px;
 }
 
-.treatments-list li:last-child .treatment-row {
+.treatment-schedule-list li:last-child .treatment-row {
   border-bottom: none;
 }
 
@@ -352,6 +393,86 @@
   padding: 10px 12px;
   font-family: inherit;
   font-size: 0.9375rem;
+}
+
+.journal-scheduled-times {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.journal-schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.journal-schedule-row input {
+  flex: 1;
+}
+
+.journal-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.journal-pill-row button {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 8px 16px;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.journal-pill-row button.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.journal-scheduled-time-remove {
+  flex-shrink: 0;
+  width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.journal-scheduled-time-add {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 8px 0;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.journal-new-entry-success {
+  background: var(--color-green-bg);
+  color: var(--color-green-text);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
 }
 
 .journal-new-entry-error {

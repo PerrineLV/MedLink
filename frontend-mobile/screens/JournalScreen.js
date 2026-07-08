@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { fetchJournalEntries } from '../services/journalEntryService';
 import { fetchPatients } from '../services/patientService';
-import { fetchTreatments, toggleTreatmentIntake } from '../services/treatmentService';
+import { fetchTreatments, scheduleLabel, toggleTreatmentIntake } from '../services/treatmentService';
 import { COLORS, TYPE, bloodPressureBand, moodBand, painBand } from '../services/journalPresentation';
 import { ROLE_AIDANT, ROLE_LABELS, ROLE_PATIENT, getPrimaryRole } from '../services/roles';
 
@@ -84,31 +84,43 @@ export default function JournalScreen() {
     [entries, treatments],
   );
 
-  const handleToggleIntake = useCallback((treatment) => {
-    const previousIntake = treatment.todayIntake;
-    const optimisticIntake = {
-      ...previousIntake,
-      taken: !previousIntake.taken,
-      takenAt: previousIntake.taken ? null : new Date().toISOString(),
-    };
-
+  const applyScheduleIntake = useCallback((treatmentId, scheduleId, todayIntake) => {
     setTreatments((current) =>
-      current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: optimisticIntake } : item)),
+      current.map((treatment) =>
+        treatment.id !== treatmentId
+          ? treatment
+          : {
+              ...treatment,
+              schedules: treatment.schedules.map((schedule) =>
+                schedule.id === scheduleId ? { ...schedule, todayIntake } : schedule,
+              ),
+            },
+      ),
     );
-
-    toggleTreatmentIntake(previousIntake.id)
-      .then((updatedIntake) => {
-        setTreatments((current) =>
-          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: updatedIntake } : item)),
-        );
-      })
-      .catch(() => {
-        setTreatments((current) =>
-          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: previousIntake } : item)),
-        );
-        setError('Impossible de mettre à jour ce traitement. Réessayez.');
-      });
   }, []);
+
+  const handleToggleIntake = useCallback(
+    (treatment, schedule) => {
+      const previousIntake = schedule.todayIntake;
+      const optimisticIntake = {
+        ...previousIntake,
+        taken: !previousIntake.taken,
+        takenAt: previousIntake.taken ? null : new Date().toISOString(),
+      };
+
+      applyScheduleIntake(treatment.id, schedule.id, optimisticIntake);
+
+      toggleTreatmentIntake(previousIntake.id)
+        .then((updatedIntake) => {
+          applyScheduleIntake(treatment.id, schedule.id, updatedIntake);
+        })
+        .catch(() => {
+          applyScheduleIntake(treatment.id, schedule.id, previousIntake);
+          setError('Impossible de mettre à jour ce traitement. Réessayez.');
+        });
+    },
+    [applyScheduleIntake],
+  );
 
   if (isLoading) {
     return (
@@ -360,32 +372,66 @@ function TreatmentsSection({ treatments, patientNamesById, showPatientName, onTo
       {treatments.length === 0 ? (
         <Text style={styles.emptyText}>Aucun traitement en cours.</Text>
       ) : (
-        <View style={styles.treatmentsCard}>
-          {treatments.map((treatment) => (
-            <TreatmentRow
-              key={treatment.id}
-              treatment={treatment}
-              patientName={showPatientName ? patientNamesById[treatment.patientId] : null}
-              onToggle={onToggle}
-            />
-          ))}
-        </View>
+        treatments.map((treatment) => (
+          <TreatmentCard
+            key={treatment.id}
+            treatment={treatment}
+            patientName={showPatientName ? patientNamesById[treatment.patientId] : null}
+            onToggle={onToggle}
+          />
+        ))
       )}
     </View>
   );
 }
 
-function TreatmentRow({ treatment, patientName, onToggle }) {
-  const { taken, takenAt } = treatment.todayIntake ?? { taken: false, takenAt: null };
+function TreatmentCard({ treatment, patientName, onToggle }) {
+  const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken);
+
+  return (
+    <View style={styles.treatmentsCard}>
+      <View
+        style={styles.treatmentCardHeader}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={allTaken ? 'Tous les horaires du jour sont pris' : 'Certains horaires du jour restent à prendre'}
+      >
+        <Text style={styles.treatmentIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {allTaken ? '✅' : '⭕'}
+        </Text>
+
+        <View style={styles.treatmentInfo}>
+          {patientName && <Text style={styles.patientName}>{patientName}</Text>}
+          <Text style={styles.treatmentName}>
+            {treatment.name} · {treatment.dosage}
+          </Text>
+        </View>
+      </View>
+
+      {treatment.schedules.map((schedule, index) => (
+        <TreatmentScheduleRow
+          key={schedule.id}
+          treatment={treatment}
+          schedule={schedule}
+          isLast={index === treatment.schedules.length - 1}
+          onToggle={onToggle}
+        />
+      ))}
+    </View>
+  );
+}
+
+function TreatmentScheduleRow({ treatment, schedule, isLast, onToggle }) {
+  const { taken, takenAt } = schedule.todayIntake ?? { taken: false, takenAt: null };
   const color = taken ? COLORS.green.text : COLORS.mutedText;
   const accessibilityLabel = taken
     ? `${treatment.name} ${treatment.dosage}, pris à ${formatTime(takenAt)}`
-    : `${treatment.name} ${treatment.dosage}, à prendre à ${treatment.scheduledTime} — appuyer pour marquer comme pris`;
+    : `${treatment.name} ${treatment.dosage}, à prendre : ${scheduleLabel(schedule)} — appuyer pour marquer comme pris`;
 
   return (
     <TouchableOpacity
-      style={styles.treatmentRow}
-      onPress={() => onToggle(treatment)}
+      style={[styles.treatmentRow, isLast && styles.treatmentRowLast]}
+      onPress={() => onToggle(treatment, schedule)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
@@ -393,15 +439,9 @@ function TreatmentRow({ treatment, patientName, onToggle }) {
         {taken ? '✅' : '⭕'}
       </Text>
 
-      <View style={styles.treatmentInfo}>
-        {patientName && <Text style={styles.patientName}>{patientName}</Text>}
-        <Text style={styles.treatmentName}>
-          {treatment.name} · {treatment.dosage}
-        </Text>
-        <Text style={[styles.treatmentStatus, { color }]}>
-          {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre à ${treatment.scheduledTime}`}
-        </Text>
-      </View>
+      <Text style={[styles.treatmentStatus, { color }]}>
+        {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre : ${scheduleLabel(schedule)}`}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -527,6 +567,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: 16,
     overflow: 'hidden',
+    marginBottom: 12,
+  },
+  treatmentCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   treatmentRow: {
     flexDirection: 'row',
@@ -537,6 +588,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+  },
+  treatmentRowLast: {
+    borderBottomWidth: 0,
   },
   treatmentIcon: { fontSize: TYPE.lg },
   treatmentInfo: { flex: 1 },

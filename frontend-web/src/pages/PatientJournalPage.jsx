@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CheckCircle2, Circle } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
@@ -6,10 +6,16 @@ import Badge from '../components/Badge'
 import { createComment, fetchJournalEntries } from '../services/journalEntryService'
 import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
 import { fetchPatients } from '../services/patientService'
-import { createTreatment, fetchTreatments } from '../services/treatmentService'
+import { createTreatment, fetchTreatments, scheduleLabel } from '../services/treatmentService'
 import './PatientJournalPage.css'
 
 const GENERIC_PRESCRIBE_ERROR = "Impossible d'enregistrer ce traitement, réessayez."
+
+const MOMENT_OPTIONS = [
+  { value: 'morning', label: 'Matin' },
+  { value: 'noon', label: 'Midi' },
+  { value: 'evening', label: 'Soir' },
+]
 
 const FILTERS = [
   { key: 'all', label: 'Tout' },
@@ -95,43 +101,46 @@ export default function PatientJournalPage() {
       )}
 
       {!error && (
-        <ReadOnlyTreatmentsPanel treatments={treatments} />
-      )}
+        <div className="journal-layout">
+          <div className="journal-column">
+            <div className="patient-journal-filters" role="group" aria-label="Filtrer par période">
+              {FILTERS.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={filter === item.key ? 'active' : undefined}
+                  aria-pressed={filter === item.key}
+                  onClick={() => setFilter(item.key)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-      {!error && <PrescribeTreatmentPanel patientId={patientId} onTreatmentCreated={handleTreatmentCreated} />}
+            {entries === null && <p className="patient-journal-loading">Chargement…</p>}
 
-      {!error && (
-        <div className="patient-journal-filters" role="group" aria-label="Filtrer par période">
-          {FILTERS.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className={filter === item.key ? 'active' : undefined}
-              aria-pressed={filter === item.key}
-              onClick={() => setFilter(item.key)}
-            >
-              {item.label}
-            </button>
-          ))}
+            {entries !== null && filteredEntries.length === 0 && (
+              <p className="patient-journal-empty">Aucune entrée sur cette période.</p>
+            )}
+
+            {filteredEntries.length > 0 && (
+              <ul className="patient-journal-feed">
+                {filteredEntries.map((entry) => (
+                  <JournalEntryCard
+                    key={entry.id}
+                    entry={entry}
+                    onCommentAdded={(comment) => handleCommentAdded(entry.id, comment)}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="journal-column">
+            <ReadOnlyTreatmentsPanel treatments={treatments} />
+            <PrescribeTreatmentPanel patientId={patientId} onTreatmentCreated={handleTreatmentCreated} />
+          </div>
         </div>
-      )}
-
-      {!error && entries === null && <p className="patient-journal-loading">Chargement…</p>}
-
-      {!error && entries !== null && filteredEntries.length === 0 && (
-        <p className="patient-journal-empty">Aucune entrée sur cette période.</p>
-      )}
-
-      {!error && filteredEntries.length > 0 && (
-        <ul className="patient-journal-feed">
-          {filteredEntries.map((entry) => (
-            <JournalEntryCard
-              key={entry.id}
-              entry={entry}
-              onCommentAdded={(comment) => handleCommentAdded(entry.id, comment)}
-            />
-          ))}
-        </ul>
       )}
     </AppLayout>
   )
@@ -261,27 +270,53 @@ function ReadOnlyTreatmentsPanel({ treatments }) {
       ) : (
         <ul className="treatments-list">
           {treatments.map((treatment) => {
-            const { taken, takenAt } = treatment.todayIntake ?? { taken: false, takenAt: null }
+            const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken)
 
             return (
-              <li
-                key={treatment.id}
-                className={`treatment-row ${taken ? 'treatment-row-taken' : 'treatment-row-pending'}`}
-              >
-                {taken ? (
-                  <CheckCircle2 className="treatment-icon" aria-hidden="true" />
-                ) : (
-                  <Circle className="treatment-icon" aria-hidden="true" />
-                )}
+              <li key={treatment.id} className="treatment-card">
+                <div className={`treatment-card-header ${allTaken ? 'treatment-row-taken' : 'treatment-row-pending'}`}>
+                  <span
+                    role="img"
+                    aria-label={
+                      allTaken ? 'Tous les horaires du jour sont pris' : 'Certains horaires du jour restent à prendre'
+                    }
+                  >
+                    {allTaken ? (
+                      <CheckCircle2 className="treatment-icon" aria-hidden="true" />
+                    ) : (
+                      <Circle className="treatment-icon" aria-hidden="true" />
+                    )}
+                  </span>
 
-                <span className="treatment-info">
-                  <span className="treatment-name">
-                    {treatment.name} · {treatment.dosage}
+                  <span className="treatment-info">
+                    <span className="treatment-name">
+                      {treatment.name} · {treatment.dosage}
+                    </span>
                   </span>
-                  <span className="treatment-status">
-                    {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre à ${treatment.scheduledTime}`}
-                  </span>
-                </span>
+                </div>
+
+                <ul className="treatment-schedule-list">
+                  {treatment.schedules.map((schedule) => {
+                    const { taken, takenAt } = schedule.todayIntake ?? { taken: false, takenAt: null }
+
+                    return (
+                      <li
+                        key={schedule.id}
+                        className={`treatment-row ${taken ? 'treatment-row-taken' : 'treatment-row-pending'}`}
+                      >
+                        {taken ? (
+                          <CheckCircle2 className="treatment-icon" aria-hidden="true" />
+                        ) : (
+                          <Circle className="treatment-icon" aria-hidden="true" />
+                        )}
+
+                        <span className="treatment-status">
+                          {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre : ${scheduleLabel(schedule)}`}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
               </li>
             )
           })}
@@ -299,25 +334,60 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
   const [isCreating, setIsCreating] = useState(false)
   const [name, setName] = useState('')
   const [dosage, setDosage] = useState('')
-  const [scheduledTime, setScheduledTime] = useState('')
+  const [selectedMoments, setSelectedMoments] = useState([])
+  const [customLabels, setCustomLabels] = useState([])
   const [error, setError] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [addedCount, setAddedCount] = useState(0)
+  const nameInputRef = useRef(null)
 
   const resetForm = () => {
     setName('')
     setDosage('')
-    setScheduledTime('')
+    setSelectedMoments([])
+    setCustomLabels([])
     setError(null)
   }
 
   const cancelPanel = () => {
     setIsCreating(false)
+    setAddedCount(0)
     resetForm()
+  }
+
+  const toggleMoment = (moment) => {
+    setSelectedMoments((current) =>
+      current.includes(moment) ? current.filter((value) => value !== moment) : [...current, moment],
+    )
+  }
+
+  const addCustomLabel = () => {
+    setCustomLabels((current) => [...current, ''])
+  }
+
+  const updateCustomLabel = (index, value) => {
+    setCustomLabels((current) => current.map((label, i) => (i === index ? value : label)))
+  }
+
+  const removeCustomLabel = (index) => {
+    setCustomLabels((current) => current.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError(null)
+
+    const trimmedCustomLabels = customLabels.map((label) => label.trim()).filter((label) => label !== '')
+    const schedules = [
+      ...selectedMoments.map((moment) => ({ moment, label: null })),
+      ...trimmedCustomLabels.map((label) => ({ moment: 'custom', label })),
+    ]
+
+    if (schedules.length === 0) {
+      setError('Choisissez au moins un horaire.')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -325,11 +395,12 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
         patientId: Number(patientId),
         name,
         dosage,
-        scheduledTime,
+        schedules,
       })
       onTreatmentCreated(treatment)
-      setIsCreating(false)
+      setAddedCount((count) => count + 1)
       resetForm()
+      nameInputRef.current?.focus()
     } catch (requestError) {
       setError(requestError.response?.data?.detail ?? GENERIC_PRESCRIBE_ERROR)
     } finally {
@@ -345,9 +416,22 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
 
       {isCreating && (
         <form className="journal-new-entry-panel" onSubmit={handleSubmit}>
+          {addedCount > 0 && (
+            <p className="journal-new-entry-success" role="status">
+              {addedCount} traitement{addedCount > 1 ? 's' : ''} ajouté{addedCount > 1 ? 's' : ''}. Vous pouvez en
+              prescrire un autre ou terminer.
+            </p>
+          )}
+
           <div className="journal-field">
             <span className="journal-field-label">Nom</span>
-            <input type="text" value={name} onChange={(event) => setName(event.target.value)} required />
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+            />
           </div>
 
           <div className="journal-field">
@@ -362,13 +446,48 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
           </div>
 
           <div className="journal-field">
-            <span className="journal-field-label">Horaire</span>
-            <input
-              type="time"
-              value={scheduledTime}
-              onChange={(event) => setScheduledTime(event.target.value)}
-              required
-            />
+            <span className="journal-field-label">Horaires (plusieurs choix possibles)</span>
+            <div className="journal-pill-row" role="group" aria-label="Moments de prise">
+              {MOMENT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={selectedMoments.includes(option.value) ? 'active' : undefined}
+                  aria-pressed={selectedMoments.includes(option.value)}
+                  onClick={() => toggleMoment(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            {customLabels.length > 0 && (
+              <div className="journal-scheduled-times">
+                {customLabels.map((label, index) => (
+                  <div key={index} className="journal-schedule-row">
+                    <input
+                      type="text"
+                      value={label}
+                      onChange={(event) => updateCustomLabel(index, event.target.value)}
+                      placeholder="Ex. Avant le coucher"
+                      aria-label={`Horaire personnalisé ${index + 1}`}
+                    />
+                    <button
+                      type="button"
+                      className="journal-scheduled-time-remove"
+                      onClick={() => removeCustomLabel(index)}
+                      aria-label={`Supprimer l'horaire personnalisé ${index + 1}`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button type="button" className="journal-scheduled-time-add" onClick={addCustomLabel}>
+              + Ajouter un horaire personnalisé
+            </button>
           </div>
 
           {error && (
@@ -379,10 +498,10 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
 
           <div className="journal-new-entry-actions">
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Enregistrement…' : 'Enregistrer'}
+              {isSubmitting ? 'Enregistrement…' : 'Enregistrer et ajouter un autre'}
             </button>
             <button type="button" onClick={cancelPanel}>
-              Annuler
+              {addedCount > 0 ? 'Terminer' : 'Annuler'}
             </button>
           </div>
         </form>

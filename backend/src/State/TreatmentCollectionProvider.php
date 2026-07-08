@@ -64,7 +64,9 @@ final class TreatmentCollectionProvider implements ProviderInterface
         $treatments = $this->treatmentRepository->findActiveByPatientIds($visiblePatientIds);
 
         foreach ($treatments as $treatment) {
-            $treatment->setTodayIntake($this->treatmentIntakeService->findOrCreateForDate($treatment, $date));
+            foreach ($treatment->getSchedules() as $schedule) {
+                $schedule->setTodayIntake($this->treatmentIntakeService->findOrCreateForDate($schedule, $date));
+            }
         }
 
         return $treatments;
