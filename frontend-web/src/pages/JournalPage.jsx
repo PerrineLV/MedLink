@@ -101,41 +101,64 @@ export default function JournalPage() {
 
   return (
     <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
-      <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
-
       {error && (
         <p className="journal-error" role="alert">
           {error}
         </p>
       )}
 
-      {!error && entries === null && <p className="journal-loading">Chargement…</p>}
-
-      {!error && entries !== null && entries.length === 0 && (
-        <p className="journal-empty">Aucune entrée pour le moment.</p>
-      )}
-
-      {!error && entries !== null && entries.length > 0 && (
-        <ul className="journal-feed">
-          {entries.map((entry) => (
-            <JournalEntryCard key={entry.id} entry={entry} />
-          ))}
-        </ul>
-      )}
-
       {!error && (
-        <TreatmentsPanel
-          treatments={treatments}
-          patientNamesById={patientNamesById}
-          showPatientName={showPatientName}
-          onToggle={handleToggleIntake}
-        />
+        <div className="journal-layout">
+          <div className="journal-column">
+            <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
+
+            {entries === null && <p className="journal-loading">Chargement…</p>}
+
+            {entries !== null && entries.length === 0 && (
+              <p className="journal-empty">Aucune entrée pour le moment.</p>
+            )}
+
+            {entries !== null && entries.length > 0 && (
+              <ul className="journal-feed">
+                {entries.map((entry) => (
+                  <JournalEntryCard
+                    key={entry.id}
+                    entry={entry}
+                    patientName={showPatientName ? patientNamesById[entry.patientId] : null}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="journal-column">
+            <TreatmentsPanel
+              treatments={treatments}
+              patients={patients}
+              patientNamesById={patientNamesById}
+              showPatientName={showPatientName}
+              onToggle={handleToggleIntake}
+            />
+          </div>
+        </div>
       )}
     </AppLayout>
   )
 }
 
-function TreatmentsPanel({ treatments, patientNamesById, showPatientName, onToggle }) {
+function TreatmentsPanel({ treatments, patients, patientNamesById, showPatientName, onToggle }) {
+  const treatmentsByPatientId = useMemo(() => {
+    if (!showPatientName || !treatments) return null
+
+    return treatments.reduce((groups, treatment) => {
+      const group = groups[treatment.patientId] ?? []
+      group.push(treatment)
+      groups[treatment.patientId] = group
+
+      return groups
+    }, {})
+  }, [showPatientName, treatments])
+
   return (
     <section className="treatments-panel">
       <h2 className="treatments-heading">Traitements du jour</h2>
@@ -144,15 +167,23 @@ function TreatmentsPanel({ treatments, patientNamesById, showPatientName, onTogg
         <p className="journal-loading">Chargement…</p>
       ) : treatments.length === 0 ? (
         <p className="journal-empty">Aucun traitement en cours.</p>
+      ) : treatmentsByPatientId ? (
+        patients
+          .filter((patient) => treatmentsByPatientId[patient.id]?.length > 0)
+          .map((patient) => (
+            <div key={patient.id} className="treatments-patient-group">
+              <h3 className="treatments-patient-heading">{patientNamesById[patient.id]}</h3>
+              <ul className="treatments-list">
+                {treatmentsByPatientId[patient.id].map((treatment) => (
+                  <TreatmentCard key={treatment.id} treatment={treatment} onToggle={onToggle} />
+                ))}
+              </ul>
+            </div>
+          ))
       ) : (
         <ul className="treatments-list">
           {treatments.map((treatment) => (
-            <TreatmentCard
-              key={treatment.id}
-              treatment={treatment}
-              patientName={showPatientName ? patientNamesById[treatment.patientId] : null}
-              onToggle={onToggle}
-            />
+            <TreatmentCard key={treatment.id} treatment={treatment} onToggle={onToggle} />
           ))}
         </ul>
       )}
@@ -160,7 +191,7 @@ function TreatmentsPanel({ treatments, patientNamesById, showPatientName, onTogg
   )
 }
 
-function TreatmentCard({ treatment, patientName, onToggle }) {
+function TreatmentCard({ treatment, onToggle }) {
   const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken)
 
   return (
@@ -178,7 +209,6 @@ function TreatmentCard({ treatment, patientName, onToggle }) {
         </span>
 
         <span className="treatment-info">
-          {patientName && <span className="treatment-patient-name">{patientName}</span>}
           <span className="treatment-name">
             {treatment.name} · {treatment.dosage}
           </span>
@@ -419,7 +449,7 @@ function Pill({ label, selected, onClick, ariaLabel }) {
   )
 }
 
-function JournalEntryCard({ entry }) {
+function JournalEntryCard({ entry, patientName }) {
   const mood = moodBand(entry.mood)
   const pain = painBand(entry.painLevel)
   const bloodPressure = bloodPressureBand(entry.bloodPressure)
@@ -441,6 +471,8 @@ function JournalEntryCard({ entry }) {
         <span className="journal-entry-date">{date}</span>
         {entry.enteredByCaregiver && <span className="journal-entry-caregiver-tag">Saisie par l'aidant</span>}
       </div>
+
+      {patientName && <span className="journal-entry-patient-name">{patientName}</span>}
 
       <div className="journal-entry-metrics">
         <div className="journal-entry-metric">

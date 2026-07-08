@@ -101,43 +101,46 @@ export default function PatientJournalPage() {
       )}
 
       {!error && (
-        <ReadOnlyTreatmentsPanel treatments={treatments} />
-      )}
+        <div className="journal-layout">
+          <div className="journal-column">
+            <div className="patient-journal-filters" role="group" aria-label="Filtrer par période">
+              {FILTERS.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={filter === item.key ? 'active' : undefined}
+                  aria-pressed={filter === item.key}
+                  onClick={() => setFilter(item.key)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-      {!error && <PrescribeTreatmentPanel patientId={patientId} onTreatmentCreated={handleTreatmentCreated} />}
+            {entries === null && <p className="patient-journal-loading">Chargement…</p>}
 
-      {!error && (
-        <div className="patient-journal-filters" role="group" aria-label="Filtrer par période">
-          {FILTERS.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className={filter === item.key ? 'active' : undefined}
-              aria-pressed={filter === item.key}
-              onClick={() => setFilter(item.key)}
-            >
-              {item.label}
-            </button>
-          ))}
+            {entries !== null && filteredEntries.length === 0 && (
+              <p className="patient-journal-empty">Aucune entrée sur cette période.</p>
+            )}
+
+            {filteredEntries.length > 0 && (
+              <ul className="patient-journal-feed">
+                {filteredEntries.map((entry) => (
+                  <JournalEntryCard
+                    key={entry.id}
+                    entry={entry}
+                    onCommentAdded={(comment) => handleCommentAdded(entry.id, comment)}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="journal-column">
+            <ReadOnlyTreatmentsPanel treatments={treatments} />
+            <PrescribeTreatmentPanel patientId={patientId} onTreatmentCreated={handleTreatmentCreated} />
+          </div>
         </div>
-      )}
-
-      {!error && entries === null && <p className="patient-journal-loading">Chargement…</p>}
-
-      {!error && entries !== null && filteredEntries.length === 0 && (
-        <p className="patient-journal-empty">Aucune entrée sur cette période.</p>
-      )}
-
-      {!error && filteredEntries.length > 0 && (
-        <ul className="patient-journal-feed">
-          {filteredEntries.map((entry) => (
-            <JournalEntryCard
-              key={entry.id}
-              entry={entry}
-              onCommentAdded={(comment) => handleCommentAdded(entry.id, comment)}
-            />
-          ))}
-        </ul>
       )}
     </AppLayout>
   )

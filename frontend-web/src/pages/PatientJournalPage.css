@@ -38,6 +38,27 @@
   margin-bottom: 24px;
 }
 
+.journal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.journal-column {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .journal-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .journal-column {
+    flex: 1 1 0;
+  }
+}
+
 .patient-journal-filters button {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
