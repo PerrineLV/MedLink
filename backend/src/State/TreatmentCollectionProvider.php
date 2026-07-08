@@ -6,21 +6,23 @@ namespace App\State;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
-use App\Entity\JournalEntry;
+use App\Entity\Treatment;
 use App\Entity\User;
-use App\Repository\JournalEntryRepository;
+use App\Repository\TreatmentRepository;
 use App\Security\VisiblePatientIds;
+use App\Service\TreatmentIntakeService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
- * @implements ProviderInterface<JournalEntry>
+ * @implements ProviderInterface<Treatment>
  */
-final class JournalEntryCollectionProvider implements ProviderInterface
+final class TreatmentCollectionProvider implements ProviderInterface
 {
     public function __construct(
-        private readonly JournalEntryRepository $journalEntryRepository,
+        private readonly TreatmentRepository $treatmentRepository,
+        private readonly TreatmentIntakeService $treatmentIntakeService,
         private readonly VisiblePatientIds $visiblePatientIds,
         private readonly Security $security,
         private readonly RequestStack $requestStack,
@@ -28,7 +30,7 @@ final class JournalEntryCollectionProvider implements ProviderInterface
     }
 
     /**
-     * @return list<JournalEntry>
+     * @return list<Treatment>
      */
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): array
     {
@@ -42,16 +44,31 @@ final class JournalEntryCollectionProvider implements ProviderInterface
             return [];
         }
 
-        $patientFilter = $this->requestStack->getCurrentRequest()?->query->get('patient');
+        $request = $this->requestStack->getCurrentRequest();
+
+        $patientFilter = $request?->query->get('patient');
         if (null !== $patientFilter) {
             $patientId = (int) $patientFilter;
             if (!in_array($patientId, $visiblePatientIds, true)) {
-                throw new AccessDeniedException("Vous n'avez pas accès au journal de ce patient.");
+                throw new AccessDeniedException("Vous n'avez pas accès aux traitements de ce patient.");
             }
 
             $visiblePatientIds = [$patientId];
         }
 
-        return $this->journalEntryRepository->findByPatientIds($visiblePatientIds);
+        $dateFilter = $request?->query->get('date');
+        $date = null !== $dateFilter
+            ? new \DateTimeImmutable($dateFilter)
+            : new \DateTimeImmutable('today');
+
+        $treatments = $this->treatmentRepository->findActiveByPatientIds($visiblePatientIds);
+
+        foreach ($treatments as $treatment) {
+            foreach ($treatment->getSchedules() as $schedule) {
+                $schedule->setTodayIntake($this->treatmentIntakeService->findOrCreateForDate($schedule, $date));
+            }
+        }
+
+        return $treatments;
     }
 }

@@ -1,0 +1,78 @@
+.patients-title {
+  margin: 0 0 24px;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+}
+
+.patients-error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.patients-loading,
+.patients-empty {
+  color: var(--color-text-muted);
+}
+
+.patient-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 720px;
+}
+
+.patient-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 16px 20px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  min-height: 44px;
+}
+
+.patient-card:hover {
+  box-shadow: 0 4px 12px rgba(46, 56, 98, 0.12);
+}
+
+.patient-avatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.patient-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.patient-name {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.patient-last-entry {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
