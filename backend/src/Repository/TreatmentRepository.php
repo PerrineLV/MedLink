@@ -33,7 +33,7 @@ class TreatmentRepository extends ServiceEntityRepository
             ->andWhere('t.patient IN (:patientIds)')
             ->andWhere('t.active = true')
             ->setParameter('patientIds', $patientIds)
-            ->orderBy('t.scheduledTime', 'ASC')
+            ->orderBy('t.createdAt', 'ASC')
             ->getQuery()
             ->getResult();
     }

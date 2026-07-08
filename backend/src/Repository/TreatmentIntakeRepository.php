@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\Treatment;
 use App\Entity\TreatmentIntake;
+use App\Entity\TreatmentSchedule;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -19,12 +19,12 @@ class TreatmentIntakeRepository extends ServiceEntityRepository
         parent::__construct($registry, TreatmentIntake::class);
     }
 
-    public function findOneByTreatmentAndDate(Treatment $treatment, \DateTimeImmutable $date): ?TreatmentIntake
+    public function findOneByScheduleAndDate(TreatmentSchedule $schedule, \DateTimeImmutable $date): ?TreatmentIntake
     {
         return $this->createQueryBuilder('ti')
-            ->andWhere('ti.treatment = :treatment')
+            ->andWhere('ti.schedule = :schedule')
             ->andWhere('ti.date = :date')
-            ->setParameter('treatment', $treatment)
+            ->setParameter('schedule', $schedule)
             ->setParameter('date', $date, 'date_immutable')
             ->setMaxResults(1)
             ->getQuery()

@@ -14,7 +14,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: TreatmentIntakeRepository::class)]
 #[ORM\Table(name: 'treatment_intake')]
-#[ORM\UniqueConstraint(name: 'uniq_treatment_intake_date', columns: ['treatment_id', 'date'])]
+#[ORM\UniqueConstraint(name: 'uniq_treatment_intake_schedule_date', columns: ['treatment_schedule_id', 'date'])]
 #[ApiResource(
     operations: [
         new Patch(
@@ -34,9 +34,9 @@ class TreatmentIntake
     #[Groups(['treatment:read'])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Treatment::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    private Treatment $treatment;
+    #[ORM\ManyToOne(targetEntity: TreatmentSchedule::class)]
+    #[ORM\JoinColumn(name: 'treatment_schedule_id', nullable: false)]
+    private TreatmentSchedule $schedule;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     #[Groups(['treatment:read'])]
@@ -50,9 +50,9 @@ class TreatmentIntake
     #[Groups(['treatment:read'])]
     private ?\DateTimeImmutable $takenAt = null;
 
-    public function __construct(Treatment $treatment, \DateTimeImmutable $date)
+    public function __construct(TreatmentSchedule $schedule, \DateTimeImmutable $date)
     {
-        $this->treatment = $treatment;
+        $this->schedule = $schedule;
         $this->date = $date;
     }
 
@@ -61,9 +61,24 @@ class TreatmentIntake
         return $this->id;
     }
 
+    public function getSchedule(): TreatmentSchedule
+    {
+        return $this->schedule;
+    }
+
+    #[Groups(['treatment:read'])]
+    public function getScheduleId(): ?int
+    {
+        return $this->schedule->getId();
+    }
+
+    /**
+     * Raccourci pour l'expression de sécurité de l'endpoint toggle, qui a
+     * besoin du patient sans connaître la relation Schedule -> Treatment.
+     */
     public function getTreatment(): Treatment
     {
-        return $this->treatment;
+        return $this->schedule->getTreatment();
     }
 
     public function getDate(): \DateTimeImmutable

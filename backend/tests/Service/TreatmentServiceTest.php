@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\Treatment;
+use App\Entity\TreatmentSchedule;
 use App\Entity\User;
 use App\Exception\InvalidTreatmentException;
 use App\Repository\PatientSoignantRepository;
@@ -44,17 +45,68 @@ final class TreatmentServiceTest extends TestCase
         $this->security->method('getUser')->willReturn($soignant);
         $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(true);
 
-        $this->entityManager->expects(self::once())->method('persist');
+        // Un persist pour le Treatment, un pour son unique TreatmentSchedule.
+        $this->entityManager->expects(self::exactly(2))->method('persist');
         $this->entityManager->expects(self::once())->method('flush');
 
-        $treatment = $this->service->create($patient, 'Bisoprolol', '5 mg', '08:00');
+        $treatment = $this->service->create($patient, 'Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_MORNING]]);
 
         self::assertSame($patient, $treatment->getPatient());
         self::assertSame($soignant, $treatment->getPrescribedBy());
         self::assertSame('Bisoprolol', $treatment->getName());
         self::assertSame('5 mg', $treatment->getDosage());
-        self::assertSame('08:00', $treatment->getScheduledTime());
+        self::assertCount(1, $treatment->getSchedules());
+        self::assertSame(TreatmentSchedule::MOMENT_MORNING, $treatment->getSchedules()[0]->getMoment());
+        self::assertNull($treatment->getSchedules()[0]->getCustomLabel());
         self::assertTrue($treatment->isActive());
+    }
+
+    public function testCreatePersistsAScheduleForEachMomentOfDay(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+
+        $this->security->method('getUser')->willReturn($soignant);
+        $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(true);
+
+        // Un persist pour le Treatment, trois pour ses TreatmentSchedule.
+        $this->entityManager->expects(self::exactly(4))->method('persist');
+
+        $treatment = $this->service->create($patient, 'Bisoprolol', '5 mg', [
+            ['moment' => TreatmentSchedule::MOMENT_MORNING],
+            ['moment' => TreatmentSchedule::MOMENT_NOON],
+            ['moment' => TreatmentSchedule::MOMENT_EVENING],
+        ]);
+
+        $moments = array_map(
+            static fn (TreatmentSchedule $schedule) => $schedule->getMoment(),
+            $treatment->getSchedules()->toArray(),
+        );
+
+        self::assertSame(
+            [TreatmentSchedule::MOMENT_MORNING, TreatmentSchedule::MOMENT_NOON, TreatmentSchedule::MOMENT_EVENING],
+            $moments,
+        );
+    }
+
+    public function testCreatePersistsACustomScheduleWithItsLabel(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+
+        $this->security->method('getUser')->willReturn($soignant);
+        $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(true);
+
+        // Un persist pour le Treatment, un pour son unique TreatmentSchedule.
+        $this->entityManager->expects(self::exactly(2))->method('persist');
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $treatment = $this->service->create($patient, 'Ramipril', '10 mg', [
+            ['moment' => TreatmentSchedule::MOMENT_CUSTOM, 'label' => 'Avant le coucher'],
+        ]);
+
+        self::assertSame(TreatmentSchedule::MOMENT_CUSTOM, $treatment->getSchedules()[0]->getMoment());
+        self::assertSame('Avant le coucher', $treatment->getSchedules()[0]->getCustomLabel());
     }
 
     public function testCreateThrowsAccessDeniedWhenNoUserIsAuthenticated(): void
@@ -67,7 +119,7 @@ final class TreatmentServiceTest extends TestCase
 
         $this->expectException(AccessDeniedException::class);
 
-        $this->service->create($patient, 'Bisoprolol', '5 mg', '08:00');
+        $this->service->create($patient, 'Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_MORNING]]);
     }
 
     public function testCreateThrowsAccessDeniedForThePatientThemselves(): void
@@ -80,7 +132,7 @@ final class TreatmentServiceTest extends TestCase
 
         $this->expectException(AccessDeniedException::class);
 
-        $this->service->create($patient, 'Bisoprolol', '5 mg', '08:00');
+        $this->service->create($patient, 'Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_MORNING]]);
     }
 
     public function testCreateThrowsAccessDeniedForAnAidant(): void
@@ -94,7 +146,7 @@ final class TreatmentServiceTest extends TestCase
 
         $this->expectException(AccessDeniedException::class);
 
-        $this->service->create($patient, 'Bisoprolol', '5 mg', '08:00');
+        $this->service->create($patient, 'Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_MORNING]]);
     }
 
     public function testCreateThrowsAccessDeniedWhenTheSoignantHasNoActiveRelation(): void
@@ -109,11 +161,11 @@ final class TreatmentServiceTest extends TestCase
 
         $this->expectException(AccessDeniedException::class);
 
-        $this->service->create($patient, 'Bisoprolol', '5 mg', '08:00');
+        $this->service->create($patient, 'Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_MORNING]]);
     }
 
     #[DataProvider('provideInvalidTreatmentData')]
-    public function testCreateRejectsInvalidData(string $name, string $dosage, string $scheduledTime): void
+    public function testCreateRejectsInvalidData(string $name, string $dosage, array $schedules): void
     {
         $patient = $this->makeUser(1, User::ROLE_PATIENT);
         $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
@@ -126,26 +178,32 @@ final class TreatmentServiceTest extends TestCase
 
         $this->expectException(InvalidTreatmentException::class);
 
-        $this->service->create($patient, $name, $dosage, $scheduledTime);
+        $this->service->create($patient, $name, $dosage, $schedules);
     }
 
     /**
-     * @return iterable<string, array{string, string, string}>
+     * @return iterable<string, array{string, string, list<array{moment: string, label?: ?string}>}>
      */
     public static function provideInvalidTreatmentData(): iterable
     {
-        yield 'empty name' => ['   ', '5 mg', '08:00'];
-        yield 'empty dosage' => ['Bisoprolol', '   ', '08:00'];
-        yield 'scheduled time without colon' => ['Bisoprolol', '5 mg', '0800'];
-        yield 'scheduled time out of range' => ['Bisoprolol', '5 mg', '25:00'];
-        yield 'scheduled time with invalid minutes' => ['Bisoprolol', '5 mg', '08:60'];
+        yield 'empty name' => ['   ', '5 mg', [['moment' => TreatmentSchedule::MOMENT_MORNING]]];
+        yield 'empty dosage' => ['Bisoprolol', '   ', [['moment' => TreatmentSchedule::MOMENT_MORNING]]];
+        yield 'unknown moment' => ['Bisoprolol', '5 mg', [['moment' => 'afternoon']]];
+        yield 'no schedule at all' => ['Bisoprolol', '5 mg', []];
+        yield 'duplicate morning moment' => ['Bisoprolol', '5 mg', [
+            ['moment' => TreatmentSchedule::MOMENT_MORNING],
+            ['moment' => TreatmentSchedule::MOMENT_MORNING],
+        ]];
+        yield 'custom moment without a label' => ['Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_CUSTOM]]];
+        yield 'custom moment with a blank label' => ['Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_CUSTOM, 'label' => '   ']]];
+        yield 'custom moment with a too long label' => ['Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_CUSTOM, 'label' => str_repeat('a', 101)]]];
     }
 
     public function testUpdatePersistsPartialChangesForAnActivelyAttachedSoignant(): void
     {
         $patient = $this->makeUser(1, User::ROLE_PATIENT);
         $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
-        $treatment = new Treatment($patient, 'Bisoprolol', '5 mg', '08:00', $soignant);
+        $treatment = new Treatment($patient, 'Bisoprolol', '5 mg', $soignant);
 
         $this->security->method('getUser')->willReturn($soignant);
         $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(true);
@@ -163,7 +221,7 @@ final class TreatmentServiceTest extends TestCase
     {
         $patient = $this->makeUser(1, User::ROLE_PATIENT);
         $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
-        $treatment = new Treatment($patient, 'Bisoprolol', '5 mg', '08:00', $soignant);
+        $treatment = new Treatment($patient, 'Bisoprolol', '5 mg', $soignant);
 
         $this->security->method('getUser')->willReturn($soignant);
         $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(false);

@@ -6,6 +6,7 @@ namespace App\Tests\Service;
 
 use App\Entity\Treatment;
 use App\Entity\TreatmentIntake;
+use App\Entity\TreatmentSchedule;
 use App\Entity\User;
 use App\Repository\TreatmentIntakeRepository;
 use App\Service\TreatmentIntakeService;
@@ -29,33 +30,33 @@ final class TreatmentIntakeServiceTest extends TestCase
 
     public function testFindOrCreateForDateReturnsTheExistingIntakeWithoutPersisting(): void
     {
-        $treatment = $this->makeTreatment();
+        $schedule = $this->makeSchedule();
         $date = new \DateTimeImmutable('today');
-        $existing = new TreatmentIntake($treatment, $date);
+        $existing = new TreatmentIntake($schedule, $date);
 
-        $this->treatmentIntakeRepository->method('findOneByTreatmentAndDate')->willReturn($existing);
+        $this->treatmentIntakeRepository->method('findOneByScheduleAndDate')->willReturn($existing);
 
         $this->entityManager->expects(self::never())->method('persist');
         $this->entityManager->expects(self::never())->method('flush');
 
-        $result = $this->service->findOrCreateForDate($treatment, $date);
+        $result = $this->service->findOrCreateForDate($schedule, $date);
 
         self::assertSame($existing, $result);
     }
 
     public function testFindOrCreateForDateCreatesANewNotTakenIntakeWhenAbsent(): void
     {
-        $treatment = $this->makeTreatment();
+        $schedule = $this->makeSchedule();
         $date = new \DateTimeImmutable('today');
 
-        $this->treatmentIntakeRepository->method('findOneByTreatmentAndDate')->willReturn(null);
+        $this->treatmentIntakeRepository->method('findOneByScheduleAndDate')->willReturn(null);
 
         $this->entityManager->expects(self::once())->method('persist');
         $this->entityManager->expects(self::once())->method('flush');
 
-        $intake = $this->service->findOrCreateForDate($treatment, $date);
+        $intake = $this->service->findOrCreateForDate($schedule, $date);
 
-        self::assertSame($treatment, $intake->getTreatment());
+        self::assertSame($schedule, $intake->getSchedule());
         self::assertEquals($date, $intake->getDate());
         self::assertFalse($intake->isTaken());
         self::assertNull($intake->getTakenAt());
@@ -63,7 +64,7 @@ final class TreatmentIntakeServiceTest extends TestCase
 
     public function testToggleMarksAnUntakenIntakeAsTaken(): void
     {
-        $intake = new TreatmentIntake($this->makeTreatment(), new \DateTimeImmutable('today'));
+        $intake = new TreatmentIntake($this->makeSchedule(), new \DateTimeImmutable('today'));
 
         $this->entityManager->expects(self::once())->method('flush');
 
@@ -75,7 +76,7 @@ final class TreatmentIntakeServiceTest extends TestCase
 
     public function testToggleMarksATakenIntakeAsNotTaken(): void
     {
-        $intake = new TreatmentIntake($this->makeTreatment(), new \DateTimeImmutable('today'));
+        $intake = new TreatmentIntake($this->makeSchedule(), new \DateTimeImmutable('today'));
         $intake->markTaken(new \DateTimeImmutable('today 08:00'));
 
         $this->entityManager->expects(self::once())->method('flush');
@@ -86,7 +87,7 @@ final class TreatmentIntakeServiceTest extends TestCase
         self::assertNull($result->getTakenAt());
     }
 
-    private function makeTreatment(): Treatment
+    private function makeSchedule(): TreatmentSchedule
     {
         $patient = new User('patient@medlink.test', 'Prenom', 'Nom');
         $patient->setRoles([User::ROLE_PATIENT]);
@@ -94,6 +95,8 @@ final class TreatmentIntakeServiceTest extends TestCase
         $soignant = new User('soignant@medlink.test', 'Prenom', 'Nom');
         $soignant->setRoles([User::ROLE_SOIGNANT]);
 
-        return new Treatment($patient, 'Bisoprolol', '5 mg', '08:00', $soignant);
+        $treatment = new Treatment($patient, 'Bisoprolol', '5 mg', $soignant);
+
+        return new TreatmentSchedule($treatment, TreatmentSchedule::MOMENT_MORNING);
     }
 }

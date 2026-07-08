@@ -5,7 +5,7 @@ import Badge from '../components/Badge'
 import { createJournalEntry, fetchJournalEntries } from '../services/journalEntryService'
 import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
 import { fetchPatients } from '../services/patientService'
-import { fetchTreatments, toggleTreatmentIntake } from '../services/treatmentService'
+import { fetchTreatments, scheduleLabel, toggleTreatmentIntake } from '../services/treatmentService'
 import './JournalPage.css'
 
 const MOOD_OPTIONS = [1, 2, 3, 4, 5]
@@ -61,31 +61,43 @@ export default function JournalPage() {
     [patients],
   )
 
-  const handleToggleIntake = useCallback((treatment) => {
-    const previousIntake = treatment.todayIntake
-    const optimisticIntake = {
-      ...previousIntake,
-      taken: !previousIntake.taken,
-      takenAt: previousIntake.taken ? null : new Date().toISOString(),
-    }
-
+  const applyScheduleIntake = useCallback((treatmentId, scheduleId, todayIntake) => {
     setTreatments((current) =>
-      current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: optimisticIntake } : item)),
+      current.map((treatment) =>
+        treatment.id !== treatmentId
+          ? treatment
+          : {
+              ...treatment,
+              schedules: treatment.schedules.map((schedule) =>
+                schedule.id === scheduleId ? { ...schedule, todayIntake } : schedule,
+              ),
+            },
+      ),
     )
-
-    toggleTreatmentIntake(previousIntake.id)
-      .then((updatedIntake) => {
-        setTreatments((current) =>
-          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: updatedIntake } : item)),
-        )
-      })
-      .catch(() => {
-        setTreatments((current) =>
-          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: previousIntake } : item)),
-        )
-        setError('Impossible de mettre à jour ce traitement. Réessayez.')
-      })
   }, [])
+
+  const handleToggleIntake = useCallback(
+    (treatment, schedule) => {
+      const previousIntake = schedule.todayIntake
+      const optimisticIntake = {
+        ...previousIntake,
+        taken: !previousIntake.taken,
+        takenAt: previousIntake.taken ? null : new Date().toISOString(),
+      }
+
+      applyScheduleIntake(treatment.id, schedule.id, optimisticIntake)
+
+      toggleTreatmentIntake(previousIntake.id)
+        .then((updatedIntake) => {
+          applyScheduleIntake(treatment.id, schedule.id, updatedIntake)
+        })
+        .catch(() => {
+          applyScheduleIntake(treatment.id, schedule.id, previousIntake)
+          setError('Impossible de mettre à jour ce traitement. Réessayez.')
+        })
+    },
+    [applyScheduleIntake],
+  )
 
   return (
     <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
@@ -135,7 +147,7 @@ function TreatmentsPanel({ treatments, patientNamesById, showPatientName, onTogg
       ) : (
         <ul className="treatments-list">
           {treatments.map((treatment) => (
-            <TreatmentRow
+            <TreatmentCard
               key={treatment.id}
               treatment={treatment}
               patientName={showPatientName ? patientNamesById[treatment.patientId] : null}
@@ -148,18 +160,57 @@ function TreatmentsPanel({ treatments, patientNamesById, showPatientName, onTogg
   )
 }
 
-function TreatmentRow({ treatment, patientName, onToggle }) {
-  const { taken, takenAt } = treatment.todayIntake ?? { taken: false, takenAt: null }
+function TreatmentCard({ treatment, patientName, onToggle }) {
+  const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken)
+
+  return (
+    <li className="treatment-card">
+      <div className={`treatment-card-header ${allTaken ? 'treatment-row-taken' : 'treatment-row-pending'}`}>
+        <span
+          role="img"
+          aria-label={allTaken ? 'Tous les horaires du jour sont pris' : 'Certains horaires du jour restent à prendre'}
+        >
+          {allTaken ? (
+            <CheckCircle2 className="treatment-icon" aria-hidden="true" />
+          ) : (
+            <Circle className="treatment-icon" aria-hidden="true" />
+          )}
+        </span>
+
+        <span className="treatment-info">
+          {patientName && <span className="treatment-patient-name">{patientName}</span>}
+          <span className="treatment-name">
+            {treatment.name} · {treatment.dosage}
+          </span>
+        </span>
+      </div>
+
+      <ul className="treatment-schedule-list">
+        {treatment.schedules.map((schedule) => (
+          <TreatmentScheduleRow
+            key={schedule.id}
+            treatment={treatment}
+            schedule={schedule}
+            onToggle={onToggle}
+          />
+        ))}
+      </ul>
+    </li>
+  )
+}
+
+function TreatmentScheduleRow({ treatment, schedule, onToggle }) {
+  const { taken, takenAt } = schedule.todayIntake ?? { taken: false, takenAt: null }
   const label = taken
     ? `${treatment.name} ${treatment.dosage}, pris à ${formatTime(takenAt)}`
-    : `${treatment.name} ${treatment.dosage}, à prendre à ${treatment.scheduledTime} — appuyer pour marquer comme pris`
+    : `${treatment.name} ${treatment.dosage}, à prendre : ${scheduleLabel(schedule)} — appuyer pour marquer comme pris`
 
   return (
     <li>
       <button
         type="button"
         className={`treatment-row ${taken ? 'treatment-row-taken' : 'treatment-row-pending'}`}
-        onClick={() => onToggle(treatment)}
+        onClick={() => onToggle(treatment, schedule)}
         aria-label={label}
       >
         {taken ? (
@@ -168,14 +219,8 @@ function TreatmentRow({ treatment, patientName, onToggle }) {
           <Circle className="treatment-icon" aria-hidden="true" />
         )}
 
-        <span className="treatment-info">
-          {patientName && <span className="treatment-patient-name">{patientName}</span>}
-          <span className="treatment-name">
-            {treatment.name} · {treatment.dosage}
-          </span>
-          <span className="treatment-status">
-            {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre à ${treatment.scheduledTime}`}
-          </span>
+        <span className="treatment-status">
+          {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre : ${scheduleLabel(schedule)}`}
         </span>
       </button>
     </li>

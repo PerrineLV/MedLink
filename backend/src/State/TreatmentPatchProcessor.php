@@ -32,7 +32,7 @@ final class TreatmentPatchProcessor implements ProcessorInterface
             $treatment,
             $data->name,
             $data->dosage,
-            $data->scheduledTime,
+            $data->schedules,
             $data->active,
         );
     }

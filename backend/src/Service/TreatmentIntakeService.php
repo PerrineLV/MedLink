@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\Treatment;
 use App\Entity\TreatmentIntake;
+use App\Entity\TreatmentSchedule;
 use App\Repository\TreatmentIntakeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -22,14 +22,14 @@ final class TreatmentIntakeService
      * (pas besoin de cron) : un jour différent repart d'un statut "à
      * prendre", sans reporter le statut de la veille.
      */
-    public function findOrCreateForDate(Treatment $treatment, \DateTimeImmutable $date): TreatmentIntake
+    public function findOrCreateForDate(TreatmentSchedule $schedule, \DateTimeImmutable $date): TreatmentIntake
     {
-        $existing = $this->treatmentIntakeRepository->findOneByTreatmentAndDate($treatment, $date);
+        $existing = $this->treatmentIntakeRepository->findOneByScheduleAndDate($schedule, $date);
         if (null !== $existing) {
             return $existing;
         }
 
-        $intake = new TreatmentIntake($treatment, $date);
+        $intake = new TreatmentIntake($schedule, $date);
 
         $this->entityManager->persist($intake);
         $this->entityManager->flush();

@@ -14,6 +14,8 @@ use App\Repository\TreatmentRepository;
 use App\State\TreatmentCollectionProvider;
 use App\State\TreatmentPatchProcessor;
 use App\State\TreatmentProcessor;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -48,9 +50,13 @@ class Treatment
     #[Groups(['treatment:read'])]
     private string $dosage;
 
-    #[ORM\Column(length: 5)]
+    /**
+     * @var Collection<int, TreatmentSchedule>
+     */
+    #[ORM\OneToMany(mappedBy: 'treatment', targetEntity: TreatmentSchedule::class)]
+    #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     #[Groups(['treatment:read'])]
-    private string $scheduledTime;
+    private Collection $schedules;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
@@ -64,26 +70,18 @@ class Treatment
     #[Groups(['treatment:read'])]
     private \DateTimeImmutable $createdAt;
 
-    /**
-     * Statut de prise du jour demandé, résolu par TreatmentCollectionProvider.
-     * Non persisté : dépend de la date de la requête, pas une relation Doctrine.
-     */
-    #[Groups(['treatment:read'])]
-    private ?TreatmentIntake $todayIntake = null;
-
     public function __construct(
         User $patient,
         string $name,
         string $dosage,
-        string $scheduledTime,
         User $prescribedBy,
     ) {
         $this->patient = $patient;
         $this->name = $name;
         $this->dosage = $dosage;
-        $this->scheduledTime = $scheduledTime;
         $this->prescribedBy = $prescribedBy;
         $this->createdAt = new \DateTimeImmutable();
+        $this->schedules = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -126,14 +124,24 @@ class Treatment
         return $this;
     }
 
-    public function getScheduledTime(): string
+    /**
+     * @return Collection<int, TreatmentSchedule>
+     */
+    public function getSchedules(): Collection
     {
-        return $this->scheduledTime;
+        return $this->schedules;
     }
 
-    public function setScheduledTime(string $scheduledTime): static
+    public function addSchedule(TreatmentSchedule $schedule): static
     {
-        $this->scheduledTime = $scheduledTime;
+        $this->schedules->add($schedule);
+
+        return $this;
+    }
+
+    public function clearSchedules(): static
+    {
+        $this->schedules->clear();
 
         return $this;
     }
@@ -164,17 +172,5 @@ class Treatment
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
-    }
-
-    public function getTodayIntake(): ?TreatmentIntake
-    {
-        return $this->todayIntake;
-    }
-
-    public function setTodayIntake(?TreatmentIntake $todayIntake): static
-    {
-        $this->todayIntake = $todayIntake;
-
-        return $this;
     }
 }
