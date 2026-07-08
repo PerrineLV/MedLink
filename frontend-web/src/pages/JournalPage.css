@@ -19,6 +19,21 @@
   }
 }
 
+.journal-patient-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.journal-patient-group-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0 0 16px;
+  padding-left: 12px;
+  border-left: 4px solid var(--color-primary);
+}
+
 .journal-new-entry {
   margin-bottom: 24px;
 }
@@ -210,14 +225,6 @@
   color: var(--color-primary);
 }
 
-.journal-entry-patient-name {
-  display: block;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin-bottom: 12px;
-}
-
 .journal-entry-metrics {
   display: flex;
   flex-wrap: wrap;
@@ -247,7 +254,6 @@
 }
 
 .treatments-panel {
-  margin-top: 24px;
   max-width: 720px;
 }
 
@@ -256,21 +262,6 @@
   font-weight: 700;
   color: var(--color-primary);
   margin: 0 0 12px;
-}
-
-.treatments-patient-group {
-  margin-bottom: 20px;
-}
-
-.treatments-patient-group:last-child {
-  margin-bottom: 0;
-}
-
-.treatments-patient-heading {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 8px;
 }
 
 .treatments-list {
