@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { CheckCircle2, Circle } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import Badge from '../components/Badge'
 import { createComment, fetchJournalEntries } from '../services/journalEntryService'
 import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
 import { fetchPatients } from '../services/patientService'
+import { createTreatment, fetchTreatments } from '../services/treatmentService'
 import './PatientJournalPage.css'
+
+const GENERIC_PRESCRIBE_ERROR = "Impossible d'enregistrer ce traitement, réessayez."
 
 const FILTERS = [
   { key: 'all', label: 'Tout' },
@@ -26,19 +30,26 @@ export default function PatientJournalPage() {
   const { patientId } = useParams()
   const [patientName, setPatientName] = useState(null)
   const [entries, setEntries] = useState(null)
+  const [treatments, setTreatments] = useState(null)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
 
   const load = useCallback(async () => {
     setError(null)
     setEntries(null)
+    setTreatments(null)
     setPatientName(null)
 
     try {
-      const [patients, fetchedEntries] = await Promise.all([fetchPatients(), fetchJournalEntries(patientId)])
+      const [patients, fetchedEntries, fetchedTreatments] = await Promise.all([
+        fetchPatients(),
+        fetchJournalEntries(patientId),
+        fetchTreatments(patientId),
+      ])
       const patient = patients.find((candidate) => String(candidate.id) === String(patientId))
       setPatientName(patient ? `${patient.firstName} ${patient.lastName}` : null)
       setEntries(fetchedEntries)
+      setTreatments(fetchedTreatments)
     } catch (requestError) {
       if (requestError.response?.status === 403) {
         setError("Vous n'avez pas accès au journal de ce patient.")
@@ -51,6 +62,10 @@ export default function PatientJournalPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  const handleTreatmentCreated = useCallback((treatment) => {
+    setTreatments((current) => [...(current ?? []), treatment])
+  }, [])
 
   const filteredEntries = useMemo(
     () => (entries ?? []).filter((entry) => withinWindow(entry.createdAt, filter)),
@@ -78,6 +93,12 @@ export default function PatientJournalPage() {
           {error}
         </p>
       )}
+
+      {!error && (
+        <ReadOnlyTreatmentsPanel treatments={treatments} />
+      )}
+
+      {!error && <PrescribeTreatmentPanel patientId={patientId} onTreatmentCreated={handleTreatmentCreated} />}
 
       {!error && (
         <div className="patient-journal-filters" role="group" aria-label="Filtrer par période">
@@ -225,5 +246,147 @@ function JournalEntryCard({ entry, onCommentAdded }) {
         </button>
       )}
     </li>
+  )
+}
+
+function ReadOnlyTreatmentsPanel({ treatments }) {
+  return (
+    <section className="treatments-panel">
+      <h2 className="treatments-heading">Traitements du jour</h2>
+
+      {treatments === null ? (
+        <p className="patient-journal-loading">Chargement…</p>
+      ) : treatments.length === 0 ? (
+        <p className="patient-journal-empty">Aucun traitement en cours.</p>
+      ) : (
+        <ul className="treatments-list">
+          {treatments.map((treatment) => {
+            const { taken, takenAt } = treatment.todayIntake ?? { taken: false, takenAt: null }
+
+            return (
+              <li
+                key={treatment.id}
+                className={`treatment-row ${taken ? 'treatment-row-taken' : 'treatment-row-pending'}`}
+              >
+                {taken ? (
+                  <CheckCircle2 className="treatment-icon" aria-hidden="true" />
+                ) : (
+                  <Circle className="treatment-icon" aria-hidden="true" />
+                )}
+
+                <span className="treatment-info">
+                  <span className="treatment-name">
+                    {treatment.name} · {treatment.dosage}
+                  </span>
+                  <span className="treatment-status">
+                    {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre à ${treatment.scheduledTime}`}
+                  </span>
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function formatTime(isoDate) {
+  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
+  const [isCreating, setIsCreating] = useState(false)
+  const [name, setName] = useState('')
+  const [dosage, setDosage] = useState('')
+  const [scheduledTime, setScheduledTime] = useState('')
+  const [error, setError] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const resetForm = () => {
+    setName('')
+    setDosage('')
+    setScheduledTime('')
+    setError(null)
+  }
+
+  const cancelPanel = () => {
+    setIsCreating(false)
+    resetForm()
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setError(null)
+    setIsSubmitting(true)
+
+    try {
+      const treatment = await createTreatment({
+        patientId: Number(patientId),
+        name,
+        dosage,
+        scheduledTime,
+      })
+      onTreatmentCreated(treatment)
+      setIsCreating(false)
+      resetForm()
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail ?? GENERIC_PRESCRIBE_ERROR)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="journal-new-entry">
+      <button type="button" className="journal-new-entry-toggle" onClick={() => setIsCreating(true)} disabled={isCreating}>
+        + Prescrire un traitement
+      </button>
+
+      {isCreating && (
+        <form className="journal-new-entry-panel" onSubmit={handleSubmit}>
+          <div className="journal-field">
+            <span className="journal-field-label">Nom</span>
+            <input type="text" value={name} onChange={(event) => setName(event.target.value)} required />
+          </div>
+
+          <div className="journal-field">
+            <span className="journal-field-label">Dosage</span>
+            <input
+              type="text"
+              value={dosage}
+              onChange={(event) => setDosage(event.target.value)}
+              placeholder="5 mg"
+              required
+            />
+          </div>
+
+          <div className="journal-field">
+            <span className="journal-field-label">Horaire</span>
+            <input
+              type="time"
+              value={scheduledTime}
+              onChange={(event) => setScheduledTime(event.target.value)}
+              required
+            />
+          </div>
+
+          {error && (
+            <p className="journal-new-entry-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          <div className="journal-new-entry-actions">
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+            <button type="button" onClick={cancelPanel}>
+              Annuler
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   )
 }

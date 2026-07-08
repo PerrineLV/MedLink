@@ -19,14 +19,20 @@ class TreatmentRepository extends ServiceEntityRepository
     }
 
     /**
+     * @param list<int> $patientIds
+     *
      * @return list<Treatment>
      */
-    public function findActiveByPatient(int $patientId): array
+    public function findActiveByPatientIds(array $patientIds): array
     {
+        if ([] === $patientIds) {
+            return [];
+        }
+
         return $this->createQueryBuilder('t')
-            ->andWhere('t.patient = :patientId')
+            ->andWhere('t.patient IN (:patientIds)')
             ->andWhere('t.active = true')
-            ->setParameter('patientId', $patientId)
+            ->setParameter('patientIds', $patientIds)
             ->orderBy('t.scheduledTime', 'ASC')
             ->getQuery()
             ->getResult();

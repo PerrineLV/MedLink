@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CheckCircle2, Circle } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import Badge from '../components/Badge'
 import { createJournalEntry, fetchJournalEntries } from '../services/journalEntryService'
 import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
 import { fetchPatients } from '../services/patientService'
+import { fetchTreatments, toggleTreatmentIntake } from '../services/treatmentService'
 import './JournalPage.css'
 
 const MOOD_OPTIONS = [1, 2, 3, 4, 5]
@@ -14,17 +16,24 @@ const SECURITY_BANNER_TEXT = "Données chiffrées — accessibles uniquement à 
 
 export default function JournalPage() {
   const [entries, setEntries] = useState(null)
+  const [treatments, setTreatments] = useState(null)
   const [patients, setPatients] = useState([])
   const [error, setError] = useState(null)
 
   const load = useCallback(async () => {
     setError(null)
     setEntries(null)
+    setTreatments(null)
 
     try {
-      const [fetchedEntries, fetchedPatients] = await Promise.all([fetchJournalEntries(), fetchPatients()])
+      const [fetchedEntries, fetchedPatients, fetchedTreatments] = await Promise.all([
+        fetchJournalEntries(),
+        fetchPatients(),
+        fetchTreatments(),
+      ])
       setEntries(fetchedEntries)
       setPatients(fetchedPatients)
+      setTreatments(fetchedTreatments)
     } catch (requestError) {
       if (requestError.response?.status === 403) {
         setError("Vous n'avez pas accès à ce journal.")
@@ -40,6 +49,42 @@ export default function JournalPage() {
 
   const handleEntryCreated = useCallback((entry) => {
     setEntries((current) => [entry, ...(current ?? [])])
+  }, [])
+
+  const showPatientName = useMemo(
+    () => new Set([...(entries ?? []), ...(treatments ?? [])].map((item) => item.patientId)).size > 1,
+    [entries, treatments],
+  )
+
+  const patientNamesById = useMemo(
+    () => Object.fromEntries(patients.map((patient) => [patient.id, `${patient.firstName} ${patient.lastName}`])),
+    [patients],
+  )
+
+  const handleToggleIntake = useCallback((treatment) => {
+    const previousIntake = treatment.todayIntake
+    const optimisticIntake = {
+      ...previousIntake,
+      taken: !previousIntake.taken,
+      takenAt: previousIntake.taken ? null : new Date().toISOString(),
+    }
+
+    setTreatments((current) =>
+      current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: optimisticIntake } : item)),
+    )
+
+    toggleTreatmentIntake(previousIntake.id)
+      .then((updatedIntake) => {
+        setTreatments((current) =>
+          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: updatedIntake } : item)),
+        )
+      })
+      .catch(() => {
+        setTreatments((current) =>
+          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: previousIntake } : item)),
+        )
+        setError('Impossible de mettre à jour ce traitement. Réessayez.')
+      })
   }, [])
 
   return (
@@ -65,8 +110,80 @@ export default function JournalPage() {
           ))}
         </ul>
       )}
+
+      {!error && (
+        <TreatmentsPanel
+          treatments={treatments}
+          patientNamesById={patientNamesById}
+          showPatientName={showPatientName}
+          onToggle={handleToggleIntake}
+        />
+      )}
     </AppLayout>
   )
+}
+
+function TreatmentsPanel({ treatments, patientNamesById, showPatientName, onToggle }) {
+  return (
+    <section className="treatments-panel">
+      <h2 className="treatments-heading">Traitements du jour</h2>
+
+      {treatments === null ? (
+        <p className="journal-loading">Chargement…</p>
+      ) : treatments.length === 0 ? (
+        <p className="journal-empty">Aucun traitement en cours.</p>
+      ) : (
+        <ul className="treatments-list">
+          {treatments.map((treatment) => (
+            <TreatmentRow
+              key={treatment.id}
+              treatment={treatment}
+              patientName={showPatientName ? patientNamesById[treatment.patientId] : null}
+              onToggle={onToggle}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function TreatmentRow({ treatment, patientName, onToggle }) {
+  const { taken, takenAt } = treatment.todayIntake ?? { taken: false, takenAt: null }
+  const label = taken
+    ? `${treatment.name} ${treatment.dosage}, pris à ${formatTime(takenAt)}`
+    : `${treatment.name} ${treatment.dosage}, à prendre à ${treatment.scheduledTime} — appuyer pour marquer comme pris`
+
+  return (
+    <li>
+      <button
+        type="button"
+        className={`treatment-row ${taken ? 'treatment-row-taken' : 'treatment-row-pending'}`}
+        onClick={() => onToggle(treatment)}
+        aria-label={label}
+      >
+        {taken ? (
+          <CheckCircle2 className="treatment-icon" aria-hidden="true" />
+        ) : (
+          <Circle className="treatment-icon" aria-hidden="true" />
+        )}
+
+        <span className="treatment-info">
+          {patientName && <span className="treatment-patient-name">{patientName}</span>}
+          <span className="treatment-name">
+            {treatment.name} · {treatment.dosage}
+          </span>
+          <span className="treatment-status">
+            {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre à ${treatment.scheduledTime}`}
+          </span>
+        </span>
+      </button>
+    </li>
+  )
+}
+
+function formatTime(isoDate) {
+  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
 function NewEntryPanel({ patients, onEntryCreated }) {
