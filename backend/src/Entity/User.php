@@ -4,14 +4,27 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
 use App\Repository\UserRepository;
+use App\State\PatientCollectionProvider;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
+#[ApiResource(
+    operations: [
+        new GetCollection(
+            uriTemplate: '/patients',
+            provider: PatientCollectionProvider::class,
+            normalizationContext: ['groups' => ['patient_summary:read']],
+        ),
+    ],
+)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     public const ROLE_PATIENT = 'ROLE_PATIENT';
@@ -22,6 +35,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['patient_summary:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
@@ -37,9 +51,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private string $password;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['patient_summary:read'])]
     private string $firstName;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['patient_summary:read'])]
     private string $lastName;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
