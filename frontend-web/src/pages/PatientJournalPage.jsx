@@ -3,8 +3,10 @@ import { Link, useParams } from 'react-router-dom'
 import { CheckCircle2, Circle } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import Badge from '../components/Badge'
+import MedicationAutocomplete from '../components/MedicationAutocomplete'
 import { createComment, fetchJournalEntries } from '../services/journalEntryService'
 import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
+import { fetchMedicationMetadata } from '../services/medicationService'
 import { fetchPatients } from '../services/patientService'
 import { createTreatment, fetchTreatments, scheduleLabel } from '../services/treatmentService'
 import './PatientJournalPage.css'
@@ -330,6 +332,10 @@ function formatTime(isoDate) {
   return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function formatExtractionDate(isoDate) {
+  return new Date(isoDate).toLocaleDateString('fr-FR')
+}
+
 function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
   const [isCreating, setIsCreating] = useState(false)
   const [name, setName] = useState('')
@@ -339,7 +345,28 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
   const [error, setError] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [addedCount, setAddedCount] = useState(0)
+  const [medicationExtractedAt, setMedicationExtractedAt] = useState(null)
   const nameInputRef = useRef(null)
+
+  useEffect(() => {
+    if (!isCreating) {
+      return
+    }
+
+    let cancelled = false
+
+    fetchMedicationMetadata()
+      .then(({ extractedAt }) => {
+        if (!cancelled) {
+          setMedicationExtractedAt(extractedAt)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [isCreating])
 
   const resetForm = () => {
     setName('')
@@ -425,13 +452,21 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
 
           <div className="journal-field">
             <span className="journal-field-label">Nom</span>
-            <input
+            <MedicationAutocomplete
               ref={nameInputRef}
-              type="text"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={setName}
+              onSelectMedication={(medication) => {
+                if (medication.suggestedDosage) {
+                  setDosage(medication.suggestedDosage)
+                }
+              }}
               required
             />
+            <span className="journal-field-hint">
+              Source : Base de données publique des médicaments (ANSM)
+              {medicationExtractedAt && `, extraction du ${formatExtractionDate(medicationExtractedAt)}`}
+            </span>
           </div>
 
           <div className="journal-field">
