@@ -13,7 +13,6 @@ use App\Security\VisiblePatientIds;
 use App\Service\TreatmentIntakeService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
@@ -40,25 +39,29 @@ final class TreatmentCollectionProvider implements ProviderInterface
             return [];
         }
 
+        $visiblePatientIds = $this->visiblePatientIds->forUser($currentUser);
+        if ([] === $visiblePatientIds) {
+            return [];
+        }
+
         $request = $this->requestStack->getCurrentRequest();
 
         $patientFilter = $request?->query->get('patient');
-        if (null === $patientFilter) {
-            throw new BadRequestHttpException('Le paramètre "patient" est obligatoire.');
+        if (null !== $patientFilter) {
+            $patientId = (int) $patientFilter;
+            if (!in_array($patientId, $visiblePatientIds, true)) {
+                throw new AccessDeniedException("Vous n'avez pas accès aux traitements de ce patient.");
+            }
+
+            $visiblePatientIds = [$patientId];
         }
 
-        $patientId = (int) $patientFilter;
-        $visiblePatientIds = $this->visiblePatientIds->forUser($currentUser);
-        if (!in_array($patientId, $visiblePatientIds, true)) {
-            throw new AccessDeniedException("Vous n'avez pas accès aux traitements de ce patient.");
-        }
-
-        $dateFilter = $request->query->get('date');
+        $dateFilter = $request?->query->get('date');
         $date = null !== $dateFilter
             ? new \DateTimeImmutable($dateFilter)
             : new \DateTimeImmutable('today');
 
-        $treatments = $this->treatmentRepository->findActiveByPatient($patientId);
+        $treatments = $this->treatmentRepository->findActiveByPatientIds($visiblePatientIds);
 
         foreach ($treatments as $treatment) {
             $treatment->setTodayIntake($this->treatmentIntakeService->findOrCreateForDate($treatment, $date));

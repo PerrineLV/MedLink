@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { fetchJournalEntries } from '../services/journalEntryService';
 import { fetchPatients } from '../services/patientService';
+import { fetchTreatments, toggleTreatmentIntake } from '../services/treatmentService';
 import { COLORS, TYPE, bloodPressureBand, moodBand, painBand } from '../services/journalPresentation';
 import { ROLE_AIDANT, ROLE_LABELS, ROLE_PATIENT, getPrimaryRole } from '../services/roles';
 
@@ -41,6 +42,7 @@ export default function JournalScreen() {
   const displayName = firstName ?? (primaryRole ? ROLE_LABELS[primaryRole] : 'Utilisateur');
 
   const [entries, setEntries] = useState([]);
+  const [treatments, setTreatments] = useState([]);
   const [patientNamesById, setPatientNamesById] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -51,8 +53,13 @@ export default function JournalScreen() {
     setError(null);
 
     try {
-      const [fetchedEntries, patients] = await Promise.all([fetchJournalEntries(), fetchPatients()]);
+      const [fetchedEntries, patients, fetchedTreatments] = await Promise.all([
+        fetchJournalEntries(),
+        fetchPatients(),
+        fetchTreatments(),
+      ]);
       setEntries(fetchedEntries);
+      setTreatments(fetchedTreatments);
       setPatientNamesById(
         Object.fromEntries(patients.map((patient) => [patient.id, `${patient.firstName} ${patient.lastName}`])),
       );
@@ -69,12 +76,39 @@ export default function JournalScreen() {
     }, [load]),
   );
 
-  // An aidant's feed mixes entries from several patients; showing whose
-  // entry it is only makes sense once there's more than one to tell apart.
+  // An aidant's feed mixes entries (and treatments) from several patients;
+  // showing whose it is only makes sense once there's more than one to tell
+  // apart.
   const showPatientName = useMemo(
-    () => new Set(entries.map((entry) => entry.patientId)).size > 1,
-    [entries],
+    () => new Set([...entries, ...treatments].map((item) => item.patientId)).size > 1,
+    [entries, treatments],
   );
+
+  const handleToggleIntake = useCallback((treatment) => {
+    const previousIntake = treatment.todayIntake;
+    const optimisticIntake = {
+      ...previousIntake,
+      taken: !previousIntake.taken,
+      takenAt: previousIntake.taken ? null : new Date().toISOString(),
+    };
+
+    setTreatments((current) =>
+      current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: optimisticIntake } : item)),
+    );
+
+    toggleTreatmentIntake(previousIntake.id)
+      .then((updatedIntake) => {
+        setTreatments((current) =>
+          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: updatedIntake } : item)),
+        );
+      })
+      .catch(() => {
+        setTreatments((current) =>
+          current.map((item) => (item.id === treatment.id ? { ...item, todayIntake: previousIntake } : item)),
+        );
+        setError('Impossible de mettre à jour ce traitement. Réessayez.');
+      });
+  }, []);
 
   if (isLoading) {
     return (
@@ -126,6 +160,14 @@ export default function JournalScreen() {
             patientName={showPatientName ? patientNamesById[item.patientId] : null}
           />
         )}
+        ListFooterComponent={
+          <TreatmentsSection
+            treatments={treatments}
+            patientNamesById={patientNamesById}
+            showPatientName={showPatientName}
+            onToggle={handleToggleIntake}
+          />
+        }
       />
 
       <BottomNav navigation={navigation} onProfilePress={() => confirmLogout(logout)} />
@@ -306,6 +348,64 @@ function MoodDots({ mood, color }) {
   );
 }
 
+function formatTime(isoDate) {
+  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function TreatmentsSection({ treatments, patientNamesById, showPatientName, onToggle }) {
+  return (
+    <View style={styles.treatmentsSection}>
+      <Text style={styles.sectionHeading}>Traitements du jour</Text>
+
+      {treatments.length === 0 ? (
+        <Text style={styles.emptyText}>Aucun traitement en cours.</Text>
+      ) : (
+        <View style={styles.treatmentsCard}>
+          {treatments.map((treatment) => (
+            <TreatmentRow
+              key={treatment.id}
+              treatment={treatment}
+              patientName={showPatientName ? patientNamesById[treatment.patientId] : null}
+              onToggle={onToggle}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function TreatmentRow({ treatment, patientName, onToggle }) {
+  const { taken, takenAt } = treatment.todayIntake ?? { taken: false, takenAt: null };
+  const color = taken ? COLORS.green.text : COLORS.mutedText;
+  const accessibilityLabel = taken
+    ? `${treatment.name} ${treatment.dosage}, pris à ${formatTime(takenAt)}`
+    : `${treatment.name} ${treatment.dosage}, à prendre à ${treatment.scheduledTime} — appuyer pour marquer comme pris`;
+
+  return (
+    <TouchableOpacity
+      style={styles.treatmentRow}
+      onPress={() => onToggle(treatment)}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
+      <Text style={styles.treatmentIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {taken ? '✅' : '⭕'}
+      </Text>
+
+      <View style={styles.treatmentInfo}>
+        {patientName && <Text style={styles.patientName}>{patientName}</Text>}
+        <Text style={styles.treatmentName}>
+          {treatment.name} · {treatment.dosage}
+        </Text>
+        <Text style={[styles.treatmentStatus, { color }]}>
+          {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre à ${treatment.scheduledTime}`}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
   centered: { justifyContent: 'center', alignItems: 'center' },
@@ -416,4 +516,30 @@ const styles = StyleSheet.create({
   bottomNavIcon: { fontSize: TYPE.md },
   bottomNavLabel: { fontSize: TYPE.xs, color: 'rgba(255,255,255,0.7)' },
   bottomNavLabelActive: { color: COLORS.onPrimary, fontWeight: '700' },
+  treatmentsSection: { marginTop: 8 },
+  sectionHeading: {
+    color: COLORS.primary,
+    fontSize: TYPE.md,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  treatmentsCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  treatmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  treatmentIcon: { fontSize: TYPE.lg },
+  treatmentInfo: { flex: 1 },
+  treatmentName: { fontSize: TYPE.sm, fontWeight: '700', color: COLORS.primary },
+  treatmentStatus: { fontSize: TYPE.xs, fontWeight: '600', marginTop: 2 },
 });
