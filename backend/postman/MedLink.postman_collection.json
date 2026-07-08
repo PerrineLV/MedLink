@@ -1,83 +1,33 @@
 {
   "info": {
     "name": "MedLink API",
-    "description": "Collection de tests manuels pour l'API MedLink. Prealable : charger les fixtures ML-42 (docker compose exec app php bin/console doctrine:fixtures:load), puis lancer le dossier '0. Setup' pour s'authentifier et recuperer automatiquement les IDs patients (les IDs Doctrine ne sont pas stables d'un environnement a l'autre). Le dossier 'ML-22 - Journal de suivi' couvre ensuite les endpoints JournalEntry (POST/GET) et les scenarios de securite (patient / aidant / soignant) en s'appuyant sur les relations actives/inactives des fixtures.",
+    "description": "Collection de tests manuels pour l'API MedLink. Le dossier 'ML-22 - Journal de suivi' couvre les endpoints JournalEntry (POST/GET) et les scenarios de securite (patient / aidant / soignant).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "base_url", "value": "http://localhost:8080" },
-    { "key": "patient1_token", "value": "" },
-    { "key": "patient2_token", "value": "" },
-    { "key": "patient3_token", "value": "" },
-    { "key": "aidant1_token", "value": "" },
-    { "key": "aidant2_token", "value": "" },
+    { "key": "patient_id", "value": "14" },
+    { "key": "aidant_id", "value": "15" },
+    { "key": "soignant_id", "value": "16" },
+    { "key": "patient_token", "value": "" },
+    { "key": "aidant_token", "value": "" },
     { "key": "soignant_token", "value": "" },
-    { "key": "patient1_id", "value": "" },
-    { "key": "patient2_id", "value": "" },
-    { "key": "patient3_id", "value": "" },
-    { "key": "entry_id", "value": "" },
-    { "key": "long_note", "value": "" }
+    { "key": "entry_id", "value": "" }
   ],
   "item": [
     {
-      "name": "0. Setup",
-      "description": "A executer dans l'ordre (Run collection) juste apres doctrine:fixtures:load. Chaque patient s'authentifie puis liste ses propres entrees de journal (fixtures ML-42, GET s'auto-filtre sur l'utilisateur connecte) : la reponse revele son patientId sans coder en dur des IDs Doctrine fragiles. patient1 fournit aussi entry_id pour le test GET par id.",
+      "name": "Auth",
       "item": [
         {
-          "name": "Login - patient1",
+          "name": "Login - patient",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('patient1_token', pm.response.json().token);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"patient1@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
-            },
-            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
-          }
-        },
-        {
-          "name": "Setup - patient1 id (+ entry_id)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('a au moins une entree (fixtures ML-42)', () => pm.expect(json.member.length).to.be.above(0));",
-                  "pm.collectionVariables.set('patient1_id', json.member[0].patientId);",
-                  "pm.collectionVariables.set('entry_id', json.member[0].id);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{patient1_token}}" }],
-            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          },
-          "description": "patient1 a plusieurs entrees dans les fixtures ML-42 ; GET s'auto-filtre sur l'utilisateur connecte, donc member[0].patientId est fiable quel que soit l'ID Doctrine reel."
-        },
-        {
-          "name": "Login - patient2",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('patient2_token', pm.response.json().token);"
+                  "pm.collectionVariables.set('patient_token', json.token);",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
@@ -87,41 +37,21 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"patient2@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+              "raw": "{\n  \"email\": \"patient@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
           }
         },
         {
-          "name": "Setup - patient2 id",
+          "name": "Login - aidant",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('a au moins une entree (fixtures ML-42)', () => pm.expect(json.member.length).to.be.above(0));",
-                  "pm.collectionVariables.set('patient2_id', json.member[0].patientId);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{patient2_token}}" }],
-            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          }
-        },
-        {
-          "name": "Login - patient3",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('patient3_token', pm.response.json().token);"
+                  "pm.collectionVariables.set('aidant_token', json.token);",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
@@ -131,79 +61,10 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"patient3@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+              "raw": "{\n  \"email\": \"aidant@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
           }
-        },
-        {
-          "name": "Setup - patient3 id",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('a au moins une entree (fixtures ML-42)', () => pm.expect(json.member.length).to.be.above(0));",
-                  "pm.collectionVariables.set('patient3_id', json.member[0].patientId);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{patient3_token}}" }],
-            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          }
-        },
-        {
-          "name": "Login - aidant1",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('aidant1_token', pm.response.json().token);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"aidant1@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
-            },
-            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
-          },
-          "description": "aidant1 (fixtures ML-42) : rattache actif a patient1 ET patient2."
-        },
-        {
-          "name": "Login - aidant2",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('aidant2_token', pm.response.json().token);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"aidant2@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
-            },
-            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
-          },
-          "description": "aidant2 (fixtures ML-42) : rattache a patient3 mais avec active=false (revoque). Jamais rattache a patient1/patient2."
         },
         {
           "name": "Login - soignant",
@@ -212,8 +73,9 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('soignant_token', pm.response.json().token);"
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('soignant_token', json.token);",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
@@ -226,32 +88,37 @@
               "raw": "{\n  \"email\": \"soignant@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
-          },
-          "description": "soignant (fixtures ML-42) : referent actif de patient1/2/3, mais relation active=false avec patient4."
+          }
         }
       ]
     },
     {
       "name": "ML-22 - Journal de suivi",
-      "description": "A executer apres le dossier '0. Setup'. S'appuie sur les relations actives/inactives des fixtures ML-42 : aidant1<->patient1 (actif), aidant2<->patient3 (revoque), aidant2<->patient1 (jamais rattache).",
+      "description": "Avant de tester les scenarios aidant/soignant, cree les relations en base (aucun endpoint ne les expose encore) :\ndocker compose exec app php bin/console doctrine:query:sql \"INSERT INTO patient_aidant (patient_id, aidant_id, active, created_at) VALUES ({{patient_id}}, {{aidant_id}}, true, now())\"\ndocker compose exec app php bin/console doctrine:query:sql \"INSERT INTO patient_soignant (patient_id, soignant_id, active, created_at) VALUES ({{patient_id}}, {{soignant_id}}, true, now())\"\n\nPour tester la revocation immediate, repasse 'active' a false :\ndocker compose exec app php bin/console doctrine:query:sql \"UPDATE patient_aidant SET active = false WHERE patient_id = {{patient_id}} AND aidant_id = {{aidant_id}}\"",
       "item": [
         {
-          "name": "POST - Creer une entree (nominal, patient1)",
+          "name": "POST - Creer une entree (nominal, patient)",
           "event": [
             {
               "listen": "test",
-              "script": { "exec": ["pm.test('status 201', () => pm.response.to.have.status(201));"] }
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('entry_id', json.id);"
+                ]
+              }
             }
           ],
           "request": {
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
+              { "key": "Authorization", "value": "Bearer {{patient_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"RAS\"\n}"
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"RAS\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
           }
@@ -268,11 +135,11 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
+              { "key": "Authorization", "value": "Bearer {{patient_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 5,\n  \"painLevel\": 1,\n  \"bloodPressure\": \"115/75\"\n}"
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 5,\n  \"painLevel\": 1,\n  \"bloodPressure\": \"115/75\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
           }
@@ -289,11 +156,11 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
+              { "key": "Authorization", "value": "Bearer {{patient_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 8,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 8,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
           }
@@ -310,11 +177,11 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
+              { "key": "Authorization", "value": "Bearer {{patient_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 11,\n  \"bloodPressure\": \"120/80\"\n}"
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 3,\n  \"painLevel\": 11,\n  \"bloodPressure\": \"120/80\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
           }
@@ -331,11 +198,11 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
+              { "key": "Authorization", "value": "Bearer {{patient_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"abc\"\n}"
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"abc\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
           }
@@ -343,14 +210,6 @@
         {
           "name": "POST - 422 note trop longue (>1000 car.)",
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('long_note', 'a'.repeat(1001));"
-                ]
-              }
-            },
             {
               "listen": "test",
               "script": { "exec": ["pm.test('status 422', () => pm.response.to.have.status(422));"] }
@@ -360,18 +219,40 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
+              { "key": "Authorization", "value": "Bearer {{patient_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"{{long_note}}\"\n}"
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"{{$randomLoremParagraphs}}\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
           },
-          "description": "long_note est genere par un pre-request script ('a'.repeat(1001)) plutot que {{$randomLoremParagraphs}} : cette derniere insere des retours a la ligne bruts qui cassent le JSON du corps et provoquent un 500 au lieu du 422 attendu."
+          "description": "Remplace la valeur de 'note' par une chaine de plus de 1000 caracteres (ex: colle 1001 fois la lettre 'a') si {{$randomLoremParagraphs}} ne suffit pas."
         },
         {
-          "name": "POST - 201 aidant1 rattache actif (saisie par aidant)",
+          "name": "POST - 403 aidant non rattache",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{aidant_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
+          },
+          "description": "A executer AVANT d'avoir cree la relation PatientAidant en base (voir description du dossier)."
+        },
+        {
+          "name": "POST - 201 aidant rattache (saisie par aidant)",
           "event": [
             {
               "listen": "test",
@@ -388,59 +269,39 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{aidant1_token}}" }
+              { "key": "Authorization", "value": "Bearer {{aidant_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"Saisie par aidant\"\n}"
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"Saisie par aidant\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
           },
-          "description": "aidant1 est rattache actif a patient1 (fixtures ML-42)."
+          "description": "A executer APRES avoir insere la relation PatientAidant active=true en base."
         },
         {
-          "name": "POST - 403 aidant2 jamais rattache (patient1)",
-          "event": [
-            {
-              "listen": "test",
-              "script": { "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"] }
-            }
-          ],
+          "name": "GET - Liste (patient, voit ses propres entrees)",
           "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{aidant2_token}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
-            },
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          },
-          "description": "aidant2 n'a jamais eu de relation PatientAidant avec patient1 (fixtures ML-42)."
+          }
         },
         {
-          "name": "POST - 403 aidant2 relation desactivee (patient3)",
-          "event": [
-            {
-              "listen": "test",
-              "script": { "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"] }
-            }
-          ],
+          "name": "GET - Liste (aidant, voit les patients actifs)",
           "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{aidant2_token}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient3_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
-            },
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{aidant_token}}" }],
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          },
-          "description": "aidant2<->patient3 existe en base mais active=false (revocation, fixtures ML-42) : l'acces doit rester refuse sans avoir a desactiver quoi que ce soit manuellement."
+          }
+        },
+        {
+          "name": "GET - Liste (soignant, lecture seule)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{soignant_token}}" }],
+            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
+          }
         },
         {
           "name": "POST - 403 soignant ne peut pas creer",
@@ -458,7 +319,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
           }
@@ -467,7 +328,7 @@
           "name": "GET - Une entree par id",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{patient1_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
             "url": {
               "raw": "{{base_url}}/api/journal_entries/{{entry_id}}",
               "host": ["{{base_url}}"],
@@ -476,44 +337,20 @@
           }
         },
         {
-          "name": "GET - Liste (patient1, voit ses propres entrees)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{patient1_token}}" }],
-            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          }
-        },
-        {
-          "name": "GET - Liste (aidant1, voit patient1 + patient2)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{aidant1_token}}" }],
-            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          }
-        },
-        {
-          "name": "GET - Liste (soignant, lecture seule patient1/2/3)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{soignant_token}}" }],
-            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          }
-        },
-        {
-          "name": "GET - Liste filtree par patient (soignant sur patient1)",
+          "name": "GET - Liste filtree par patient (soignant)",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{soignant_token}}" }],
             "url": {
-              "raw": "{{base_url}}/api/journal_entries?patient={{patient1_id}}",
+              "raw": "{{base_url}}/api/journal_entries?patient={{patient_id}}",
               "host": ["{{base_url}}"],
               "path": ["api", "journal_entries"],
-              "query": [{ "key": "patient", "value": "{{patient1_id}}" }]
+              "query": [{ "key": "patient", "value": "{{patient_id}}" }]
             }
           }
         },
         {
-          "name": "GET - 403 filtre sur patient inexistant",
+          "name": "GET - 403 filtre sur un patient non rattache",
           "event": [
             {
               "listen": "test",
@@ -524,263 +361,11 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{soignant_token}}" }],
             "url": {
-              "raw": "{{base_url}}/api/journal_entries?patient=999999",
+              "raw": "{{base_url}}/api/journal_entries?patient=9999",
               "host": ["{{base_url}}"],
               "path": ["api", "journal_entries"],
-              "query": [{ "key": "patient", "value": "999999" }]
+              "query": [{ "key": "patient", "value": "9999" }]
             }
-          }
-        }
-      ]
-    },
-    {
-      "name": "ML-23 - Selection patient (aidant)",
-      "description": "GET /api/patients : liste les patients pour lesquels l'utilisateur connecte peut saisir/consulter une entree (lui-meme pour un patient, ses patients actifs pour un aidant/soignant). Utilise par l'app mobile pour proposer le bon patient a l'aidant avant de creer une entree (ML-23).",
-      "item": [
-        {
-          "name": "GET - Liste patients (aidant1, voit patient1 + patient2)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('2 patients rattaches actifs', () => pm.expect(json.length).to.eql(2));",
-                  "pm.test('expose uniquement id/prenom/nom', () => json.forEach((patient) => pm.expect(Object.keys(patient).sort()).to.eql(['firstName', 'id', 'lastName'])));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{aidant1_token}}" }],
-            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
-          }
-        },
-        {
-          "name": "GET - Liste patients (aidant2, relation desactivee => vide)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('aucun patient (relation avec patient3 desactivee)', () => pm.expect(pm.response.json().length).to.eql(0));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{aidant2_token}}" }],
-            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
-          }
-        },
-        {
-          "name": "GET - Liste patients (patient1, se voit lui-meme)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('un seul patient : lui-meme', () => pm.expect(json.length).to.eql(1));",
-                  "pm.test('id correspond a patient1_id', () => pm.expect(json[0].id).to.eql(pm.collectionVariables.get('patient1_id')));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{patient1_token}}" }],
-            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
-          }
-        },
-        {
-          "name": "GET - Liste patients (soignant, voit patient1/2/3)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('3 patients rattaches actifs', () => pm.expect(pm.response.json().length).to.eql(3));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{soignant_token}}" }],
-            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
-          }
-        },
-        {
-          "name": "GET - 401 sans authentification",
-          "event": [
-            {
-              "listen": "test",
-              "script": { "exec": ["pm.test('status 401', () => pm.response.to.have.status(401));"] }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": { "raw": "{{base_url}}/api/patients", "host": ["{{base_url}}"], "path": ["api", "patients"] }
-          }
-        }
-      ]
-    },
-    {
-      "name": "ML-24 - Commentaires soignant (journal)",
-      "description": "POST /api/journal_entry_comments : un soignant peut commenter une entree du journal d'un patient dont il est le referent actif (PatientSoignant.active = true) ; ni le patient ni son aidant ne le peuvent. Le controle d'acces sur la liste/detail d'un patient non rattache (403) est deja couvert par 'GET - 403 filtre sur patient inexistant' du dossier ML-22 (meme chemin de code : patientId hors de la liste des patients visibles).",
-      "item": [
-        {
-          "name": "POST - Soignant commente une entree (nominal, patient1)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 201', () => pm.response.to.have.status(201));",
-                  "const json = pm.response.json();",
-                  "pm.test('le commentaire est associe au bon auteur', () => pm.expect(json.text).to.eql('A surveiller de pres.'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{soignant_token}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"A surveiller de pres.\"\n}"
-            },
-            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
-          }
-        },
-        {
-          "name": "GET - Le commentaire apparait dans le fil (patient1)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "const entry = json.find((e) => e.id === pm.collectionVariables.get('entry_id'));",
-                  "pm.test(\"le commentaire du soignant est visible dans l'entree\", () => pm.expect(entry.comments.some((c) => c.text === 'A surveiller de pres.')).to.be.true);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
-            ],
-            "url": { "raw": "{{base_url}}/api/journal_entries", "host": ["{{base_url}}"], "path": ["api", "journal_entries"] }
-          }
-        },
-        {
-          "name": "POST - 403 patient tente de commenter sa propre entree",
-          "event": [
-            {
-              "listen": "test",
-              "script": { "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"] }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{patient1_token}}" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"test\"\n}" },
-            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
-          }
-        },
-        {
-          "name": "POST - 403 aidant tente de commenter",
-          "event": [
-            {
-              "listen": "test",
-              "script": { "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"] }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{aidant1_token}}" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"test\"\n}" },
-            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
-          }
-        },
-        {
-          "name": "POST - 422 commentaire vide",
-          "event": [
-            {
-              "listen": "test",
-              "script": { "exec": ["pm.test('status 422', () => pm.response.to.have.status(422));"] }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{soignant_token}}" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"   \"\n}" },
-            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
-          }
-        },
-        {
-          "name": "POST - 422 commentaire trop long (>1000 car.)",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": { "exec": ["pm.collectionVariables.set('long_note', 'a'.repeat(1001));"] }
-            },
-            {
-              "listen": "test",
-              "script": { "exec": ["pm.test('status 422', () => pm.response.to.have.status(422));"] }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{soignant_token}}" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"{{long_note}}\"\n}" },
-            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
-          }
-        },
-        {
-          "name": "POST - 404 entree de journal introuvable",
-          "event": [
-            {
-              "listen": "test",
-              "script": { "exec": ["pm.test('status 404', () => pm.response.to.have.status(404));"] }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{soignant_token}}" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"journalEntryId\": 999999,\n  \"text\": \"test\"\n}" },
-            "url": { "raw": "{{base_url}}/api/journal_entry_comments", "host": ["{{base_url}}"], "path": ["api", "journal_entry_comments"] }
           }
         }
       ]

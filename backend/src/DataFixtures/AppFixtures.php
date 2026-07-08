@@ -7,8 +7,6 @@ namespace App\DataFixtures;
 use App\Entity\JournalEntry;
 use App\Entity\PatientAidant;
 use App\Entity\PatientSoignant;
-use App\Entity\Treatment;
-use App\Entity\TreatmentIntake;
 use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -69,36 +67,6 @@ class AppFixtures extends Fixture
 
         // patient4 : aucune entrée de journal (cas "aucune donnée")
 
-        // Traitements patient1 : couvre les 3 statuts visuels du jour (pris,
-        // à prendre, en retard) + un traitement arrêté qui ne doit plus
-        // apparaître dans la liste du jour.
-        $bisoprolol = $this->createTreatment($manager, $patient1, $soignant, 'Bisoprolol', '5 mg', '08:00');
-        $this->createTreatmentIntake($manager, $bisoprolol, taken: true, takenAtModifier: 'today 08:05');
-
-        $ramipril1 = $this->createTreatment($manager, $patient1, $soignant, 'Ramipril', '10 mg', $this->hoursFromNow(3));
-        $this->createTreatmentIntake($manager, $ramipril1, taken: false);
-
-        $furosemide = $this->createTreatment($manager, $patient1, $soignant, 'Furosémide', '20 mg', $this->hoursFromNow(-3));
-        $this->createTreatmentIntake($manager, $furosemide, taken: false);
-
-        $this->createTreatment($manager, $patient1, $soignant, 'Paracétamol', '500 mg', '12:00', active: false);
-
-        // Traitements patient2
-        $metformine = $this->createTreatment($manager, $patient2, $soignant, 'Metformine', '850 mg', '08:00');
-        $this->createTreatmentIntake($manager, $metformine, taken: true, takenAtModifier: 'today 08:10');
-
-        $levothyrox = $this->createTreatment($manager, $patient2, $soignant, 'Levothyrox', '75 µg', $this->hoursFromNow(-2));
-        $this->createTreatmentIntake($manager, $levothyrox, taken: false);
-
-        // Traitements patient3 (relation aidant désactivée, relation soignant active)
-        $aspirine = $this->createTreatment($manager, $patient3, $soignant, 'Aspirine', '75 mg', '08:00');
-        $this->createTreatmentIntake($manager, $aspirine, taken: true, takenAtModifier: 'today 08:00');
-
-        $ramipril3 = $this->createTreatment($manager, $patient3, $soignant, 'Ramipril', '10 mg', $this->hoursFromNow(4));
-        $this->createTreatmentIntake($manager, $ramipril3, taken: false);
-
-        // patient4 : aucun traitement (cas "aucune donnée")
-
         $manager->flush();
     }
 
@@ -131,48 +99,5 @@ class AppFixtures extends Fixture
         $createdAt->setValue($entry, new \DateTimeImmutable($createdAtModifier));
 
         $manager->persist($entry);
-    }
-
-    private function createTreatment(
-        ObjectManager $manager,
-        User $patient,
-        User $soignant,
-        string $name,
-        string $dosage,
-        string $scheduledTime,
-        bool $active = true,
-    ): Treatment {
-        $treatment = new Treatment($patient, $name, $dosage, $scheduledTime, $soignant);
-        if (!$active) {
-            $treatment->setActive(false);
-        }
-
-        $manager->persist($treatment);
-
-        return $treatment;
-    }
-
-    private function createTreatmentIntake(
-        ObjectManager $manager,
-        Treatment $treatment,
-        bool $taken,
-        ?string $takenAtModifier = null,
-    ): void {
-        $intake = new TreatmentIntake($treatment, new \DateTimeImmutable('today'));
-        if ($taken) {
-            $intake->markTaken(new \DateTimeImmutable($takenAtModifier ?? 'now'));
-        }
-
-        $manager->persist($intake);
-    }
-
-    /**
-     * Heure du jour décalée de $hours par rapport à maintenant, au format
-     * "HH:MM" — permet aux fixtures de rester "en retard"/"à prendre" de
-     * façon stable quelle que soit l'heure de chargement.
-     */
-    private function hoursFromNow(int $hours): string
-    {
-        return (new \DateTimeImmutable(sprintf('%+d hours', $hours)))->format('H:i');
     }
 }

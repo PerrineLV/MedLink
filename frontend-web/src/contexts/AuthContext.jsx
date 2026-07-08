@@ -8,7 +8,6 @@ import {
   useState,
 } from 'react'
 import { login as loginRequest } from '../services/authService'
-import httpClient from '../services/httpClient'
 import { decodeJwtPayload } from '../services/jwt'
 
 // 30 min of inactivity logs the user out; a warning appears 2 min before.
@@ -22,7 +21,6 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null)
   const [roles, setRoles] = useState([])
-  const [firstName, setFirstName] = useState(null)
   const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false)
 
   const warningTimeoutRef = useRef(null)
@@ -37,7 +35,6 @@ export function AuthProvider({ children }) {
     clearInactivityTimers()
     setToken(null)
     setRoles([])
-    setFirstName(null)
     setSessionExpiryWarning(false)
   }, [clearInactivityTimers])
 
@@ -69,14 +66,6 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
-  useEffect(() => {
-    if (token) {
-      httpClient.defaults.headers.common.Authorization = `Bearer ${token}`
-    } else {
-      delete httpClient.defaults.headers.common.Authorization
-    }
-  }, [token])
-
   const login = useCallback(async (email, password) => {
     const { token: accessToken } = await loginRequest(email, password)
     const payload = decodeJwtPayload(accessToken)
@@ -84,7 +73,6 @@ export function AuthProvider({ children }) {
 
     setToken(accessToken)
     setRoles(grantedRoles)
-    setFirstName(payload?.firstName ?? null)
 
     return grantedRoles
   }, [])
@@ -93,14 +81,13 @@ export function AuthProvider({ children }) {
     () => ({
       token,
       roles,
-      firstName,
       isAuthenticated: Boolean(token),
       sessionExpiryWarning,
       login,
       logout,
       dismissSessionExpiryWarning: resetInactivityTimers,
     }),
-    [token, roles, firstName, sessionExpiryWarning, login, logout, resetInactivityTimers],
+    [token, roles, sessionExpiryWarning, login, logout, resetInactivityTimers],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

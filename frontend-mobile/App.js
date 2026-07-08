@@ -5,8 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
-import JournalScreen from './screens/JournalScreen';
-import NewEntryScreen from './screens/NewEntryScreen';
+import DashboardScreen from './screens/DashboardScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
 
 const Stack = createStackNavigator();
@@ -16,15 +15,9 @@ function RootNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{ headerShown: false }}
-        initialRouteName={isAuthenticated ? 'Journal' : 'Login'}
-      >
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <>
-            <Stack.Screen name="Journal" component={JournalScreen} />
-            <Stack.Screen name="NewEntry" component={NewEntryScreen} />
-          </>
+          <Stack.Screen name="Dashboard" component={DashboardScreen} />
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
