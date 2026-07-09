@@ -107,4 +107,16 @@ final class LiaisonInvitationService
 
         return $invitation;
     }
+
+    public function revoke(PatientAidant|PatientSoignant $relation): LiaisonInvitation
+    {
+        // Jamais de suppression physique : traçabilité historique exigée en
+        // contexte HDS (cf. ML-46). Idempotent si le lien est déjà inactif.
+        $relation->setActive(false);
+        $this->entityManager->flush();
+
+        return $relation instanceof PatientAidant
+            ? LiaisonInvitation::forAidantRelation($relation)
+            : LiaisonInvitation::forSoignantRelation($relation);
+    }
 }

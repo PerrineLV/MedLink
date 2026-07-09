@@ -250,6 +250,53 @@ final class LiaisonInvitationServiceTest extends TestCase
         $this->service->reject($relation);
     }
 
+    public function testRevokeDeactivatesAnActiveAidantLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $aidant = $this->makeUser(2, User::ROLE_AIDANT);
+        $relation = $this->makeAidantRelation($patient, $aidant, 5);
+        $relation->setActive(true);
+
+        $this->entityManager->expects(self::never())->method('remove');
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $invitation = $this->service->revoke($relation);
+
+        self::assertFalse($relation->isActive());
+        self::assertSame('aidant-5', $invitation->id);
+        self::assertFalse($invitation->active);
+    }
+
+    public function testRevokeDeactivatesAnActiveSoignantLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $relation = $this->makeSoignantRelation($patient, $soignant, 5);
+        $relation->setActive(true);
+
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $invitation = $this->service->revoke($relation);
+
+        self::assertFalse($relation->isActive());
+        self::assertSame('soignant-5', $invitation->id);
+        self::assertFalse($invitation->active);
+    }
+
+    public function testRevokeIsIdempotentOnAnAlreadyInactiveLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $aidant = $this->makeUser(2, User::ROLE_AIDANT);
+        $relation = $this->makeAidantRelation($patient, $aidant, 5);
+
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $invitation = $this->service->revoke($relation);
+
+        self::assertFalse($relation->isActive());
+        self::assertFalse($invitation->active);
+    }
+
     private function makeUser(int $id, string $role): User
     {
         $user = new User(sprintf('user-%d@medlink.test', $id), 'Prenom', 'Nom');

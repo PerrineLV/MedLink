@@ -74,6 +74,51 @@ final class LiaisonInvitationVoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_ABSTAIN, $this->voter->vote($token, $user, [LiaisonInvitationVoter::RESPOND]));
     }
 
+    public function testThePatientCanRevokeTheirOwnAidantLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $aidant = $this->makeUser(2, User::ROLE_AIDANT);
+        $relation = new PatientAidant($patient, $aidant);
+
+        $token = $this->tokenFor($patient);
+
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $this->voter->vote($token, $relation, [LiaisonInvitationVoter::REVOKE]));
+    }
+
+    public function testThePatientCanRevokeTheirOwnSoignantLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $relation = new PatientSoignant($patient, $soignant);
+
+        $token = $this->tokenFor($patient);
+
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $this->voter->vote($token, $relation, [LiaisonInvitationVoter::REVOKE]));
+    }
+
+    public function testTheInvitedAidantCannotRevokeTheirOwnLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $aidant = $this->makeUser(2, User::ROLE_AIDANT);
+        $relation = new PatientAidant($patient, $aidant);
+
+        $token = $this->tokenFor($aidant);
+
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->voter->vote($token, $relation, [LiaisonInvitationVoter::REVOKE]));
+    }
+
+    public function testAThirdPartyCannotRevokeALinkThatIsNotTheirs(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $anotherPatient = $this->makeUser(3, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $relation = new PatientSoignant($patient, $soignant);
+
+        $token = $this->tokenFor($anotherPatient);
+
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->voter->vote($token, $relation, [LiaisonInvitationVoter::REVOKE]));
+    }
+
     private function makeUser(int $id, string $role): User
     {
         $user = new User(sprintf('user-%d@medlink.test', $id), 'Prenom', 'Nom');

@@ -43,6 +43,10 @@ class AppFixtures extends Fixture
         $patient4 = $this->createUser($manager, 'patient4@medlink.test', 'Emma', 'Rousseau', User::ROLE_PATIENT);
         $aidant1 = $this->createUser($manager, 'aidant1@medlink.test', 'Bruno', 'Nguyen', User::ROLE_AIDANT);
         $aidant2 = $this->createUser($manager, 'aidant2@medlink.test', 'Fatou', 'Diallo', User::ROLE_AIDANT);
+        // Aucune relation avec un patient : sert à tester le cas nominal
+        // d'invitation d'un soignant (ML-44/45), tous les autres patients
+        // étant déjà rattachés au seul soignant ci-dessus.
+        $this->createUser($manager, 'soignant2@medlink.test', 'Karim', 'Haddad', User::ROLE_SOIGNANT);
         $this->createUser($manager, 'admin@medlink.test', 'Diane', 'Petit', User::ROLE_ADMIN);
 
         // Relations Patient <-> Aidant

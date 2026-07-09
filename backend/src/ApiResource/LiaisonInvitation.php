@@ -16,6 +16,7 @@ use App\State\LiaisonInvitationAcceptProcessor;
 use App\State\LiaisonInvitationProcessor;
 use App\State\LiaisonInvitationProvider;
 use App\State\LiaisonInvitationRejectProcessor;
+use App\State\LiaisonInvitationRevokeProcessor;
 
 #[ApiResource(
     operations: [
@@ -37,6 +38,13 @@ use App\State\LiaisonInvitationRejectProcessor;
             provider: LiaisonInvitationProvider::class,
             processor: LiaisonInvitationRejectProcessor::class,
             security: "is_granted('LIAISON_INVITATION_RESPOND', object)",
+        ),
+        new Patch(
+            uriTemplate: '/liaisons/{id}/revoquer',
+            deserialize: false,
+            provider: LiaisonInvitationProvider::class,
+            processor: LiaisonInvitationRevokeProcessor::class,
+            security: "is_granted('LIAISON_REVOKE', object)",
         ),
     ],
 )]
