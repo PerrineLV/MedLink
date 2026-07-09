@@ -84,6 +84,18 @@
     {
       "key": "future_appointment_at",
       "value": ""
+    },
+    {
+      "key": "export_from",
+      "value": ""
+    },
+    {
+      "key": "export_to",
+      "value": ""
+    },
+    {
+      "key": "export_future_to",
+      "value": ""
     }
   ],
   "item": [
@@ -3159,6 +3171,464 @@
                 "api",
                 "appointments",
                 "{{appointment_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-29 - Export PDF du suivi",
+      "description": "GET /api/export/pdf : genere un export PDF du journal de suivi sur une periode. Un patient exporte toujours son propre journal (parametre patient ignore) ; un aidant/soignant doit fournir ?patient=<id> (verifie via le voter PATIENT_VIEW, memes regles que ML-22/23). Le script prerequest du dossier calcule des dates relatives a 'aujourd'hui' pour rester valide quelle que soit la date d'execution : export_from/export_to couvrent large (400 jours) pour englober toutes les entrees des fixtures ML-42, export_future_to est dans le futur pour tester le rejet explicite.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const toDate = new Date();",
+              "pm.collectionVariables.set('export_to', toDate.toISOString().slice(0, 10));",
+              "const fromDate = new Date();",
+              "fromDate.setDate(fromDate.getDate() - 400);",
+              "pm.collectionVariables.set('export_from', fromDate.toISOString().slice(0, 10));",
+              "const futureDate = new Date();",
+              "futureDate.setDate(futureDate.getDate() + 30);",
+              "pm.collectionVariables.set('export_future_to', futureDate.toISOString().slice(0, 10));"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "GET - Export PDF (nominal, patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type application/pdf', () => pm.response.to.have.header('Content-Type', 'application/pdf'));",
+                  "pm.test('nom de fichier medlink_suivi_AAAA-MM-JJ.pdf', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('medlink_suivi_'));",
+                  "pm.test('debute par la signature PDF', () => pm.expect(pm.response.text().startsWith('%PDF-')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                }
+              ]
+            }
+          },
+          "description": "patient1 (fixtures ML-42) a des entrees sur < 7j, 7-30j et > 30j, dont une saisie par aidant1 : a verifier visuellement dans le PDF telecharge (toutes les entrees presentes, mention 'saisie par un aidant')."
+        },
+        {
+          "name": "GET - 400 periode vide (patient4, aucune entree)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient4_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                }
+              ]
+            }
+          },
+          "description": "patient4 (fixtures ML-42) n'a aucune entree de journal : l'erreur doit rester explicite plutot qu'un PDF vide."
+        },
+        {
+          "name": "GET - 400 date de fin dans le futur",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_future_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_future_to}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - 400 date de debut posterieure a la date de fin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_to}}&to={{export_from}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_to}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_from}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - 400 parametre patient manquant (aidant1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Export PDF (nominal, aidant1 sur patient1 via ?patient=)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type application/pdf', () => pm.response.to.have.header('Content-Type', 'application/pdf'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}&patient={{patient1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                },
+                {
+                  "key": "patient",
+                  "value": "{{patient1_id}}"
+                }
+              ]
+            }
+          },
+          "description": "aidant1 est rattache actif a patient1 (fixtures ML-42)."
+        },
+        {
+          "name": "GET - 403 aidant2 relation desactivee (patient3)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}&patient={{patient3_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                },
+                {
+                  "key": "patient",
+                  "value": "{{patient3_id}}"
+                }
+              ]
+            }
+          },
+          "description": "aidant2<->patient3 existe en base mais active=false (revocation, fixtures ML-42)."
+        },
+        {
+          "name": "GET - Export PDF (nominal, soignant sur patient1, lecture seule)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type application/pdf', () => pm.response.to.have.header('Content-Type', 'application/pdf'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}&patient={{patient1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                },
+                {
+                  "key": "patient",
+                  "value": "{{patient1_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - 401 sans authentification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                }
               ]
             }
           }

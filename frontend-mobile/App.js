@@ -15,6 +15,7 @@ import MessagesScreen from './screens/MessagesScreen';
 import ConversationScreen from './screens/ConversationScreen';
 import AppointmentScreen from './screens/AppointmentScreen';
 import NewAppointmentScreen from './screens/NewAppointmentScreen';
+import ExportScreen from './screens/ExportScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
 
 const Stack = createStackNavigator();
@@ -38,6 +39,7 @@ function RootNavigator() {
             <Stack.Screen name="Conversation" component={ConversationScreen} />
             <Stack.Screen name="Appointments" component={AppointmentScreen} />
             <Stack.Screen name="NewAppointment" component={NewAppointmentScreen} />
+            <Stack.Screen name="Export" component={ExportScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />

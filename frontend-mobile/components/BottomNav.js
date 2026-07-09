@@ -45,7 +45,7 @@ const BOTTOM_NAV_ITEMS = [
   { key: 'Journal', icon: '📓', screen: 'Journal' },
   { key: 'Messages', icon: '💬', screen: 'Messages' },
   { key: 'RDV', icon: '📅', screen: 'Appointments' },
-  { key: 'Export', icon: '📤', screen: null },
+  { key: 'Export', icon: '📤', screen: 'Export' },
   { key: 'Profil', icon: '👤', screen: null },
 ];
 

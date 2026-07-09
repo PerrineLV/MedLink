@@ -10,6 +10,7 @@ import LiaisonsPage from './pages/LiaisonsPage';
 import InvitationsPage from './pages/InvitationsPage';
 import MessagingPage from './pages/MessagingPage';
 import AgendaPage from './pages/AgendaPage';
+import ExportPage from './pages/ExportPage';
 import { ROLE_AIDANT, ROLE_PATIENT, ROLE_SOIGNANT } from './services/roles';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/messages" element={<MessagingPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
+          <Route path="/export" element={<ExportPage />} />
         </Route>
         <Route element={<ProtectedRoute roles={[ROLE_SOIGNANT]} />}>
           <Route path="/patients" element={<PatientsPage />} />
