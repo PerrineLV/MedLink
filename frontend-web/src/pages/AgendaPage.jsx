@@ -63,7 +63,10 @@ export default function AgendaPage() {
       setPatients(fetchedPatients);
       setPatientNamesById(
         Object.fromEntries(
-          fetchedPatients.map((patient) => [patient.id, `${patient.firstName} ${patient.lastName}`]),
+          fetchedPatients.map((patient) => [
+            patient.id,
+            `${patient.firstName} ${patient.lastName}`,
+          ]),
         ),
       );
       setSoignantNamesById(
@@ -200,9 +203,7 @@ function AppointmentCard({
   onCancel,
 }) {
   const showReminder =
-    !isPast &&
-    appointment.status === APPOINTMENT_STATUS.PLANNED &&
-    isWithin24Hours(appointment);
+    !isPast && appointment.status === APPOINTMENT_STATUS.PLANNED && isWithin24Hours(appointment);
   const isCancelled = appointment.status === APPOINTMENT_STATUS.CANCELLED;
   const canCancel = isSoignant && !isPast && appointment.status === APPOINTMENT_STATUS.PLANNED;
   const date = formatDate(appointment.scheduledAt);
@@ -223,7 +224,9 @@ function AppointmentCard({
       <div className="agenda-card-date" aria-hidden="true">
         <span className="agenda-card-day">{new Date(appointment.scheduledAt).getDate()}</span>
         <span className="agenda-card-month">
-          {new Date(appointment.scheduledAt).toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '')}
+          {new Date(appointment.scheduledAt)
+            .toLocaleDateString('fr-FR', { month: 'short' })
+            .replace('.', '')}
         </span>
       </div>
 

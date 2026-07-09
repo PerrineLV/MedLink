@@ -250,9 +250,7 @@ function AppointmentCard({
   onCancel,
 }) {
   const showReminder =
-    !isPast &&
-    appointment.status === APPOINTMENT_STATUS.PLANNED &&
-    isWithin24Hours(appointment);
+    !isPast && appointment.status === APPOINTMENT_STATUS.PLANNED && isWithin24Hours(appointment);
   const isCancelled = appointment.status === APPOINTMENT_STATUS.CANCELLED;
   const canCancel = isSoignant && !isPast && appointment.status === APPOINTMENT_STATUS.PLANNED;
 
