@@ -44,7 +44,7 @@ export function openProfileMenu(navigation, logout, roles = []) {
 const BOTTOM_NAV_ITEMS = [
   { key: 'Journal', icon: '📓', screen: 'Journal' },
   { key: 'Messages', icon: '💬', screen: 'Messages' },
-  { key: 'RDV', icon: '📅', screen: null },
+  { key: 'RDV', icon: '📅', screen: 'Appointments' },
   { key: 'Export', icon: '📤', screen: null },
   { key: 'Profil', icon: '👤', screen: null },
 ];
