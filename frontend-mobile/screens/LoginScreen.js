@@ -13,12 +13,14 @@ import { useAuth } from '../contexts/AuthContext';
 
 const GENERIC_ERROR = 'Identifiants incorrects';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation, route }) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const registered = route?.params?.registered === true;
 
   const handleSubmit = async () => {
     setError(null);
@@ -49,6 +51,12 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>MedLink</Text>
           <Text style={styles.subtitle}>Connectez-vous à votre espace</Text>
+
+          {registered && (
+            <Text style={styles.success} accessibilityRole="text">
+              Compte créé, vous pouvez vous connecter.
+            </Text>
+          )}
 
           <View style={styles.field}>
             <Text style={styles.label}>Adresse e-mail</Text>
@@ -93,6 +101,14 @@ export default function LoginScreen() {
             accessibilityLabel="Se connecter"
           >
             <Text style={styles.submitText}>{isSubmitting ? 'Connexion…' : 'Se connecter'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Register')}
+            accessibilityRole="link"
+            accessibilityLabel="Pas encore de compte : en créer un"
+          >
+            <Text style={styles.registerLink}>Pas encore de compte ? Créer un compte</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -172,5 +188,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  success: {
+    backgroundColor: '#E3F5EA',
+    color: '#1E7E46',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  registerLink: {
+    marginTop: 16,
+    textAlign: 'center',
+    color: COLORS.primaryLight,
+    fontWeight: '600',
   },
 });

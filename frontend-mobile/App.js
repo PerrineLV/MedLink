@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { InvitationsBadgeProvider } from './contexts/InvitationsBadgeContext';
 import { MessagesBadgeProvider } from './contexts/MessagesBadgeContext';
 import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
 import JournalScreen from './screens/JournalScreen';
 import NewEntryScreen from './screens/NewEntryScreen';
 import LiaisonsScreen from './screens/LiaisonsScreen';
@@ -42,7 +43,10 @@ function RootNavigator() {
             <Stack.Screen name="Export" component={ExportScreen} />
           </>
         ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

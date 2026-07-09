@@ -5,3 +5,9 @@ export async function login(email, password) {
 
   return response.data;
 }
+
+export async function register(payload) {
+  const response = await httpClient.post('/auth/register', payload);
+
+  return response.data;
+}
