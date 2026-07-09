@@ -68,6 +68,14 @@
     {
       "key": "invitation_soignant_id",
       "value": ""
+    },
+    {
+      "key": "soignant_id",
+      "value": ""
+    },
+    {
+      "key": "message_id",
+      "value": ""
     }
   ],
   "item": [
@@ -2326,6 +2334,423 @@
         }
       ],
       "description": "Recharger les fixtures avant CHAQUE run de ce dossier : docker compose exec app php bin/console doctrine:fixtures:load --no-interaction. Les requetes d'invitation nominale (patient1->aidant2, patient4->soignant2) supposent qu'aucun lien n'existe encore entre ces comptes. Comme ML-46 ne supprime jamais un lien (active=false conserve, tracabilite HDS), un deuxieme run sans recharger les fixtures fait echouer ces requetes en 409 au lieu de 201, ce qui laisse invitation_aidant_id/invitation_soignant_id vides et fait echouer en cascade (404) toutes les requetes suivantes qui en dependent."
+    },
+    {
+      "name": "ML-25 - Messagerie",
+      "description": "A executer apres le dossier '0. Setup'. Aucun endpoint ne renvoie l'id de l'utilisateur connecte : la premiere requete (soignant -> patient1, lien deja actif dans les fixtures ML-42) sert donc uniquement a recuperer soignant_id via le senderId de la reponse, sur le meme principe que patient1_id/patient2_id/patient3_id dans '0. Setup'.",
+      "item": [
+        {
+          "name": "POST - Setup : soignant envoie un message a patient1 (recupere soignant_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('destinataire = patient1', () => pm.expect(json.recipientId).to.eql(pm.collectionVariables.get('patient1_id')));",
+                  "pm.collectionVariables.set('soignant_id', json.senderId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{patient1_id}},\n  \"content\": \"Setup ML-25 : recuperation de soignant_id.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - Creer un message (nominal, patient1 -> soignant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('sender/recipient corrects', () => {",
+                  "  pm.expect(json.senderId).to.eql(pm.collectionVariables.get('patient1_id'));",
+                  "  pm.expect(json.recipientId).to.eql(pm.collectionVariables.get('soignant_id'));",
+                  "});",
+                  "pm.test('non lu a la creation', () => pm.expect(json.read).to.eql(false));",
+                  "pm.collectionVariables.set('message_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{soignant_id}},\n  \"content\": \"Bonjour docteur, test ML-25.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Conversation patient1 <-> soignant (filtree)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('contient le message cree juste avant', () => pm.expect(json.member.map((m) => m.id)).to.include(pm.collectionVariables.get('message_id')));",
+                  "pm.test(\"ne contient que des messages entre patient1 et soignant (pas d'autre conversation)\", () => {",
+                  "  const patient1Id = pm.collectionVariables.get('patient1_id');",
+                  "  const soignantId = pm.collectionVariables.get('soignant_id');",
+                  "  json.member.forEach((m) => {",
+                  "    pm.expect([patient1Id, soignantId]).to.include(m.senderId);",
+                  "    pm.expect([patient1Id, soignantId]).to.include(m.recipientId);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages?conversation={{soignant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "conversation",
+                  "value": "{{soignant_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - Marquer comme lu (nominal, soignant destinataire)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('read = true', () => pm.expect(pm.response.json().read).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages/{{message_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "{{message_id}}",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - 403 l'expediteur ne peut pas marquer son propre message comme lu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages/{{message_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "{{message_id}}",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - 403 un tiers hors conversation ne peut pas marquer comme lu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages/{{message_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "{{message_id}}",
+                "read"
+              ]
+            }
+          },
+          "description": "soignant2 n'a aucune part dans cette conversation (fixtures ML-42 : aucun lien avec patient1)."
+        },
+        {
+          "name": "POST - 403 destinataire non rattache (patient1 -> patient2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{patient2_id}},\n  \"content\": \"Ne doit pas passer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          },
+          "description": "patient2 est utilise comme destinataire non rattache (aucune relation PatientAidant/PatientSoignant entre deux patients) : c'est le meme chemin de rejet MessageVoter::areLinked que 'patient vers un soignant qui n'est pas le sien' du plan de tests ML-25, sans avoir a exposer l'id de soignant2 (aucun endpoint ne le fournit)."
+        },
+        {
+          "name": "POST - 422 message vide",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{soignant_id}},\n  \"content\": \"   \"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 422 message trop long (>2000 car.)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('long_note', 'a'.repeat(2001));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{soignant_id}},\n  \"content\": \"{{long_note}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 404 destinataire introuvable",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": 999999,\n  \"content\": \"test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\DataFixtures;
 
 use App\Entity\JournalEntry;
+use App\Entity\Message;
 use App\Entity\PatientAidant;
 use App\Entity\PatientSoignant;
 use App\Entity\Treatment;
@@ -113,6 +114,13 @@ class AppFixtures extends Fixture
 
         // patient4 : aucun traitement (cas "aucune donnée")
 
+        // Messagerie patient1 <-> soignant : conversation avec plusieurs
+        // messages dans les deux sens, mélange de lus/non lus (ML-25).
+        $this->createMessage($manager, $patient1, $soignant, "Bonjour docteur, j'ai une question sur mon traitement.", '-2 days', read: true);
+        $this->createMessage($manager, $soignant, $patient1, 'Bonjour, je vous écoute.', '-2 days +1 hour', read: true);
+        $this->createMessage($manager, $patient1, $soignant, 'Dois-je prendre le Bisoprolol avant ou après le repas ?', '-1 days', read: true);
+        $this->createMessage($manager, $soignant, $patient1, 'Après le repas, de préférence le matin.', '-1 days +30 minutes', read: false);
+
         $manager->flush();
     }
 
@@ -145,6 +153,27 @@ class AppFixtures extends Fixture
         $createdAt->setValue($entry, new \DateTimeImmutable($createdAtModifier));
 
         $manager->persist($entry);
+    }
+
+    private function createMessage(
+        ObjectManager $manager,
+        User $sender,
+        User $recipient,
+        string $content,
+        string $createdAtModifier,
+        bool $read,
+    ): void {
+        $message = new Message($sender, $recipient, $content);
+        if ($read) {
+            $message->markRead();
+        }
+
+        // Comme pour le journal, la date de création doit pouvoir être
+        // antérieure à "maintenant" pour simuler un historique de conversation.
+        $createdAt = (new \ReflectionProperty($message, 'createdAt'));
+        $createdAt->setValue($message, new \DateTimeImmutable($createdAtModifier));
+
+        $manager->persist($message);
     }
 
     /**
