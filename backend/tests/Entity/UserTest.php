@@ -95,4 +95,27 @@ final class UserTest extends TestCase
 
         self::assertSame('hashed-password', $user->getPassword());
     }
+
+    public function testTitleIsMutable(): void
+    {
+        $user = new User('soignant@medlink.test', 'Jeanne', 'Dupont');
+
+        self::assertNull($user->getTitle());
+
+        $user->setTitle('Dr');
+
+        self::assertSame('Dr', $user->getTitle());
+    }
+
+    public function testConsentAtIsMutable(): void
+    {
+        $user = new User('patient@medlink.test', 'Jeanne', 'Dupont');
+
+        self::assertNull($user->getConsentAt());
+
+        $consentAt = new \DateTimeImmutable('-1 minute');
+        $user->setConsentAt($consentAt);
+
+        self::assertSame($consentAt, $user->getConsentAt());
+    }
 }

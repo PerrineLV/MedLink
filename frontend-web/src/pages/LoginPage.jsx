@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getHomeRoute } from '../services/roles';
 import './LoginPage.css';
@@ -8,10 +8,13 @@ const GENERIC_ERROR = 'Identifiants incorrects';
 
 export default function LoginPage() {
   const { login, isAuthenticated, roles } = useAuth();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const registered = location.state?.registered === true;
 
   if (isAuthenticated) {
     return <Navigate to={getHomeRoute(roles)} replace />;
@@ -43,6 +46,12 @@ export default function LoginPage() {
       <div className="login-card">
         <h1>MedLink</h1>
         <p className="login-subtitle">Connectez-vous à votre espace</p>
+
+        {registered && (
+          <p className="login-success" role="status">
+            Compte créé, vous pouvez vous connecter.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-field">
@@ -81,6 +90,10 @@ export default function LoginPage() {
             {isSubmitting ? 'Connexion…' : 'Se connecter'}
           </button>
         </form>
+
+        <p className="login-register-link">
+          Pas encore de compte ? <Link to="/register">Créer un compte</Link>
+        </p>
       </div>
     </main>
   );

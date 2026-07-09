@@ -61,6 +61,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $title = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $consentAt = null;
+
     public function __construct(string $email, string $firstName, string $lastName)
     {
         $this->email = $email;
@@ -162,5 +168,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(?string $title): static
+    {
+        $this->title = $title;
+
+        return $this;
+    }
+
+    public function getConsentAt(): ?\DateTimeImmutable
+    {
+        return $this->consentAt;
+    }
+
+    public function setConsentAt(?\DateTimeImmutable $consentAt): static
+    {
+        $this->consentAt = $consentAt;
+
+        return $this;
     }
 }
