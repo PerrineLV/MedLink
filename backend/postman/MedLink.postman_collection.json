@@ -1560,14 +1560,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status 201', () => pm.response.to.have.status(201));"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
                   "const json = pm.response.json();",
                   "pm.test('active = false (en attente)', () => pm.expect(json.active).to.eql(false));",
                   "pm.test(\"role = ROLE_AIDANT\", () => pm.expect(json.inviteeRole).to.eql('ROLE_AIDANT'));",
@@ -1682,14 +1675,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
                   "pm.test('active = true', () => pm.expect(json.active).to.eql(true));"
                 ]
@@ -1726,14 +1712,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
                   "pm.test('active = false', () => pm.expect(json.active).to.eql(false));"
                 ]
@@ -1843,14 +1822,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status 201', () => pm.response.to.have.status(201));"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
                   "const json = pm.response.json();",
                   "pm.test('active = false (en attente)', () => pm.expect(json.active).to.eql(false));",
                   "pm.collectionVariables.set('invitation_soignant_id', json.id);"
@@ -1894,14 +1866,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
                   "pm.test('active = false', () => pm.expect(json.active).to.eql(false));"
                 ]
@@ -2282,7 +2247,8 @@
             }
           }
         }
-      ]
+      ],
+      "description": "Recharger les fixtures avant CHAQUE run de ce dossier : docker compose exec app php bin/console doctrine:fixtures:load --no-interaction. Les requetes d'invitation nominale (patient1->aidant2, patient4->soignant2) supposent qu'aucun lien n'existe encore entre ces comptes. Comme ML-46 ne supprime jamais un lien (active=false conserve, tracabilite HDS), un deuxieme run sans recharger les fixtures fait echouer ces requetes en 409 au lieu de 201, ce qui laisse invitation_aidant_id/invitation_soignant_id vides et fait echouer en cascade (404) toutes les requetes suivantes qui en dependent."
     }
   ]
 }
