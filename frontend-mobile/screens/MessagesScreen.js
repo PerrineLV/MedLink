@@ -17,6 +17,16 @@ function initials(firstName, lastName) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
 }
 
+// Précise, pour un contact aidant/soignant, via quel(s) patient(s) commun(s)
+// l'échange est autorisé (ML-70) : indispensable quand on a plusieurs
+// contacts de ce type (ex. un soignant avec plusieurs aidants) et qu'on ne
+// sait pas sinon lequel correspond à quel patient.
+function viaPatientsLabel(viaPatients) {
+  if (!viaPatients || viaPatients.length === 0) return null;
+
+  return `via ${viaPatients.map((patient) => `${patient.firstName} ${patient.lastName}`).join(', ')}`;
+}
+
 export default function MessagesScreen() {
   const navigation = useNavigation();
   const { firstName, roles, logout } = useAuth();
@@ -35,7 +45,7 @@ export default function MessagesScreen() {
       setError(null);
 
       try {
-        const fetchedContacts = await fetchContacts(roles);
+        const fetchedContacts = await fetchContacts();
         const withUnreadFlag = await Promise.all(
           fetchedContacts.map(async (contact) => {
             const conversation = await fetchMessages(contact.id).catch(() => []);
@@ -51,7 +61,7 @@ export default function MessagesScreen() {
         isRefresh ? setIsRefreshing(false) : setIsLoading(false);
       }
     },
-    [roles],
+    [],
   );
 
   useFocusEffect(
@@ -130,7 +140,10 @@ export default function MessagesScreen() {
 
 function ContactCard({ contact, onPress }) {
   const name = `${contact.firstName} ${contact.lastName}`;
-  const accessibilityLabel = contact.hasUnread ? `${name}, message non lu` : name;
+  const via = viaPatientsLabel(contact.viaPatients);
+  const accessibilityLabel = [name, ROLE_LABELS[contact.role], via, contact.hasUnread ? 'message non lu' : null]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <TouchableOpacity
@@ -146,6 +159,7 @@ function ContactCard({ contact, onPress }) {
       <View style={styles.cardInfo}>
         <Text style={styles.cardName}>{name}</Text>
         <Text style={styles.cardMeta}>{ROLE_LABELS[contact.role]}</Text>
+        {via && <Text style={styles.cardVia}>{via}</Text>}
       </View>
 
       {contact.hasUnread && (
@@ -196,6 +210,7 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1 },
   cardName: { fontSize: TYPE.sm, fontWeight: '700', color: COLORS.primary },
   cardMeta: { fontSize: TYPE.xs, color: COLORS.mutedText, marginTop: 2 },
+  cardVia: { fontSize: TYPE.xs, color: COLORS.mutedText, fontStyle: 'italic', marginTop: 2 },
   unreadBadge: {
     borderRadius: 33,
     paddingVertical: 6,

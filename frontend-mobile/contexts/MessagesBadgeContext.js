@@ -13,14 +13,14 @@ const MessagesBadgeContext = createContext(null);
 // setUnreadMessagesCount plutôt que de déclencher un second aller-retour
 // réseau redondant avec refresh().
 export function MessagesBadgeProvider({ children }) {
-  const { roles, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) return;
 
     try {
-      const contacts = await fetchContacts(roles);
+      const contacts = await fetchContacts();
       const conversations = await Promise.all(contacts.map((contact) => fetchMessages(contact.id).catch(() => [])));
       const count = conversations.reduce(
         (total, messages, index) =>
@@ -32,7 +32,7 @@ export function MessagesBadgeProvider({ children }) {
       // Le compteur reste tel quel : une erreur réseau ici ne doit pas
       // bloquer l'affichage du reste de l'écran.
     }
-  }, [roles, isAuthenticated]);
+  }, [isAuthenticated]);
 
   const value = useMemo(
     () => ({ unreadMessagesCount, refresh, setUnreadMessagesCount }),

@@ -6,16 +6,16 @@ namespace App\Security\Voter;
 
 use App\Entity\Message;
 use App\Entity\User;
-use App\Repository\PatientAidantRepository;
-use App\Repository\PatientSoignantRepository;
+use App\Security\MessageableContacts;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
  * Contrôle les actions sur la messagerie :
  *  - SEND : envoyer un message à un destinataire (subject), réservé aux
- *    utilisateurs rattachés l'un à l'autre par une relation active
- *    (patient/aidant ou patient/soignant), quel que soit le sens ;
+ *    paires autorisées par la matrice ML-70 (patient/soignant, ou
+ *    aidant/soignant via un patient commun — jamais patient/aidant,
+ *    aidant/aidant ni soignant/soignant), voir MessageableContacts ;
  *  - MARK_READ : marquer un message comme lu, réservé au destinataire du
  *    message.
  *
@@ -27,8 +27,7 @@ final class MessageVoter extends Voter
     public const MARK_READ = 'MESSAGE_MARK_READ';
 
     public function __construct(
-        private readonly PatientAidantRepository $patientAidantRepository,
-        private readonly PatientSoignantRepository $patientSoignantRepository,
+        private readonly MessageableContacts $messageableContacts,
     ) {
     }
 
@@ -57,14 +56,17 @@ final class MessageVoter extends Voter
         /** @var User $recipient */
         $recipient = $subject;
 
-        return $this->areLinked($currentUser, $recipient);
+        return $this->isMessageable($currentUser, $recipient);
     }
 
-    private function areLinked(User $a, User $b): bool
+    private function isMessageable(User $sender, User $recipient): bool
     {
-        return $this->patientAidantRepository->hasActiveRelation($a, $b)
-            || $this->patientAidantRepository->hasActiveRelation($b, $a)
-            || $this->patientSoignantRepository->hasActiveRelation($a, $b)
-            || $this->patientSoignantRepository->hasActiveRelation($b, $a);
+        foreach ($this->messageableContacts->forUser($sender) as $contact) {
+            if ($contact->user->getId() === $recipient->getId()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -95,6 +95,15 @@
   color: var(--color-text-muted);
 }
 
+.messaging-contact-via {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .messaging-contact-unread {
   align-self: flex-start;
   margin-top: 2px;

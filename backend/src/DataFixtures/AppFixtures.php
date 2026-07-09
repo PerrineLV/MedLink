@@ -121,6 +121,12 @@ class AppFixtures extends Fixture
         $this->createMessage($manager, $patient1, $soignant, 'Dois-je prendre le Bisoprolol avant ou après le repas ?', '-1 days', read: true);
         $this->createMessage($manager, $soignant, $patient1, 'Après le repas, de préférence le matin.', '-1 days +30 minutes', read: false);
 
+        // Messagerie aidant1 <-> soignant (ML-70) : aidant1 et le soignant
+        // sont tous les deux rattachés activement à patient1, la conversation
+        // est donc autorisée bien qu'aucun des deux ne soit patient.
+        $this->createMessage($manager, $aidant1, $soignant, "Bonjour, je suis l'aidant d'Alice. Un point sur son suivi ?", '-1 days', read: true);
+        $this->createMessage($manager, $soignant, $aidant1, 'Bonjour, tout va bien, sa tension est stable.', '-1 days +15 minutes', read: false);
+
         $manager->flush();
     }
 

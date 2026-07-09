@@ -1,7 +1,4 @@
 import httpClient from './httpClient'
-import { fetchLiaisons } from './liaisonService'
-import { fetchPatients } from './patientService'
-import { ROLE_PATIENT } from './roles'
 
 export async function fetchMessages(conversationUserId) {
   const response = await httpClient.get('/messages', { params: { conversation: conversationUserId } })
@@ -22,26 +19,18 @@ export async function markMessageRead(messageId) {
 }
 
 /**
- * Who can be messaged depends on the role: a patient messages their
- * attached aidants/soignants (GET /api/liaisons — patient-only), while an
- * aidant/soignant messages their attached patients (GET /api/patients, same
- * endpoint ML-23 already uses to pick a patient for a journal entry).
+ * Qui peut être contacté dépend de la matrice ML-70 (patient <-> soignant,
+ * aidant <-> soignant via un patient commun, jamais patient <-> aidant) :
+ * calculé côté backend (MessageableContacts, seule source de vérité,
+ * partagée avec l'autorisation d'envoi) pour ne jamais diverger de ce que
+ * l'API accepterait réellement. Pour une paire aidant/soignant, chaque
+ * contact porte aussi viaPatients : le ou les patients communs qui
+ * justifient l'autorisation, à afficher quand l'un des deux a plusieurs
+ * patients (donc plusieurs contacts de ce type) sans savoir lequel
+ * correspond à quel patient.
  */
-export async function fetchContacts(roles) {
-  if (roles.includes(ROLE_PATIENT)) {
-    const liaisons = await fetchLiaisons()
+export async function fetchContacts() {
+  const response = await httpClient.get('/message-contacts')
 
-    return liaisons
-      .filter((liaison) => liaison.active)
-      .map((liaison) => ({
-        id: liaison.inviteeId,
-        firstName: liaison.inviteeFirstName,
-        lastName: liaison.inviteeLastName,
-        role: liaison.inviteeRole,
-      }))
-  }
-
-  const patients = await fetchPatients()
-
-  return patients.map((patient) => ({ ...patient, role: ROLE_PATIENT }))
+  return response.data
 }

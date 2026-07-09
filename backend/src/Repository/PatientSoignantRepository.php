@@ -50,6 +50,25 @@ class PatientSoignantRepository extends ServiceEntityRepository
     }
 
     /**
+     * @param list<int> $patientIds
+     *
+     * @return list<PatientSoignant>
+     */
+    public function findActiveForPatients(array $patientIds): array
+    {
+        if ([] === $patientIds) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('ps')
+            ->andWhere('ps.patient IN (:patientIds)')
+            ->andWhere('ps.active = true')
+            ->setParameter('patientIds', $patientIds)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * @return list<PatientSoignant>
      */
     public function findVisibleForPatient(User $patient): array

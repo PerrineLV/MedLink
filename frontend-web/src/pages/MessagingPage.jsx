@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Send } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
-import { useAuth } from '../contexts/AuthContext'
 import { useMessagesBadge } from '../contexts/MessagesBadgeContext'
 import { fetchContacts, fetchMessages, markMessageRead, sendMessage } from '../services/messageService'
 import { ROLE_LABELS } from '../services/roles'
@@ -18,8 +17,52 @@ function initials(firstName, lastName) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase()
 }
 
+// Précise, pour un contact aidant/soignant, via quel(s) patient(s) commun(s)
+// l'échange est autorisé (ML-70) : indispensable quand on a plusieurs
+// contacts de ce type (ex. un soignant avec plusieurs aidants) et qu'on ne
+// sait pas sinon lequel correspond à quel patient.
+function viaPatientsLabel(viaPatients) {
+  if (!viaPatients || viaPatients.length === 0) return null
+
+  return `via ${viaPatients.map((patient) => `${patient.firstName} ${patient.lastName}`).join(', ')}`
+}
+
+function ContactListItem({ contact, isSelected, onSelect }) {
+  const via = viaPatientsLabel(contact.viaPatients)
+
+  return (
+    <li>
+      <button
+        type="button"
+        className={isSelected ? 'messaging-contact active' : 'messaging-contact'}
+        onClick={onSelect}
+        aria-current={isSelected}
+      >
+        <span className="messaging-contact-avatar" aria-hidden="true">
+          {initials(contact.firstName, contact.lastName)}
+        </span>
+        <span className="messaging-contact-info">
+          <span className="messaging-contact-name">
+            {contact.firstName} {contact.lastName}
+          </span>
+          <span className="messaging-contact-role">{ROLE_LABELS[contact.role]}</span>
+          {via && (
+            <span className="messaging-contact-via" title={via}>
+              {via}
+            </span>
+          )}
+          {contact.hasUnread && (
+            <span className="messaging-contact-unread" aria-label="Message non lu">
+              Non lu
+            </span>
+          )}
+        </span>
+      </button>
+    </li>
+  )
+}
+
 export default function MessagingPage() {
-  const { roles } = useAuth()
   const { setUnreadMessagesCount } = useMessagesBadge()
   const [contacts, setContacts] = useState(null)
   const [contactsError, setContactsError] = useState(null)
@@ -67,7 +110,7 @@ export default function MessagingPage() {
     setContactsError(null)
 
     try {
-      const fetchedContacts = await fetchContacts(roles)
+      const fetchedContacts = await fetchContacts()
       const withUnreadFlag = await Promise.all(
         fetchedContacts.map(async (contact) => {
           const conversation = await fetchMessages(contact.id).catch(() => [])
@@ -80,12 +123,11 @@ export default function MessagingPage() {
     } catch {
       setContactsError(GENERIC_CONTACTS_ERROR)
     }
-  }, [roles])
+  }, [])
 
   useEffect(() => {
     loadContacts()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loadContacts])
 
   // Cette page a déjà calculé le statut non lu de chaque contact pour son
   // propre affichage : on le pousse au badge partagé plutôt que de
@@ -134,29 +176,12 @@ export default function MessagingPage() {
             ) : (
               <ul>
                 {contacts.map((contact) => (
-                  <li key={contact.id}>
-                    <button
-                      type="button"
-                      className={contact.id === selectedContactId ? 'messaging-contact active' : 'messaging-contact'}
-                      onClick={() => setSelectedContactId(contact.id)}
-                      aria-current={contact.id === selectedContactId}
-                    >
-                      <span className="messaging-contact-avatar" aria-hidden="true">
-                        {initials(contact.firstName, contact.lastName)}
-                      </span>
-                      <span className="messaging-contact-info">
-                        <span className="messaging-contact-name">
-                          {contact.firstName} {contact.lastName}
-                        </span>
-                        <span className="messaging-contact-role">{ROLE_LABELS[contact.role]}</span>
-                        {contact.hasUnread && (
-                          <span className="messaging-contact-unread" aria-label="Message non lu">
-                            Non lu
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  </li>
+                  <ContactListItem
+                    key={contact.id}
+                    contact={contact}
+                    isSelected={contact.id === selectedContactId}
+                    onSelect={() => setSelectedContactId(contact.id)}
+                  />
                 ))}
               </ul>
             )}
