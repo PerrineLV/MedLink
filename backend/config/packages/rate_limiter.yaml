@@ -6,3 +6,9 @@ framework:
             policy: fixed_window
             limit: 5
             interval: '1 minute'
+
+        # 5 tentatives / heure, keyed by client IP — voir App\Controller\RegistrationController.
+        register_by_ip:
+            policy: fixed_window
+            limit: 5
+            interval: '1 hour'

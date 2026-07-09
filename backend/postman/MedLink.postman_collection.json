@@ -96,6 +96,18 @@
     {
       "key": "export_future_to",
       "value": ""
+    },
+    {
+      "key": "register_patient_email",
+      "value": ""
+    },
+    {
+      "key": "register_patient_id",
+      "value": ""
+    },
+    {
+      "key": "register_rate_limit_attempts",
+      "value": "0"
     }
   ],
   "item": [
@@ -3632,6 +3644,484 @@
               ]
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "ML-57 - Inscription self-service (tous roles)",
+      "description": "Endpoint public POST /api/auth/register, sans authentification prealable (voir access_control PUBLIC_ACCESS dans security.yaml). Les tests nominaux utilisent {{$randomEmail}} pour rester rejouables sans recharger les fixtures. Le dernier item (429) est isole expres : il consomme la limite register_by_ip (5/heure) et ne doit pas etre inclus dans un Run collection global sur tout ce fichier.",
+      "item": [
+        {
+          "name": "POST - Creer un compte patient (nominal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('roles = [ROLE_PATIENT]', () => pm.expect(json.roles).to.eql(['ROLE_PATIENT']));",
+                  "pm.test('title absent pour un patient', () => pm.expect(json.title).to.eql(null));",
+                  "pm.test('password absent de la reponse', () => pm.expect(json.password).to.eql(undefined));",
+                  "pm.collectionVariables.set('register_patient_email', json.email);",
+                  "pm.collectionVariables.set('register_patient_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Jeanne\",\n  \"lastName\": \"Dupont\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - Login apres inscription (nominal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('token JWT retourne', () => pm.expect(pm.response.json().token).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{register_patient_email}}\",\n  \"password\": \"ValidPass1\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 201 compte soignant avec title persiste",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('roles = [ROLE_SOIGNANT]', () => pm.expect(json.roles).to.eql(['ROLE_SOIGNANT']));",
+                  "pm.test(\"title = 'Dr'\", () => pm.expect(json.title).to.eql('Dr'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Camille\",\n  \"lastName\": \"Dubois\",\n  \"role\": \"soignant\",\n  \"title\": \"Dr\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 201 compte aidant (title ignore silencieusement)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('roles = [ROLE_AIDANT]', () => pm.expect(json.roles).to.eql(['ROLE_AIDANT']));",
+                  "pm.test('title ignore (non pertinent hors soignant)', () => pm.expect(json.title).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Bruno\",\n  \"lastName\": \"Nguyen\",\n  \"role\": \"aidant\",\n  \"title\": \"Dr\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 409 email deja utilise (fixture patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient1@medlink.test\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Doublon\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 role admin refuse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Admin\",\n  \"role\": \"admin\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 role inconnu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Role\",\n  \"role\": \"invite\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 mot de passe trop faible",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"1234\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Faible\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 consentement manquant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"SansConsentement\",\n  \"role\": \"patient\",\n  \"consent\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 champ email manquant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"SansEmail\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 corps JSON invalide",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ceci n'est pas du json"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 429 apres 6 tentatives rapprochees (ISOLE - ne pas lancer avec le reste)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const n = parseInt(pm.collectionVariables.get('register_rate_limit_attempts') || '0') + 1;",
+                  "pm.collectionVariables.set('register_rate_limit_attempts', n.toString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const n = parseInt(pm.collectionVariables.get('register_rate_limit_attempts'));",
+                  "if (n <= 5) {",
+                  "    pm.test('tentative ' + n + '/5 acceptee (201)', () => pm.response.to.have.status(201));",
+                  "} else {",
+                  "    pm.test('limite depassee (429)', () => pm.response.to.have.status(429));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"RateLimit\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          },
+          "description": "A envoyer 6 fois de suite (bouton Send, ou Collection Runner x6 iterations sur cet item seul) pour declencher le blocage register_by_ip (5/heure). Reinitialiser register_rate_limit_attempts a 0 dans les variables de la collection avant de rejouer, ou cote backend : docker compose exec app php bin/console cache:pool:clear cache.rate_limiter"
         }
       ]
     }
