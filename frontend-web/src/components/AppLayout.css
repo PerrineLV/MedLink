@@ -73,6 +73,37 @@
   font-size: 1.25rem;
 }
 
+.app-header-bell {
+  position: relative;
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 1.25rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.app-header-bell-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: var(--color-red-text);
+  color: white;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .app-header-logout {
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: var(--radius-pill);
@@ -132,6 +163,21 @@
 .app-sidebar a.active {
   background: var(--color-primary);
   color: white;
+}
+
+.app-sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-red-text);
+  color: white;
+  font-size: 0.6875rem;
+  font-weight: 700;
 }
 
 .app-content {

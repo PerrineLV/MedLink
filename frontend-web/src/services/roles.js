@@ -36,6 +36,7 @@ export function getHomeRoute(roles = []) {
 const SOIGNANT_SIDEBAR_ITEMS = [
   { key: 'dashboard', label: 'Tableau de bord', to: '/dashboard' },
   { key: 'patients', label: 'Patients', to: '/patients' },
+  { key: 'invitations', label: 'Invitations', to: '/invitations' },
   { key: 'messages', label: 'Messages', to: null },
   { key: 'agenda', label: 'Agenda', to: null },
   { key: 'parametres', label: 'Paramètres', to: null },
@@ -50,17 +51,23 @@ const PATIENT_SIDEBAR_ITEMS = [
   { key: 'export', label: 'Export PDF', to: null },
 ]
 
+const AIDANT_SIDEBAR_ITEMS = [
+  ...PATIENT_SIDEBAR_ITEMS.filter((item) => item.key !== 'liaisons'),
+  { key: 'invitations', label: 'Invitations', to: '/invitations' },
+]
+
 /**
  * Sidebar menu for AppLayout: patient/aidant get their own shortcuts
  * (Journal/Traitements/Messagerie/Rendez-vous/Export PDF, ML-41), everyone
  * else keeps the soignant/admin menu. "Mes liaisons" (ML-47) is
  * patient-only — an aidant never manages the patient's own consent
  * relationships (cf. principe RGPD consent-first) — so it's dropped for a
- * session that only holds ROLE_AIDANT.
+ * session that only holds ROLE_AIDANT, replaced by "Invitations" (ML-48,
+ * the invitations *received* by the aidant, not the patient's own links).
  */
 export function getSidebarItems(roles = []) {
   if (roles.includes(ROLE_PATIENT)) return PATIENT_SIDEBAR_ITEMS
-  if (roles.includes(ROLE_AIDANT)) return PATIENT_SIDEBAR_ITEMS.filter((item) => item.key !== 'liaisons')
+  if (roles.includes(ROLE_AIDANT)) return AIDANT_SIDEBAR_ITEMS
 
   return SOIGNANT_SIDEBAR_ITEMS
 }

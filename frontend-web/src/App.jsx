@@ -7,6 +7,7 @@ import PatientsPage from './pages/PatientsPage'
 import PatientJournalPage from './pages/PatientJournalPage'
 import JournalPage from './pages/JournalPage'
 import LiaisonsPage from './pages/LiaisonsPage'
+import InvitationsPage from './pages/InvitationsPage'
 import { ROLE_AIDANT, ROLE_PATIENT, ROLE_SOIGNANT } from './services/roles'
 
 function App() {
@@ -27,6 +28,9 @@ function App() {
         </Route>
         <Route element={<ProtectedRoute roles={[ROLE_PATIENT]} />}>
           <Route path="/liaisons" element={<LiaisonsPage />} />
+        </Route>
+        <Route element={<ProtectedRoute roles={[ROLE_AIDANT, ROLE_SOIGNANT]} />}>
+          <Route path="/invitations" element={<InvitationsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

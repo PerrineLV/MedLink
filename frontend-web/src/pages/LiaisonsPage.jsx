@@ -181,7 +181,7 @@ function RevokeConfirmation({ liaison, onCancel, onRevoked }) {
   return (
     <div className="liaisons-confirm" role="alertdialog" aria-live="assertive" aria-label="Confirmer la révocation">
       <p>
-        Révoquer l&apos;accès de {name} ? Il/elle ne pourra plus consulter ton suivi.
+        Révoquer l&apos;accès de {name} ? Il/elle ne pourra plus consulter votre suivi.
       </p>
       {error && (
         <p className="liaisons-error" role="alert">

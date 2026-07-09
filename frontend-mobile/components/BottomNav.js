@@ -1,5 +1,9 @@
+import { useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext';
 import { COLORS, TYPE } from '../services/journalPresentation';
+import { ROLE_AIDANT, ROLE_SOIGNANT } from '../services/roles';
 
 const MIN_TOUCH_TARGET = 44;
 
@@ -18,11 +22,19 @@ function confirmLogout(logout) {
 }
 
 // L'onglet "Profil" n'a pas d'écran dédié : la barre de navigation étant
-// figée à 5 items (cf. skill medlink-ui-conventions), "Mes liaisons" (ML-47)
-// s'y ajoute comme option de menu plutôt que comme 6e item.
-export function openProfileMenu(navigation, logout) {
+// figée à 5 items (cf. skill medlink-ui-conventions). "Mes liaisons" (ML-47)
+// est réservé au patient (c'est lui qui gère ses propres liens) ; l'aidant et
+// le soignant y voient à la place "Invitations reçues" (ML-48), l'écran
+// symétrique côté destinataire.
+export function openProfileMenu(navigation, logout, roles = []) {
+  const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT);
+
+  const menuItem = canReceiveInvitations
+    ? { text: 'Invitations reçues', onPress: () => navigation.navigate('Invitations') }
+    : { text: 'Mes liaisons', onPress: () => navigation.navigate('Liaisons') };
+
   Alert.alert('Profil', undefined, [
-    { text: 'Mes liaisons', onPress: () => navigation.navigate('Liaisons') },
+    menuItem,
     { text: 'Se déconnecter', style: 'destructive', onPress: () => confirmLogout(logout) },
     { text: 'Annuler', style: 'cancel' },
   ]);
@@ -36,11 +48,21 @@ const BOTTOM_NAV_ITEMS = [
   { key: 'Profil', icon: '👤', screen: null },
 ];
 
-export default function BottomNav({ navigation, activeKey, onProfilePress }) {
+export default function BottomNav({ navigation, activeKey, onProfilePress, roles = [] }) {
+  const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT);
+  const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } = useInvitationsBadge();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (canReceiveInvitations) refreshPendingInvitationsCount();
+    }, [canReceiveInvitations, refreshPendingInvitationsCount]),
+  );
+
   return (
     <View style={styles.bottomNav}>
       {BOTTOM_NAV_ITEMS.map((item) => {
         const isActive = item.key === activeKey;
+        const showBadge = item.key === 'Profil' && canReceiveInvitations && pendingInvitationsCount > 0;
 
         const onPress = () => {
           if (item.key === 'Profil') return onProfilePress();
@@ -56,15 +78,26 @@ export default function BottomNav({ navigation, activeKey, onProfilePress }) {
             onPress={onPress}
             accessibilityRole="button"
             accessibilityState={{ selected: isActive }}
-            accessibilityLabel={item.key}
+            accessibilityLabel={
+              showBadge
+                ? `${item.key}, ${pendingInvitationsCount} invitation${pendingInvitationsCount > 1 ? 's' : ''} en attente`
+                : item.key
+            }
           >
-            <Text
-              style={styles.bottomNavIcon}
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            >
-              {item.icon}
-            </Text>
+            <View style={styles.bottomNavIconWrapper}>
+              <Text
+                style={styles.bottomNavIcon}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                {item.icon}
+              </Text>
+              {showBadge && (
+                <View style={styles.bottomNavBadge} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  <Text style={styles.bottomNavBadgeText}>{pendingInvitationsCount}</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.bottomNavLabel, isActive && styles.bottomNavLabelActive]}>{item.key}</Text>
           </TouchableOpacity>
         );
@@ -87,7 +120,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
+  bottomNavIconWrapper: { position: 'relative' },
   bottomNavIcon: { fontSize: TYPE.md },
+  bottomNavBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: COLORS.red.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomNavBadgeText: { color: COLORS.onPrimary, fontSize: 10, fontWeight: '700' },
   bottomNavLabel: { fontSize: TYPE.xs, color: 'rgba(255,255,255,0.7)' },
   bottomNavLabelActive: { color: COLORS.onPrimary, fontWeight: '700' },
 });

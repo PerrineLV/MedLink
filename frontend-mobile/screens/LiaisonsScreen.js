@@ -31,7 +31,7 @@ function initials(firstName, lastName) {
 function confirmRevoke(liaison, onConfirm) {
   const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
 
-  Alert.alert('Révoquer cet accès ?', `Révoquer l'accès de ${name} ? Il/elle ne pourra plus consulter ton suivi.`, [
+  Alert.alert('Révoquer cet accès ?', `Révoquer l'accès de ${name} ? Il/elle ne pourra plus consulter votre suivi.`, [
     { text: 'Annuler', style: 'cancel' },
     { text: 'Confirmer', style: 'destructive', onPress: onConfirm },
   ]);
@@ -39,7 +39,7 @@ function confirmRevoke(liaison, onConfirm) {
 
 export default function LiaisonsScreen() {
   const navigation = useNavigation();
-  const { firstName, logout } = useAuth();
+  const { firstName, roles, logout } = useAuth();
   const displayName = firstName ?? ROLE_LABELS.ROLE_PATIENT;
 
   const [liaisons, setLiaisons] = useState([]);
@@ -134,7 +134,12 @@ export default function LiaisonsScreen() {
         )}
       </ScrollView>
 
-      <BottomNav navigation={navigation} activeKey={null} onProfilePress={() => openProfileMenu(navigation, logout)} />
+      <BottomNav
+        navigation={navigation}
+        activeKey={null}
+        roles={roles}
+        onProfilePress={() => openProfileMenu(navigation, logout, roles)}
+      />
     </View>
   );
 }

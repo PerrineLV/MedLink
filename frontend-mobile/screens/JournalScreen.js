@@ -162,7 +162,12 @@ export default function JournalScreen() {
         }
       />
 
-      <BottomNav navigation={navigation} activeKey="Journal" onProfilePress={() => openProfileMenu(navigation, logout)} />
+      <BottomNav
+        navigation={navigation}
+        activeKey="Journal"
+        roles={roles}
+        onProfilePress={() => openProfileMenu(navigation, logout, roles)}
+      />
     </View>
   );
 }

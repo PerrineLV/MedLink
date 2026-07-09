@@ -17,6 +17,7 @@ use App\State\LiaisonInvitationAcceptProcessor;
 use App\State\LiaisonInvitationCollectionProvider;
 use App\State\LiaisonInvitationProcessor;
 use App\State\LiaisonInvitationProvider;
+use App\State\LiaisonInvitationReceivedCollectionProvider;
 use App\State\LiaisonInvitationRejectProcessor;
 use App\State\LiaisonInvitationRevokeProcessor;
 
@@ -26,6 +27,11 @@ use App\State\LiaisonInvitationRevokeProcessor;
             uriTemplate: '/liaisons',
             security: "is_granted('ROLE_PATIENT')",
             provider: LiaisonInvitationCollectionProvider::class,
+        ),
+        new GetCollection(
+            uriTemplate: '/liaisons/invitations',
+            security: "is_granted('ROLE_AIDANT') or is_granted('ROLE_SOIGNANT')",
+            provider: LiaisonInvitationReceivedCollectionProvider::class,
         ),
         new Post(
             uriTemplate: '/liaisons/invitations',
@@ -64,6 +70,8 @@ final class LiaisonInvitation
         #[ApiProperty(identifier: true)]
         public readonly string $id,
         public readonly int $patientId,
+        public readonly string $patientFirstName,
+        public readonly string $patientLastName,
         public readonly int $inviteeId,
         public readonly string $inviteeRole,
         public readonly string $inviteeFirstName,
@@ -75,11 +83,14 @@ final class LiaisonInvitation
 
     public static function forAidantRelation(PatientAidant $relation): self
     {
+        $patient = $relation->getPatient();
         $aidant = $relation->getAidant();
 
         return new self(
             sprintf('aidant-%d', $relation->getId()),
-            (int) $relation->getPatient()->getId(),
+            (int) $patient->getId(),
+            $patient->getFirstName(),
+            $patient->getLastName(),
             (int) $aidant->getId(),
             User::ROLE_AIDANT,
             $aidant->getFirstName(),
@@ -91,11 +102,14 @@ final class LiaisonInvitation
 
     public static function forSoignantRelation(PatientSoignant $relation): self
     {
+        $patient = $relation->getPatient();
         $soignant = $relation->getSoignant();
 
         return new self(
             sprintf('soignant-%d', $relation->getId()),
-            (int) $relation->getPatient()->getId(),
+            (int) $patient->getId(),
+            $patient->getFirstName(),
+            $patient->getLastName(),
             (int) $soignant->getId(),
             User::ROLE_SOIGNANT,
             $soignant->getFirstName(),
