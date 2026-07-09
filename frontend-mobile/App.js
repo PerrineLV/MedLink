@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
 import JournalScreen from './screens/JournalScreen';
 import NewEntryScreen from './screens/NewEntryScreen';
+import LiaisonsScreen from './screens/LiaisonsScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
 
 const Stack = createStackNavigator();
@@ -24,6 +25,7 @@ function RootNavigator() {
           <>
             <Stack.Screen name="Journal" component={JournalScreen} />
             <Stack.Screen name="NewEntry" component={NewEntryScreen} />
+            <Stack.Screen name="Liaisons" component={LiaisonsScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />

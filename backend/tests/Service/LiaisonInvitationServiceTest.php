@@ -60,6 +60,8 @@ final class LiaisonInvitationServiceTest extends TestCase
         self::assertSame(1, $invitation->patientId);
         self::assertSame(2, $invitation->inviteeId);
         self::assertSame(User::ROLE_AIDANT, $invitation->inviteeRole);
+        self::assertSame('Prenom', $invitation->inviteeFirstName);
+        self::assertSame('Nom', $invitation->inviteeLastName);
         self::assertFalse($invitation->active);
     }
 
@@ -263,6 +265,7 @@ final class LiaisonInvitationServiceTest extends TestCase
         $invitation = $this->service->revoke($relation);
 
         self::assertFalse($relation->isActive());
+        self::assertNotNull($relation->getRevokedAt());
         self::assertSame('aidant-5', $invitation->id);
         self::assertFalse($invitation->active);
     }
@@ -279,6 +282,7 @@ final class LiaisonInvitationServiceTest extends TestCase
         $invitation = $this->service->revoke($relation);
 
         self::assertFalse($relation->isActive());
+        self::assertNotNull($relation->getRevokedAt());
         self::assertSame('soignant-5', $invitation->id);
         self::assertFalse($invitation->active);
     }
@@ -294,6 +298,7 @@ final class LiaisonInvitationServiceTest extends TestCase
         $invitation = $this->service->revoke($relation);
 
         self::assertFalse($relation->isActive());
+        self::assertNotNull($relation->getRevokedAt());
         self::assertFalse($invitation->active);
     }
 

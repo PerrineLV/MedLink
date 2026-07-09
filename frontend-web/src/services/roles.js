@@ -44,6 +44,7 @@ const SOIGNANT_SIDEBAR_ITEMS = [
 const PATIENT_SIDEBAR_ITEMS = [
   { key: 'journal', label: 'Journal', to: '/journal' },
   { key: 'traitements', label: 'Traitements', to: null },
+  { key: 'liaisons', label: 'Mes liaisons', to: '/liaisons' },
   { key: 'messagerie', label: 'Messagerie', to: null },
   { key: 'rdv', label: 'Rendez-vous', to: null },
   { key: 'export', label: 'Export PDF', to: null },
@@ -52,10 +53,14 @@ const PATIENT_SIDEBAR_ITEMS = [
 /**
  * Sidebar menu for AppLayout: patient/aidant get their own shortcuts
  * (Journal/Traitements/Messagerie/Rendez-vous/Export PDF, ML-41), everyone
- * else keeps the soignant/admin menu.
+ * else keeps the soignant/admin menu. "Mes liaisons" (ML-47) is
+ * patient-only — an aidant never manages the patient's own consent
+ * relationships (cf. principe RGPD consent-first) — so it's dropped for a
+ * session that only holds ROLE_AIDANT.
  */
 export function getSidebarItems(roles = []) {
-  if (roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT)) return PATIENT_SIDEBAR_ITEMS
+  if (roles.includes(ROLE_PATIENT)) return PATIENT_SIDEBAR_ITEMS
+  if (roles.includes(ROLE_AIDANT)) return PATIENT_SIDEBAR_ITEMS.filter((item) => item.key !== 'liaisons')
 
   return SOIGNANT_SIDEBAR_ITEMS
 }

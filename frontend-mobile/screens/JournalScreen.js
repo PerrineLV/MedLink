@@ -1,15 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import BottomNav, { openProfileMenu } from '../components/BottomNav';
+import Header from '../components/Header';
+import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchJournalEntries } from '../services/journalEntryService';
 import { fetchPatients } from '../services/patientService';
@@ -19,20 +13,6 @@ import { ROLE_AIDANT, ROLE_LABELS, ROLE_PATIENT, getPrimaryRole } from '../servi
 
 const MIN_TOUCH_TARGET = 44;
 const MOOD_SCALE = [1, 2, 3, 4, 5];
-
-const COMING_SOON_TITLE = 'Bientôt disponible';
-const COMING_SOON_MESSAGE = 'Cette fonctionnalité arrive dans une prochaine version de MedLink.';
-
-function notifyComingSoon() {
-  Alert.alert(COMING_SOON_TITLE, COMING_SOON_MESSAGE);
-}
-
-function confirmLogout(logout) {
-  Alert.alert('Profil', 'Voulez-vous vous déconnecter ?', [
-    { text: 'Annuler', style: 'cancel' },
-    { text: 'Se déconnecter', style: 'destructive', onPress: logout },
-  ]);
-}
 
 export default function JournalScreen() {
   const navigation = useNavigation();
@@ -182,7 +162,7 @@ export default function JournalScreen() {
         }
       />
 
-      <BottomNav navigation={navigation} onProfilePress={() => confirmLogout(logout)} />
+      <BottomNav navigation={navigation} activeKey="Journal" onProfilePress={() => openProfileMenu(navigation, logout)} />
     </View>
   );
 }
@@ -202,81 +182,6 @@ function isToday(isoDate) {
     date.getFullYear() === now.getFullYear() &&
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate()
-  );
-}
-
-function Header({ displayName }) {
-  return (
-    <View style={styles.header}>
-      <View style={styles.headerBrand}>
-        <Text style={styles.headerLogo} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          🛡️
-        </Text>
-        <View>
-          <Text style={styles.headerTitle}>MedLink</Text>
-          <Text style={styles.headerPatientName}>{displayName}</Text>
-        </View>
-      </View>
-
-      <View accessible accessibilityRole="text" accessibilityLabel="Connexion sécurisée">
-        <Text style={styles.headerLock} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          🔒
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-function SecurityBanner() {
-  return (
-    <View style={styles.securityBanner}>
-      <Text style={styles.securityBannerText}>Données chiffrées · accès soignants uniquement</Text>
-    </View>
-  );
-}
-
-const BOTTOM_NAV_ITEMS = [
-  { key: 'Journal', icon: '📓', screen: 'Journal' },
-  { key: 'Messages', icon: '💬', screen: null },
-  { key: 'RDV', icon: '📅', screen: null },
-  { key: 'Export', icon: '📤', screen: null },
-  { key: 'Profil', icon: '👤', screen: null },
-];
-
-function BottomNav({ navigation, onProfilePress }) {
-  return (
-    <View style={styles.bottomNav}>
-      {BOTTOM_NAV_ITEMS.map((item) => {
-        const isActive = item.key === 'Journal';
-
-        const onPress = () => {
-          if (item.key === 'Profil') return onProfilePress();
-          if (item.screen) return navigation.navigate(item.screen);
-
-          return notifyComingSoon();
-        };
-
-        return (
-          <TouchableOpacity
-            key={item.key}
-            style={styles.bottomNavItem}
-            onPress={onPress}
-            accessibilityRole="button"
-            accessibilityState={{ selected: isActive }}
-            accessibilityLabel={item.key}
-          >
-            <Text
-              style={styles.bottomNavIcon}
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            >
-              {item.icon}
-            </Text>
-            <Text style={[styles.bottomNavLabel, isActive && styles.bottomNavLabelActive]}>{item.key}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
   );
 }
 
@@ -450,26 +355,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
   centered: { justifyContent: 'center', alignItems: 'center' },
   topChrome: { backgroundColor: COLORS.surface },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 56,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headerLogo: { fontSize: TYPE.lg },
-  headerTitle: { color: COLORS.onPrimary, fontSize: TYPE.md, fontWeight: '700' },
-  headerPatientName: { color: COLORS.onPrimary, fontSize: TYPE.sm, opacity: 0.85 },
-  headerLock: { fontSize: TYPE.lg },
-  securityBanner: {
-    backgroundColor: COLORS.mutedBackground,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  securityBannerText: { color: COLORS.primary, fontSize: TYPE.xs, fontWeight: '600' },
   error: {
     backgroundColor: COLORS.red.bg,
     color: COLORS.red.text,
@@ -540,22 +425,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   addButtonText: { color: COLORS.primary, fontWeight: '700', fontSize: TYPE.sm },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.primary,
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  bottomNavItem: {
-    flex: 1,
-    minHeight: MIN_TOUCH_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  bottomNavIcon: { fontSize: TYPE.md },
-  bottomNavLabel: { fontSize: TYPE.xs, color: 'rgba(255,255,255,0.7)' },
-  bottomNavLabelActive: { color: COLORS.onPrimary, fontWeight: '700' },
   treatmentsSection: { marginTop: 8 },
   sectionHeading: {
     color: COLORS.primary,

@@ -1742,6 +1742,44 @@
           }
         },
         {
+          "name": "GET - Lister mes liaisons (nominal, patient1) - lien revoque absent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('reponse = collection avec member[]', () => pm.expect(json.member).to.be.an('array'));",
+                  "pm.test('le lien aidant revoque (etape precedente) est absent, pas seulement inactif', () => {",
+                  "  const ids = json.member.map((liaison) => liaison.id);",
+                  "  pm.expect(ids).to.not.include(pm.collectionVariables.get('invitation_aidant_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons"
+              ]
+            }
+          }
+        },
+        {
           "name": "POST - 403 aidant2 revoque a perdu l'acces au journal de patient1",
           "event": [
             {

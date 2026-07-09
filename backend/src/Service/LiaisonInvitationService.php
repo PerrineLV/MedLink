@@ -112,7 +112,11 @@ final class LiaisonInvitationService
     {
         // Jamais de suppression physique : traçabilité historique exigée en
         // contexte HDS (cf. ML-46). Idempotent si le lien est déjà inactif.
+        // revokedAt distingue une invitation encore en attente (jamais
+        // acceptée) d'un lien révoqué : les deux ont active = false, seul ce
+        // champ permet de les exclure correctement de "Mes liaisons" (ML-47).
         $relation->setActive(false);
+        $relation->setRevokedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
         return $relation instanceof PatientAidant

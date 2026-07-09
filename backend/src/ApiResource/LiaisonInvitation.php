@@ -6,6 +6,7 @@ namespace App\ApiResource;
 
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Dto\LiaisonInvitationInput;
@@ -13,6 +14,7 @@ use App\Entity\PatientAidant;
 use App\Entity\PatientSoignant;
 use App\Entity\User;
 use App\State\LiaisonInvitationAcceptProcessor;
+use App\State\LiaisonInvitationCollectionProvider;
 use App\State\LiaisonInvitationProcessor;
 use App\State\LiaisonInvitationProvider;
 use App\State\LiaisonInvitationRejectProcessor;
@@ -20,6 +22,11 @@ use App\State\LiaisonInvitationRevokeProcessor;
 
 #[ApiResource(
     operations: [
+        new GetCollection(
+            uriTemplate: '/liaisons',
+            security: "is_granted('ROLE_PATIENT')",
+            provider: LiaisonInvitationCollectionProvider::class,
+        ),
         new Post(
             uriTemplate: '/liaisons/invitations',
             processor: LiaisonInvitationProcessor::class,
@@ -59,6 +66,8 @@ final class LiaisonInvitation
         public readonly int $patientId,
         public readonly int $inviteeId,
         public readonly string $inviteeRole,
+        public readonly string $inviteeFirstName,
+        public readonly string $inviteeLastName,
         public readonly bool $active,
         public readonly \DateTimeImmutable $createdAt,
     ) {
@@ -66,11 +75,15 @@ final class LiaisonInvitation
 
     public static function forAidantRelation(PatientAidant $relation): self
     {
+        $aidant = $relation->getAidant();
+
         return new self(
             sprintf('aidant-%d', $relation->getId()),
             (int) $relation->getPatient()->getId(),
-            (int) $relation->getAidant()->getId(),
+            (int) $aidant->getId(),
             User::ROLE_AIDANT,
+            $aidant->getFirstName(),
+            $aidant->getLastName(),
             $relation->isActive(),
             $relation->getCreatedAt(),
         );
@@ -78,11 +91,15 @@ final class LiaisonInvitation
 
     public static function forSoignantRelation(PatientSoignant $relation): self
     {
+        $soignant = $relation->getSoignant();
+
         return new self(
             sprintf('soignant-%d', $relation->getId()),
             (int) $relation->getPatient()->getId(),
-            (int) $relation->getSoignant()->getId(),
+            (int) $soignant->getId(),
             User::ROLE_SOIGNANT,
+            $soignant->getFirstName(),
+            $soignant->getLastName(),
             $relation->isActive(),
             $relation->getCreatedAt(),
         );
