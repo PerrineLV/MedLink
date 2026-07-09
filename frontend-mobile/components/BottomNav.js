@@ -51,7 +51,8 @@ const BOTTOM_NAV_ITEMS = [
 
 export default function BottomNav({ navigation, activeKey, onProfilePress, roles = [] }) {
   const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT);
-  const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } = useInvitationsBadge();
+  const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } =
+    useInvitationsBadge();
   const { unreadMessagesCount, refresh: refreshUnreadMessagesCount } = useMessagesBadge();
 
   useFocusEffect(
@@ -67,7 +68,12 @@ export default function BottomNav({ navigation, activeKey, onProfilePress, roles
         const isActive = item.key === activeKey;
         const isProfil = item.key === 'Profil';
         const isMessages = item.key === 'Messages';
-        const badgeCount = isProfil && canReceiveInvitations ? pendingInvitationsCount : isMessages ? unreadMessagesCount : 0;
+        const badgeCount =
+          isProfil && canReceiveInvitations
+            ? pendingInvitationsCount
+            : isMessages
+              ? unreadMessagesCount
+              : 0;
         const showBadge = badgeCount > 0;
 
         const onPress = () => {
@@ -99,12 +105,18 @@ export default function BottomNav({ navigation, activeKey, onProfilePress, roles
                 {item.icon}
               </Text>
               {showBadge && (
-                <View style={styles.bottomNavBadge} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <View
+                  style={styles.bottomNavBadge}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                >
                   <Text style={styles.bottomNavBadgeText}>{badgeCount}</Text>
                 </View>
               )}
             </View>
-            <Text style={[styles.bottomNavLabel, isActive && styles.bottomNavLabelActive]}>{item.key}</Text>
+            <Text style={[styles.bottomNavLabel, isActive && styles.bottomNavLabelActive]}>
+              {item.key}
+            </Text>
           </TouchableOpacity>
         );
       })}

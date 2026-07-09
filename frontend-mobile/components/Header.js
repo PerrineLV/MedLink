@@ -5,7 +5,11 @@ export default function Header({ displayName }) {
   return (
     <View style={styles.header}>
       <View style={styles.headerBrand}>
-        <Text style={styles.headerLogo} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Text
+          style={styles.headerLogo}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
           🛡️
         </Text>
         <View>
@@ -15,7 +19,11 @@ export default function Header({ displayName }) {
       </View>
 
       <View accessible accessibilityRole="text" accessibilityLabel="Connexion sécurisée">
-        <Text style={styles.headerLock} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Text
+          style={styles.headerLock}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
           🔒
         </Text>
       </View>

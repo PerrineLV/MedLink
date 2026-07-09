@@ -1,23 +1,23 @@
-export const ROLE_PATIENT = 'ROLE_PATIENT'
-export const ROLE_AIDANT = 'ROLE_AIDANT'
-export const ROLE_SOIGNANT = 'ROLE_SOIGNANT'
-export const ROLE_ADMIN = 'ROLE_ADMIN'
+export const ROLE_PATIENT = 'ROLE_PATIENT';
+export const ROLE_AIDANT = 'ROLE_AIDANT';
+export const ROLE_SOIGNANT = 'ROLE_SOIGNANT';
+export const ROLE_ADMIN = 'ROLE_ADMIN';
 
-const ROLE_PRIORITY = [ROLE_ADMIN, ROLE_SOIGNANT, ROLE_AIDANT, ROLE_PATIENT]
+const ROLE_PRIORITY = [ROLE_ADMIN, ROLE_SOIGNANT, ROLE_AIDANT, ROLE_PATIENT];
 
 export const ROLE_LABELS = {
   [ROLE_PATIENT]: 'Patient',
   [ROLE_AIDANT]: 'Aidant',
   [ROLE_SOIGNANT]: 'Soignant',
   [ROLE_ADMIN]: 'Administrateur',
-}
+};
 
 /**
  * A user can technically hold several roles; this picks the one that
  * should drive which dashboard content is shown.
  */
 export function getPrimaryRole(roles = []) {
-  return ROLE_PRIORITY.find((role) => roles.includes(role)) ?? null
+  return ROLE_PRIORITY.find((role) => roles.includes(role)) ?? null;
 }
 
 /**
@@ -27,10 +27,10 @@ export function getPrimaryRole(roles = []) {
  * page exists.
  */
 export function getHomeRoute(roles = []) {
-  if (roles.includes(ROLE_SOIGNANT)) return '/patients'
-  if (roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT)) return '/journal'
+  if (roles.includes(ROLE_SOIGNANT)) return '/patients';
+  if (roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT)) return '/journal';
 
-  return '/dashboard'
+  return '/dashboard';
 }
 
 const SOIGNANT_SIDEBAR_ITEMS = [
@@ -40,7 +40,7 @@ const SOIGNANT_SIDEBAR_ITEMS = [
   { key: 'messages', label: 'Messages', to: '/messages' },
   { key: 'agenda', label: 'Agenda', to: null },
   { key: 'parametres', label: 'Paramètres', to: null },
-]
+];
 
 const PATIENT_SIDEBAR_ITEMS = [
   { key: 'journal', label: 'Journal', to: '/journal' },
@@ -49,12 +49,12 @@ const PATIENT_SIDEBAR_ITEMS = [
   { key: 'messagerie', label: 'Messagerie', to: '/messages' },
   { key: 'rdv', label: 'Rendez-vous', to: null },
   { key: 'export', label: 'Export PDF', to: null },
-]
+];
 
 const AIDANT_SIDEBAR_ITEMS = [
   ...PATIENT_SIDEBAR_ITEMS.filter((item) => item.key !== 'liaisons'),
   { key: 'invitations', label: 'Invitations', to: '/invitations' },
-]
+];
 
 /**
  * Sidebar menu for AppLayout: patient/aidant get their own shortcuts
@@ -66,8 +66,8 @@ const AIDANT_SIDEBAR_ITEMS = [
  * the invitations *received* by the aidant, not the patient's own links).
  */
 export function getSidebarItems(roles = []) {
-  if (roles.includes(ROLE_PATIENT)) return PATIENT_SIDEBAR_ITEMS
-  if (roles.includes(ROLE_AIDANT)) return AIDANT_SIDEBAR_ITEMS
+  if (roles.includes(ROLE_PATIENT)) return PATIENT_SIDEBAR_ITEMS;
+  if (roles.includes(ROLE_AIDANT)) return AIDANT_SIDEBAR_ITEMS;
 
-  return SOIGNANT_SIDEBAR_ITEMS
+  return SOIGNANT_SIDEBAR_ITEMS;
 }

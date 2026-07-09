@@ -14,7 +14,11 @@ import Header from '../components/Header';
 import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext';
-import { acceptInvitation, fetchReceivedInvitations, rejectInvitation } from '../services/liaisonService';
+import {
+  acceptInvitation,
+  fetchReceivedInvitations,
+  rejectInvitation,
+} from '../services/liaisonService';
 import { COLORS, TYPE } from '../services/journalPresentation';
 import { ROLE_LABELS, getPrimaryRole } from '../services/roles';
 
@@ -58,20 +62,23 @@ export default function InvitationsScreen() {
     }, [load]),
   );
 
-  const respond = useCallback(async (invitation, action) => {
-    setError(null);
-    setRespondingId(invitation.id);
+  const respond = useCallback(
+    async (invitation, action) => {
+      setError(null);
+      setRespondingId(invitation.id);
 
-    try {
-      await action(invitation.id);
-      setInvitations((current) => current.filter((item) => item.id !== invitation.id));
-      decrementPendingInvitationsCount();
-    } catch {
-      setError(GENERIC_RESPOND_ERROR);
-    } finally {
-      setRespondingId(null);
-    }
-  }, [decrementPendingInvitationsCount]);
+      try {
+        await action(invitation.id);
+        setInvitations((current) => current.filter((item) => item.id !== invitation.id));
+        decrementPendingInvitationsCount();
+      } catch {
+        setError(GENERIC_RESPOND_ERROR);
+      } finally {
+        setRespondingId(null);
+      }
+    },
+    [decrementPendingInvitationsCount],
+  );
 
   if (isLoading) {
     return (
@@ -98,7 +105,11 @@ export default function InvitationsScreen() {
         style={styles.list}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => load(true)} tintColor={COLORS.primary} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => load(true)}
+            tintColor={COLORS.primary}
+          />
         }
       >
         <Text style={styles.title}>Invitations en attente</Text>
@@ -142,8 +153,14 @@ function InvitationCard({ invitation, isResponding, onAccept, onReject }) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text style={styles.avatarText}>{initials(invitation.patientFirstName, invitation.patientLastName)}</Text>
+      <View
+        style={styles.avatar}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <Text style={styles.avatarText}>
+          {initials(invitation.patientFirstName, invitation.patientLastName)}
+        </Text>
       </View>
 
       <View style={styles.cardInfo}>

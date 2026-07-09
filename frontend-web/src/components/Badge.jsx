@@ -1,5 +1,5 @@
-import './Badge.css'
+import './Badge.css';
 
 export default function Badge({ level, label }) {
-  return <span className={`badge badge-${level}`}>{label}</span>
+  return <span className={`badge badge-${level}`}>{label}</span>;
 }

@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import BottomNav, { openProfileMenu } from '../components/BottomNav';
 import Header from '../components/Header';
 import SecurityBanner from '../components/SecurityBanner';
@@ -39,30 +47,29 @@ export default function MessagesScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const load = useCallback(
-    async (isRefresh) => {
-      isRefresh ? setIsRefreshing(true) : setIsLoading(true);
-      setError(null);
+  const load = useCallback(async (isRefresh) => {
+    isRefresh ? setIsRefreshing(true) : setIsLoading(true);
+    setError(null);
 
-      try {
-        const fetchedContacts = await fetchContacts();
-        const withUnreadFlag = await Promise.all(
-          fetchedContacts.map(async (contact) => {
-            const conversation = await fetchMessages(contact.id).catch(() => []);
-            const hasUnread = conversation.some((message) => message.senderId === contact.id && !message.read);
+    try {
+      const fetchedContacts = await fetchContacts();
+      const withUnreadFlag = await Promise.all(
+        fetchedContacts.map(async (contact) => {
+          const conversation = await fetchMessages(contact.id).catch(() => []);
+          const hasUnread = conversation.some(
+            (message) => message.senderId === contact.id && !message.read,
+          );
 
-            return { ...contact, hasUnread };
-          }),
-        );
-        setContacts(withUnreadFlag);
-      } catch {
-        setError(GENERIC_LOAD_ERROR);
-      } finally {
-        isRefresh ? setIsRefreshing(false) : setIsLoading(false);
-      }
-    },
-    [],
-  );
+          return { ...contact, hasUnread };
+        }),
+      );
+      setContacts(withUnreadFlag);
+    } catch {
+      setError(GENERIC_LOAD_ERROR);
+    } finally {
+      isRefresh ? setIsRefreshing(false) : setIsLoading(false);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -103,7 +110,11 @@ export default function MessagesScreen() {
         style={styles.list}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => load(true)} tintColor={COLORS.primary} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => load(true)}
+            tintColor={COLORS.primary}
+          />
         }
       >
         <Text style={styles.title}>Messages</Text>
@@ -141,7 +152,12 @@ export default function MessagesScreen() {
 function ContactCard({ contact, onPress }) {
   const name = `${contact.firstName} ${contact.lastName}`;
   const via = viaPatientsLabel(contact.viaPatients);
-  const accessibilityLabel = [name, ROLE_LABELS[contact.role], via, contact.hasUnread ? 'message non lu' : null]
+  const accessibilityLabel = [
+    name,
+    ROLE_LABELS[contact.role],
+    via,
+    contact.hasUnread ? 'message non lu' : null,
+  ]
     .filter(Boolean)
     .join(', ');
 
@@ -152,7 +168,11 @@ function ContactCard({ contact, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View
+        style={styles.avatar}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
         <Text style={styles.avatarText}>{initials(contact.firstName, contact.lastName)}</Text>
       </View>
 
@@ -163,7 +183,11 @@ function ContactCard({ contact, onPress }) {
       </View>
 
       {contact.hasUnread && (
-        <View style={styles.unreadBadge} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <View
+          style={styles.unreadBadge}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
           <Text style={styles.unreadBadgeText}>Non lu</Text>
         </View>
       )}

@@ -1,50 +1,50 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import AppLayout from '../components/AppLayout'
-import Badge from '../components/Badge'
-import { fetchLiaisons, inviteLiaison, revokeLiaison } from '../services/liaisonService'
-import { ROLE_LABELS } from '../services/roles'
-import './LiaisonsPage.css'
+import { useCallback, useEffect, useRef, useState } from 'react';
+import AppLayout from '../components/AppLayout';
+import Badge from '../components/Badge';
+import { fetchLiaisons, inviteLiaison, revokeLiaison } from '../services/liaisonService';
+import { ROLE_LABELS } from '../services/roles';
+import './LiaisonsPage.css';
 
-const SECURITY_BANNER_TEXT = 'Données chiffrées - accès soignants uniquement'
-const GENERIC_INVITE_ERROR = "Impossible d'envoyer l'invitation, réessayez."
-const GENERIC_REVOKE_ERROR = "Impossible de révoquer ce lien, réessayez."
+const SECURITY_BANNER_TEXT = 'Données chiffrées - accès soignants uniquement';
+const GENERIC_INVITE_ERROR = "Impossible d'envoyer l'invitation, réessayez.";
+const GENERIC_REVOKE_ERROR = 'Impossible de révoquer ce lien, réessayez.';
 
 function initials(firstName, lastName) {
-  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase()
+  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
 }
 
 export default function LiaisonsPage() {
-  const [liaisons, setLiaisons] = useState(null)
-  const [error, setError] = useState(null)
-  const [pendingRevoke, setPendingRevoke] = useState(null)
-  const listRef = useRef(null)
+  const [liaisons, setLiaisons] = useState(null);
+  const [error, setError] = useState(null);
+  const [pendingRevoke, setPendingRevoke] = useState(null);
+  const listRef = useRef(null);
 
   const load = useCallback(async () => {
-    setError(null)
+    setError(null);
 
     try {
-      setLiaisons(await fetchLiaisons())
+      setLiaisons(await fetchLiaisons());
     } catch {
-      setError('Impossible de charger vos liaisons. Vérifiez votre connexion.')
+      setError('Impossible de charger vos liaisons. Vérifiez votre connexion.');
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   const handleInvited = useCallback((liaison) => {
-    setLiaisons((current) => [liaison, ...(current ?? [])])
-  }, [])
+    setLiaisons((current) => [liaison, ...(current ?? [])]);
+  }, []);
 
   const handleRevoked = useCallback((liaisonId) => {
-    setLiaisons((current) => (current ?? []).filter((liaison) => liaison.id !== liaisonId))
-    setPendingRevoke(null)
-    listRef.current?.focus()
-  }, [])
+    setLiaisons((current) => (current ?? []).filter((liaison) => liaison.id !== liaisonId));
+    setPendingRevoke(null);
+    listRef.current?.focus();
+  }, []);
 
-  const activeLiaisons = (liaisons ?? []).filter((liaison) => liaison.active)
-  const pendingLiaisons = (liaisons ?? []).filter((liaison) => !liaison.active)
+  const activeLiaisons = (liaisons ?? []).filter((liaison) => liaison.active);
+  const pendingLiaisons = (liaisons ?? []).filter((liaison) => !liaison.active);
 
   return (
     <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
@@ -64,8 +64,8 @@ export default function LiaisonsPage() {
             <RevokeConfirmation
               liaison={pendingRevoke}
               onCancel={() => {
-                setPendingRevoke(null)
-                listRef.current?.focus()
+                setPendingRevoke(null);
+                listRef.current?.focus();
               }}
               onRevoked={() => handleRevoked(pendingRevoke.id)}
             />
@@ -113,12 +113,12 @@ export default function LiaisonsPage() {
         </>
       )}
     </AppLayout>
-  )
+  );
 }
 
 function ActiveLiaisonCard({ liaison, onRevokeRequested }) {
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`
-  const date = new Date(liaison.createdAt).toLocaleDateString('fr-FR')
+  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+  const date = new Date(liaison.createdAt).toLocaleDateString('fr-FR');
 
   return (
     <li className="liaison-card">
@@ -140,11 +140,11 @@ function ActiveLiaisonCard({ liaison, onRevokeRequested }) {
         Révoquer
       </button>
     </li>
-  )
+  );
 }
 
 function PendingLiaisonCard({ liaison }) {
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`
+  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
 
   return (
     <li className="liaison-card">
@@ -157,69 +157,82 @@ function PendingLiaisonCard({ liaison }) {
       </span>
       <Badge level="orange" label="En attente" />
     </li>
-  )
+  );
 }
 
 function RevokeConfirmation({ liaison, onCancel, onRevoked }) {
-  const [isRevoking, setIsRevoking] = useState(false)
-  const [error, setError] = useState(null)
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`
+  const [isRevoking, setIsRevoking] = useState(false);
+  const [error, setError] = useState(null);
+  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
 
   const handleConfirm = async () => {
-    setError(null)
-    setIsRevoking(true)
+    setError(null);
+    setIsRevoking(true);
 
     try {
-      await revokeLiaison(liaison.id)
-      onRevoked()
+      await revokeLiaison(liaison.id);
+      onRevoked();
     } catch (requestError) {
-      setError(requestError.response?.data?.detail ?? GENERIC_REVOKE_ERROR)
-      setIsRevoking(false)
+      setError(requestError.response?.data?.detail ?? GENERIC_REVOKE_ERROR);
+      setIsRevoking(false);
     }
-  }
+  };
 
   return (
-    <div className="liaisons-confirm" role="alertdialog" aria-live="assertive" aria-label="Confirmer la révocation">
-      <p>
-        Révoquer l&apos;accès de {name} ? Il/elle ne pourra plus consulter votre suivi.
-      </p>
+    <div
+      className="liaisons-confirm"
+      role="alertdialog"
+      aria-live="assertive"
+      aria-label="Confirmer la révocation"
+    >
+      <p>Révoquer l&apos;accès de {name} ? Il/elle ne pourra plus consulter votre suivi.</p>
       {error && (
         <p className="liaisons-error" role="alert">
           {error}
         </p>
       )}
       <div className="liaisons-confirm-actions">
-        <button type="button" className="liaisons-confirm-button" onClick={handleConfirm} disabled={isRevoking}>
+        <button
+          type="button"
+          className="liaisons-confirm-button"
+          onClick={handleConfirm}
+          disabled={isRevoking}
+        >
           {isRevoking ? 'Révocation…' : 'Confirmer'}
         </button>
-        <button type="button" className="liaisons-cancel-button" onClick={onCancel} disabled={isRevoking}>
+        <button
+          type="button"
+          className="liaisons-cancel-button"
+          onClick={onCancel}
+          disabled={isRevoking}
+        >
           Annuler
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 function InviteForm({ onInvited }) {
-  const [email, setEmail] = useState('')
-  const [error, setError] = useState(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    setError(null)
-    setIsSubmitting(true)
+    event.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
 
     try {
-      const liaison = await inviteLiaison(email.trim())
-      onInvited(liaison)
-      setEmail('')
+      const liaison = await inviteLiaison(email.trim());
+      onInvited(liaison);
+      setEmail('');
     } catch (requestError) {
-      setError(requestError.response?.data?.detail ?? GENERIC_INVITE_ERROR)
+      setError(requestError.response?.data?.detail ?? GENERIC_INVITE_ERROR);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <form className="liaisons-invite" onSubmit={handleSubmit}>
@@ -245,5 +258,5 @@ function InviteForm({ onInvited }) {
         </p>
       )}
     </form>
-  )
+  );
 }

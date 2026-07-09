@@ -1,7 +1,7 @@
-import httpClient from './httpClient'
+import httpClient from './httpClient';
 
 export async function fetchPatients() {
-  const response = await httpClient.get('/patients')
+  const response = await httpClient.get('/patients');
 
-  return response.data
+  return response.data;
 }

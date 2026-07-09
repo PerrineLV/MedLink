@@ -31,10 +31,14 @@ function initials(firstName, lastName) {
 function confirmRevoke(liaison, onConfirm) {
   const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
 
-  Alert.alert('Révoquer cet accès ?', `Révoquer l'accès de ${name} ? Il/elle ne pourra plus consulter votre suivi.`, [
-    { text: 'Annuler', style: 'cancel' },
-    { text: 'Confirmer', style: 'destructive', onPress: onConfirm },
-  ]);
+  Alert.alert(
+    'Révoquer cet accès ?',
+    `Révoquer l'accès de ${name} ? Il/elle ne pourra plus consulter votre suivi.`,
+    [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Confirmer', style: 'destructive', onPress: onConfirm },
+    ],
+  );
 }
 
 export default function LiaisonsScreen() {
@@ -110,7 +114,11 @@ export default function LiaisonsScreen() {
         style={styles.list}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => load(true)} tintColor={COLORS.primary} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => load(true)}
+            tintColor={COLORS.primary}
+          />
         }
       >
         <Text style={styles.title}>Mes liaisons</Text>
@@ -149,8 +157,14 @@ function LiaisonCard({ liaison, onRevoke }) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text style={styles.avatarText}>{initials(liaison.inviteeFirstName, liaison.inviteeLastName)}</Text>
+      <View
+        style={styles.avatar}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <Text style={styles.avatarText}>
+          {initials(liaison.inviteeFirstName, liaison.inviteeLastName)}
+        </Text>
       </View>
 
       <View style={styles.cardInfo}>

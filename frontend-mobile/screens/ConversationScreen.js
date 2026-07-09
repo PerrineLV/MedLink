@@ -18,7 +18,8 @@ import { COLORS, TYPE } from '../services/journalPresentation';
 // WebSocket/Mercure, largement suffisant pour l'usage visé.
 const POLL_INTERVAL_MS = 12_000;
 const GENERIC_LOAD_ERROR = 'Impossible de charger cette conversation. Vérifiez votre connexion.';
-const GENERIC_SEND_ERROR = "Impossible d'envoyer ce message. Vérifiez votre connexion et réessayez.";
+const GENERIC_SEND_ERROR =
+  "Impossible d'envoyer ce message. Vérifiez votre connexion et réessayez.";
 
 export default function ConversationScreen() {
   const navigation = useNavigation();
@@ -33,21 +34,26 @@ export default function ConversationScreen() {
   const [sendError, setSendError] = useState(null);
   const listRef = useRef(null);
 
-  const markConversationRead = useCallback(async (conversationMessages) => {
-    const unread = conversationMessages.filter((message) => message.senderId === contactId && !message.read);
-    if (unread.length === 0) return conversationMessages;
+  const markConversationRead = useCallback(
+    async (conversationMessages) => {
+      const unread = conversationMessages.filter(
+        (message) => message.senderId === contactId && !message.read,
+      );
+      if (unread.length === 0) return conversationMessages;
 
-    try {
-      const updated = await Promise.all(unread.map((message) => markMessageRead(message.id)));
-      const updatedById = new Map(updated.map((message) => [message.id, message]));
+      try {
+        const updated = await Promise.all(unread.map((message) => markMessageRead(message.id)));
+        const updatedById = new Map(updated.map((message) => [message.id, message]));
 
-      return conversationMessages.map((message) => updatedById.get(message.id) ?? message);
-    } catch {
-      // Effet de bord secondaire : un aléa réseau ici ne doit pas empêcher
-      // d'afficher la conversation qui vient d'être chargée.
-      return conversationMessages;
-    }
-  }, [contactId]);
+        return conversationMessages.map((message) => updatedById.get(message.id) ?? message);
+      } catch {
+        // Effet de bord secondaire : un aléa réseau ici ne doit pas empêcher
+        // d'afficher la conversation qui vient d'être chargée.
+        return conversationMessages;
+      }
+    },
+    [contactId],
+  );
 
   const load = useCallback(async () => {
     try {
@@ -95,7 +101,10 @@ export default function ConversationScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.flexFill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={styles.flexFill}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -105,8 +114,14 @@ export default function ConversationScreen() {
         >
           <Text style={styles.backButtonText}>‹ Retour</Text>
         </TouchableOpacity>
-        <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Text style={styles.avatarText}>{`${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase()}</Text>
+        <View
+          style={styles.avatar}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Text style={styles.avatarText}>
+            {`${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase()}
+          </Text>
         </View>
         <Text style={styles.title}>{contactName}</Text>
       </View>
@@ -128,8 +143,12 @@ export default function ConversationScreen() {
           data={messages}
           keyExtractor={(message) => String(message.id)}
           contentContainerStyle={[styles.listContent, messages.length === 0 && styles.emptyList]}
-          ListEmptyComponent={<Text style={styles.emptyText}>Aucun message pour le moment. Envoyez le premier !</Text>}
-          renderItem={({ item }) => <MessageBubble message={item} contactId={contactId} contactName={contactName} />}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>Aucun message pour le moment. Envoyez le premier !</Text>
+          }
+          renderItem={({ item }) => (
+            <MessageBubble message={item} contactId={contactId} contactName={contactName} />
+          )}
         />
       )}
 
@@ -167,7 +186,10 @@ export default function ConversationScreen() {
 
 function MessageBubble({ message, contactId, contactName }) {
   const isReceived = message.senderId === contactId;
-  const time = new Date(message.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const time = new Date(message.createdAt).toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   const accessibilityLabel = isReceived
     ? `Message reçu de ${contactName} : ${message.content}`
     : `Message envoyé, ${message.read ? 'lu' : 'non lu'} : ${message.content}`;
@@ -180,8 +202,15 @@ function MessageBubble({ message, contactId, contactName }) {
       accessibilityLabel={accessibilityLabel}
     >
       <View style={[styles.bubble, isReceived ? styles.bubbleReceived : styles.bubbleSent]}>
-        <Text style={isReceived ? styles.bubbleTextReceived : styles.bubbleTextSent}>{message.content}</Text>
-        <Text style={[styles.bubbleMeta, isReceived ? styles.bubbleMetaReceived : styles.bubbleMetaSent]}>
+        <Text style={isReceived ? styles.bubbleTextReceived : styles.bubbleTextSent}>
+          {message.content}
+        </Text>
+        <Text
+          style={[
+            styles.bubbleMeta,
+            isReceived ? styles.bubbleMetaReceived : styles.bubbleMetaSent,
+          ]}
+        >
           {time}
           {!isReceived && ` · ${message.read ? 'Lu' : 'Non lu'}`}
         </Text>

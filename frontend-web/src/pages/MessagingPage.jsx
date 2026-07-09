@@ -1,20 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Send } from 'lucide-react'
-import AppLayout from '../components/AppLayout'
-import { useMessagesBadge } from '../contexts/MessagesBadgeContext'
-import { fetchContacts, fetchMessages, markMessageRead, sendMessage } from '../services/messageService'
-import { ROLE_LABELS } from '../services/roles'
-import './MessagingPage.css'
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Send } from 'lucide-react';
+import AppLayout from '../components/AppLayout';
+import { useMessagesBadge } from '../contexts/MessagesBadgeContext';
+import {
+  fetchContacts,
+  fetchMessages,
+  markMessageRead,
+  sendMessage,
+} from '../services/messageService';
+import { ROLE_LABELS } from '../services/roles';
+import './MessagingPage.css';
 
 // Recommandation ML-26 (solo dev, délai limité) : polling plutôt que
 // WebSocket/Mercure, largement suffisant pour l'usage visé.
-const POLL_INTERVAL_MS = 12_000
-const GENERIC_CONTACTS_ERROR = 'Impossible de charger vos contacts. Vérifiez votre connexion.'
-const GENERIC_MESSAGES_ERROR = 'Impossible de charger cette conversation. Vérifiez votre connexion.'
-const GENERIC_SEND_ERROR = "Impossible d'envoyer ce message. Vérifiez votre connexion et réessayez."
+const POLL_INTERVAL_MS = 12_000;
+const GENERIC_CONTACTS_ERROR = 'Impossible de charger vos contacts. Vérifiez votre connexion.';
+const GENERIC_MESSAGES_ERROR =
+  'Impossible de charger cette conversation. Vérifiez votre connexion.';
+const GENERIC_SEND_ERROR =
+  "Impossible d'envoyer ce message. Vérifiez votre connexion et réessayez.";
 
 function initials(firstName, lastName) {
-  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase()
+  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
 }
 
 // Précise, pour un contact aidant/soignant, via quel(s) patient(s) commun(s)
@@ -22,13 +29,13 @@ function initials(firstName, lastName) {
 // contacts de ce type (ex. un soignant avec plusieurs aidants) et qu'on ne
 // sait pas sinon lequel correspond à quel patient.
 function viaPatientsLabel(viaPatients) {
-  if (!viaPatients || viaPatients.length === 0) return null
+  if (!viaPatients || viaPatients.length === 0) return null;
 
-  return `via ${viaPatients.map((patient) => `${patient.firstName} ${patient.lastName}`).join(', ')}`
+  return `via ${viaPatients.map((patient) => `${patient.firstName} ${patient.lastName}`).join(', ')}`;
 }
 
 function ContactListItem({ contact, isSelected, onSelect }) {
-  const via = viaPatientsLabel(contact.viaPatients)
+  const via = viaPatientsLabel(contact.viaPatients);
 
   return (
     <li>
@@ -59,75 +66,81 @@ function ContactListItem({ contact, isSelected, onSelect }) {
         </span>
       </button>
     </li>
-  )
+  );
 }
 
 export default function MessagingPage() {
-  const { setUnreadMessagesCount } = useMessagesBadge()
-  const [contacts, setContacts] = useState(null)
-  const [contactsError, setContactsError] = useState(null)
-  const [selectedContactId, setSelectedContactId] = useState(null)
-  const [messages, setMessages] = useState(null)
-  const [messagesError, setMessagesError] = useState(null)
+  const { setUnreadMessagesCount } = useMessagesBadge();
+  const [contacts, setContacts] = useState(null);
+  const [contactsError, setContactsError] = useState(null);
+  const [selectedContactId, setSelectedContactId] = useState(null);
+  const [messages, setMessages] = useState(null);
+  const [messagesError, setMessagesError] = useState(null);
 
   // Un message reçu (senderId = ce contact) et pas encore lu est marqué lu
   // dès qu'il est affiché : c'est la conversation ouverte qui vaut lecture,
   // pas un geste explicite de l'utilisateur.
   const markConversationRead = useCallback(async (conversationMessages, contactId) => {
-    const unread = conversationMessages.filter((message) => message.senderId === contactId && !message.read)
-    if (unread.length === 0) return conversationMessages
+    const unread = conversationMessages.filter(
+      (message) => message.senderId === contactId && !message.read,
+    );
+    if (unread.length === 0) return conversationMessages;
 
     try {
-      const updated = await Promise.all(unread.map((message) => markMessageRead(message.id)))
-      const updatedById = new Map(updated.map((message) => [message.id, message]))
+      const updated = await Promise.all(unread.map((message) => markMessageRead(message.id)));
+      const updatedById = new Map(updated.map((message) => [message.id, message]));
 
       setContacts((current) =>
-        (current ?? []).map((contact) => (contact.id === contactId ? { ...contact, hasUnread: false } : contact)),
-      )
+        (current ?? []).map((contact) =>
+          contact.id === contactId ? { ...contact, hasUnread: false } : contact,
+        ),
+      );
 
-      return conversationMessages.map((message) => updatedById.get(message.id) ?? message)
+      return conversationMessages.map((message) => updatedById.get(message.id) ?? message);
     } catch {
       // Effet de bord secondaire : un aléa réseau ici ne doit pas empêcher
       // d'afficher la conversation qui vient d'être chargée.
-      return conversationMessages
+      return conversationMessages;
     }
-  }, [])
+  }, []);
 
   const loadConversation = useCallback(
     async (contactId) => {
       try {
-        const fetched = await fetchMessages(contactId)
-        setMessagesError(null)
-        setMessages(await markConversationRead(fetched, contactId))
+        const fetched = await fetchMessages(contactId);
+        setMessagesError(null);
+        setMessages(await markConversationRead(fetched, contactId));
       } catch {
-        setMessagesError(GENERIC_MESSAGES_ERROR)
+        setMessagesError(GENERIC_MESSAGES_ERROR);
       }
     },
     [markConversationRead],
-  )
+  );
 
   const loadContacts = useCallback(async () => {
-    setContactsError(null)
+    setContactsError(null);
 
     try {
-      const fetchedContacts = await fetchContacts()
+      const fetchedContacts = await fetchContacts();
       const withUnreadFlag = await Promise.all(
         fetchedContacts.map(async (contact) => {
-          const conversation = await fetchMessages(contact.id).catch(() => [])
-          const hasUnread = conversation.some((message) => message.senderId === contact.id && !message.read)
+          const conversation = await fetchMessages(contact.id).catch(() => []);
+          const hasUnread = conversation.some(
+            (message) => message.senderId === contact.id && !message.read,
+          );
 
-          return { ...contact, hasUnread }
+          return { ...contact, hasUnread };
         }),
-      )
-      setContacts(withUnreadFlag)
+      );
+      setContacts(withUnreadFlag);
     } catch {
-      setContactsError(GENERIC_CONTACTS_ERROR)
+      setContactsError(GENERIC_CONTACTS_ERROR);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    loadContacts()
-  }, [loadContacts])
+    loadContacts();
+  }, [loadContacts]);
 
   // Cette page a déjà calculé le statut non lu de chaque contact pour son
   // propre affichage : on le pousse au badge partagé plutôt que de
@@ -135,26 +148,27 @@ export default function MessagingPage() {
   // contexte, utilisé par les autres pages).
   useEffect(() => {
     if (contacts) {
-      setUnreadMessagesCount(contacts.filter((contact) => contact.hasUnread).length)
+      setUnreadMessagesCount(contacts.filter((contact) => contact.hasUnread).length);
     }
-  }, [contacts, setUnreadMessagesCount])
+  }, [contacts, setUnreadMessagesCount]);
 
   useEffect(() => {
-    if (!selectedContactId) return undefined
+    if (!selectedContactId) return undefined;
 
-    setMessages(null)
-    loadConversation(selectedContactId)
+    setMessages(null);
+    loadConversation(selectedContactId);
 
-    const interval = setInterval(() => loadConversation(selectedContactId), POLL_INTERVAL_MS)
+    const interval = setInterval(() => loadConversation(selectedContactId), POLL_INTERVAL_MS);
 
-    return () => clearInterval(interval)
-  }, [selectedContactId, loadConversation])
+    return () => clearInterval(interval);
+  }, [selectedContactId, loadConversation]);
 
   const handleSent = useCallback((message) => {
-    setMessages((current) => [...(current ?? []), message])
-  }, [])
+    setMessages((current) => [...(current ?? []), message]);
+  }, []);
 
-  const selectedContact = (contacts ?? []).find((contact) => contact.id === selectedContactId) ?? null
+  const selectedContact =
+    (contacts ?? []).find((contact) => contact.id === selectedContactId) ?? null;
 
   return (
     <AppLayout>
@@ -198,49 +212,53 @@ export default function MessagingPage() {
               />
             ) : (
               contacts !== null &&
-              contacts.length > 0 && <p className="messaging-empty">Sélectionnez un contact pour afficher la conversation.</p>
+              contacts.length > 0 && (
+                <p className="messaging-empty">
+                  Sélectionnez un contact pour afficher la conversation.
+                </p>
+              )
             )}
           </div>
         </div>
       )}
     </AppLayout>
-  )
+  );
 }
 
 function ConversationThread({ contact, messages, error, onSent }) {
-  const [draft, setDraft] = useState('')
-  const [sendError, setSendError] = useState(null)
-  const [isSending, setIsSending] = useState(false)
-  const scrollRef = useRef(null)
+  const [draft, setDraft] = useState('');
+  const [sendError, setSendError] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages])
+  }, [messages]);
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    const content = draft.trim()
-    if (!content || isSending) return
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content || isSending) return;
 
-    setSendError(null)
-    setIsSending(true)
+    setSendError(null);
+    setIsSending(true);
 
     try {
-      const message = await sendMessage(contact.id, content)
-      onSent(message)
-      setDraft('')
+      const message = await sendMessage(contact.id, content);
+      onSent(message);
+      setDraft('');
     } catch {
       // Le brouillon n'est pas effacé : l'utilisateur ne doit pas perdre
       // silencieusement ce qu'il a écrit si l'envoi échoue.
-      setSendError(GENERIC_SEND_ERROR)
+      setSendError(GENERIC_SEND_ERROR);
     } finally {
-      setIsSending(false)
+      setIsSending(false);
     }
-  }
+  };
 
-  const contactName = `${contact.firstName} ${contact.lastName}`
+  const contactName = `${contact.firstName} ${contact.lastName}`;
 
   return (
     <>
@@ -265,7 +283,12 @@ function ConversationThread({ contact, messages, error, onSent }) {
         ) : (
           <ul className="messaging-bubbles">
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} contactId={contact.id} contactName={contactName} />
+              <MessageBubble
+                key={message.id}
+                message={message}
+                contactId={contact.id}
+                contactName={contactName}
+              />
             ))}
           </ul>
         )}
@@ -301,15 +324,18 @@ function ConversationThread({ contact, messages, error, onSent }) {
         )}
       </form>
     </>
-  )
+  );
 }
 
 function MessageBubble({ message, contactId, contactName }) {
-  const isReceived = message.senderId === contactId
-  const time = new Date(message.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const isReceived = message.senderId === contactId;
+  const time = new Date(message.createdAt).toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   const accessibleLabel = isReceived
     ? `Message reçu de ${contactName} : ${message.content}`
-    : `Message envoyé, ${message.read ? 'lu' : 'non lu'} : ${message.content}`
+    : `Message envoyé, ${message.read ? 'lu' : 'non lu'} : ${message.content}`;
 
   return (
     <li
@@ -324,5 +350,5 @@ function MessageBubble({ message, contactId, contactName }) {
         </span>
       </div>
     </li>
-  )
+  );
 }

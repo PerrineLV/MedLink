@@ -1,42 +1,42 @@
-import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { getHomeRoute } from '../services/roles'
-import './LoginPage.css'
+import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { getHomeRoute } from '../services/roles';
+import './LoginPage.css';
 
-const GENERIC_ERROR = 'Identifiants incorrects'
+const GENERIC_ERROR = 'Identifiants incorrects';
 
 export default function LoginPage() {
-  const { login, isAuthenticated, roles } = useAuth()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { login, isAuthenticated, roles } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to={getHomeRoute(roles)} replace />
+    return <Navigate to={getHomeRoute(roles)} replace />;
   }
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    setError(null)
-    setIsSubmitting(true)
+    event.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
 
     try {
-      await login(email, password)
+      await login(email, password);
     } catch (requestError) {
       // 429 = rate-limited (ML-20): surface that explicit reason. Anything
       // else (bad password, unknown email...) must stay generic so we don't
       // leak whether the account exists.
       if (requestError.response?.status === 429) {
-        setError(requestError.response.data?.message ?? 'Trop de tentatives, réessayez plus tard.')
+        setError(requestError.response.data?.message ?? 'Trop de tentatives, réessayez plus tard.');
       } else {
-        setError(GENERIC_ERROR)
+        setError(GENERIC_ERROR);
       }
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <main className="login-page">
@@ -83,5 +83,5 @@ export default function LoginPage() {
         </form>
       </div>
     </main>
-  )
+  );
 }

@@ -1,30 +1,37 @@
-import { useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext'
-import { useMessagesBadge } from '../contexts/MessagesBadgeContext'
-import { ROLE_AIDANT, ROLE_LABELS, ROLE_SOIGNANT, getPrimaryRole, getSidebarItems } from '../services/roles'
-import './AppLayout.css'
+import { useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext';
+import { useMessagesBadge } from '../contexts/MessagesBadgeContext';
+import {
+  ROLE_AIDANT,
+  ROLE_LABELS,
+  ROLE_SOIGNANT,
+  getPrimaryRole,
+  getSidebarItems,
+} from '../services/roles';
+import './AppLayout.css';
 
 function notifyComingSoon() {
-  window.alert('Cette fonctionnalité arrive dans une prochaine version de MedLink.')
+  window.alert('Cette fonctionnalité arrive dans une prochaine version de MedLink.');
 }
 
 export default function AppLayout({ children, securityBanner }) {
-  const { roles, firstName, logout } = useAuth()
-  const navigate = useNavigate()
-  const primaryRole = getPrimaryRole(roles)
-  const displayName = firstName ?? (primaryRole ? ROLE_LABELS[primaryRole] : 'Utilisateur')
-  const sidebarItems = getSidebarItems(roles)
-  const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT)
-  const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } = useInvitationsBadge()
-  const { unreadMessagesCount, refresh: refreshUnreadMessagesCount } = useMessagesBadge()
+  const { roles, firstName, logout } = useAuth();
+  const navigate = useNavigate();
+  const primaryRole = getPrimaryRole(roles);
+  const displayName = firstName ?? (primaryRole ? ROLE_LABELS[primaryRole] : 'Utilisateur');
+  const sidebarItems = getSidebarItems(roles);
+  const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT);
+  const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } =
+    useInvitationsBadge();
+  const { unreadMessagesCount, refresh: refreshUnreadMessagesCount } = useMessagesBadge();
 
   useEffect(() => {
-    if (canReceiveInvitations) refreshPendingInvitationsCount()
-    refreshUnreadMessagesCount()
+    if (canReceiveInvitations) refreshPendingInvitationsCount();
+    refreshUnreadMessagesCount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canReceiveInvitations])
+  }, [canReceiveInvitations]);
 
   return (
     <div className="app-layout">
@@ -62,7 +69,12 @@ export default function AppLayout({ children, securityBanner }) {
               )}
             </button>
           )}
-          <span className="app-header-lock" role="img" aria-label="Connexion sécurisée" title="Connexion sécurisée">
+          <span
+            className="app-header-lock"
+            role="img"
+            aria-label="Connexion sécurisée"
+            title="Connexion sécurisée"
+          >
             🔒
           </span>
           <button type="button" className="app-header-logout" onClick={logout}>
@@ -77,15 +89,19 @@ export default function AppLayout({ children, securityBanner }) {
         <nav className="app-sidebar" aria-label="Navigation principale">
           <ul>
             {sidebarItems.map((item) => {
-              const isInvitations = item.key === 'invitations'
-              const isMessages = item.to === '/messages'
-              const badgeCount = isInvitations ? pendingInvitationsCount : isMessages ? unreadMessagesCount : 0
-              const showBadge = badgeCount > 0
+              const isInvitations = item.key === 'invitations';
+              const isMessages = item.to === '/messages';
+              const badgeCount = isInvitations
+                ? pendingInvitationsCount
+                : isMessages
+                  ? unreadMessagesCount
+                  : 0;
+              const showBadge = badgeCount > 0;
               const badgeLabel = !showBadge
                 ? ''
                 : isInvitations
                   ? ` (${badgeCount} invitation${badgeCount > 1 ? 's' : ''} en attente)`
-                  : ` (${badgeCount} message${badgeCount > 1 ? 's' : ''} non lu${badgeCount > 1 ? 's' : ''})`
+                  : ` (${badgeCount} message${badgeCount > 1 ? 's' : ''} non lu${badgeCount > 1 ? 's' : ''})`;
 
               return (
                 <li key={item.key}>
@@ -108,7 +124,7 @@ export default function AppLayout({ children, securityBanner }) {
                     </button>
                   )}
                 </li>
-              )
+              );
             })}
           </ul>
         </nav>
@@ -118,5 +134,5 @@ export default function AppLayout({ children, securityBanner }) {
         </main>
       </div>
     </div>
-  )
+  );
 }
