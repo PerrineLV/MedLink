@@ -23,8 +23,6 @@
     "updates": {
       "enabled": false
     },
-    "plugins": [
-      "@react-native-community/datetimepicker"
-    ]
+    "plugins": ["@react-native-community/datetimepicker"]
   }
 }
