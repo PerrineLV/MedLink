@@ -1,11 +1,11 @@
-import { useAuth } from '../contexts/AuthContext'
-import { ROLE_LABELS, getPrimaryRole } from '../services/roles'
-import './DashboardPage.css'
+import { useAuth } from '../contexts/AuthContext';
+import { ROLE_LABELS, getPrimaryRole } from '../services/roles';
+import './DashboardPage.css';
 
 export default function DashboardPage() {
-  const { roles, logout } = useAuth()
-  const primaryRole = getPrimaryRole(roles)
-  const roleLabel = primaryRole ? ROLE_LABELS[primaryRole] : 'Utilisateur'
+  const { roles, logout } = useAuth();
+  const primaryRole = getPrimaryRole(roles);
+  const roleLabel = primaryRole ? ROLE_LABELS[primaryRole] : 'Utilisateur';
 
   return (
     <main className="dashboard-page">
@@ -19,5 +19,5 @@ export default function DashboardPage() {
         Vous êtes connecté·e en tant que <strong>{roleLabel}</strong>.
       </p>
     </main>
-  )
+  );
 }

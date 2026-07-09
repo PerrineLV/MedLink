@@ -1,92 +1,92 @@
-import { forwardRef, useEffect, useId, useRef, useState } from 'react'
-import { searchMedications } from '../services/medicationService'
-import './MedicationAutocomplete.css'
+import { forwardRef, useEffect, useId, useRef, useState } from 'react';
+import { searchMedications } from '../services/medicationService';
+import './MedicationAutocomplete.css';
 
-const DEBOUNCE_MS = 300
-const MIN_QUERY_LENGTH = 2
+const DEBOUNCE_MS = 300;
+const MIN_QUERY_LENGTH = 2;
 
 const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
   { value, onChange, onSelectMedication, required = false },
   forwardedRef,
 ) {
-  const [suggestions, setSuggestions] = useState([])
-  const [isOpen, setIsOpen] = useState(false)
-  const [activeIndex, setActiveIndex] = useState(-1)
-  const containerRef = useRef(null)
-  const listboxId = useId()
+  const [suggestions, setSuggestions] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const containerRef = useRef(null);
+  const listboxId = useId();
 
   useEffect(() => {
-    const query = value.trim()
+    const query = value.trim();
     if (query.length < MIN_QUERY_LENGTH) {
-      setSuggestions([])
-      setIsOpen(false)
-      return undefined
+      setSuggestions([]);
+      setIsOpen(false);
+      return undefined;
     }
 
-    let cancelled = false
+    let cancelled = false;
 
     const timeoutId = setTimeout(async () => {
       try {
-        const results = await searchMedications(query)
+        const results = await searchMedications(query);
         if (!cancelled) {
-          setSuggestions(results)
-          setIsOpen(results.length > 0)
-          setActiveIndex(-1)
+          setSuggestions(results);
+          setIsOpen(results.length > 0);
+          setActiveIndex(-1);
         }
       } catch {
         if (!cancelled) {
-          setSuggestions([])
-          setIsOpen(false)
+          setSuggestions([]);
+          setIsOpen(false);
         }
       }
-    }, DEBOUNCE_MS)
+    }, DEBOUNCE_MS);
 
     return () => {
-      cancelled = true
-      clearTimeout(timeoutId)
-    }
-  }, [value])
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [value]);
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false)
+        setIsOpen(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const selectSuggestion = (suggestion) => {
-    onChange(suggestion.name)
-    onSelectMedication?.(suggestion)
-    setIsOpen(false)
-    setSuggestions([])
-  }
+    onChange(suggestion.name);
+    onSelectMedication?.(suggestion);
+    setIsOpen(false);
+    setSuggestions([]);
+  };
 
   const handleKeyDown = (event) => {
     if (!isOpen || suggestions.length === 0) {
-      return
+      return;
     }
 
     if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      setActiveIndex((current) => (current + 1) % suggestions.length)
+      event.preventDefault();
+      setActiveIndex((current) => (current + 1) % suggestions.length);
     } else if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      setActiveIndex((current) => (current <= 0 ? suggestions.length - 1 : current - 1))
+      event.preventDefault();
+      setActiveIndex((current) => (current <= 0 ? suggestions.length - 1 : current - 1));
     } else if (event.key === 'Enter') {
       if (activeIndex >= 0) {
-        event.preventDefault()
-        selectSuggestion(suggestions[activeIndex])
+        event.preventDefault();
+        selectSuggestion(suggestions[activeIndex]);
       }
     } else if (event.key === 'Escape') {
-      setIsOpen(false)
+      setIsOpen(false);
     }
-  }
+  };
 
-  const activeOptionId = activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+  const activeOptionId = activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
 
   return (
     <div className="medication-autocomplete" ref={containerRef}>
@@ -116,8 +116,8 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
               aria-selected={index === activeIndex}
               className={index === activeIndex ? 'active' : undefined}
               onMouseDown={(event) => {
-                event.preventDefault()
-                selectSuggestion(suggestion)
+                event.preventDefault();
+                selectSuggestion(suggestion);
               }}
             >
               {suggestion.name}
@@ -126,7 +126,7 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
         </ul>
       )}
     </div>
-  )
-})
+  );
+});
 
-export default MedicationAutocomplete
+export default MedicationAutocomplete;

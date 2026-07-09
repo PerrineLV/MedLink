@@ -102,7 +102,16 @@ export function AuthProvider({ children }) {
       dismissSessionExpiryWarning: resetInactivityTimers,
       registerActivity,
     }),
-    [token, roles, firstName, sessionExpiryWarning, login, logout, resetInactivityTimers, registerActivity],
+    [
+      token,
+      roles,
+      firstName,
+      sessionExpiryWarning,
+      login,
+      logout,
+      resetInactivityTimers,
+      registerActivity,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

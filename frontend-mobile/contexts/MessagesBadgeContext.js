@@ -21,10 +21,14 @@ export function MessagesBadgeProvider({ children }) {
 
     try {
       const contacts = await fetchContacts();
-      const conversations = await Promise.all(contacts.map((contact) => fetchMessages(contact.id).catch(() => [])));
+      const conversations = await Promise.all(
+        contacts.map((contact) => fetchMessages(contact.id).catch(() => [])),
+      );
       const count = conversations.reduce(
         (total, messages, index) =>
-          total + messages.filter((message) => message.senderId === contacts[index].id && !message.read).length,
+          total +
+          messages.filter((message) => message.senderId === contacts[index].id && !message.read)
+            .length,
         0,
       );
       setUnreadMessagesCount(count);

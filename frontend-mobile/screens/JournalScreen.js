@@ -1,14 +1,32 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import BottomNav, { openProfileMenu } from '../components/BottomNav';
 import Header from '../components/Header';
 import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchJournalEntries } from '../services/journalEntryService';
 import { fetchPatients } from '../services/patientService';
-import { fetchTreatments, scheduleLabel, toggleTreatmentIntake } from '../services/treatmentService';
-import { COLORS, TYPE, bloodPressureBand, moodBand, painBand } from '../services/journalPresentation';
+import {
+  fetchTreatments,
+  scheduleLabel,
+  toggleTreatmentIntake,
+} from '../services/treatmentService';
+import {
+  COLORS,
+  TYPE,
+  bloodPressureBand,
+  moodBand,
+  painBand,
+} from '../services/journalPresentation';
 import { ROLE_AIDANT, ROLE_LABELS, ROLE_PATIENT, getPrimaryRole } from '../services/roles';
 
 const MIN_TOUCH_TARGET = 44;
@@ -41,10 +59,12 @@ export default function JournalScreen() {
       setEntries(fetchedEntries);
       setTreatments(fetchedTreatments);
       setPatientNamesById(
-        Object.fromEntries(patients.map((patient) => [patient.id, `${patient.firstName} ${patient.lastName}`])),
+        Object.fromEntries(
+          patients.map((patient) => [patient.id, `${patient.firstName} ${patient.lastName}`]),
+        ),
       );
     } catch {
-      setError("Impossible de charger le journal de suivi. Vérifiez votre connexion.");
+      setError('Impossible de charger le journal de suivi. Vérifiez votre connexion.');
     } finally {
       isRefresh ? setIsRefreshing(false) : setIsLoading(false);
     }
@@ -140,7 +160,11 @@ export default function JournalScreen() {
         keyExtractor={(entry) => String(entry.id)}
         contentContainerStyle={[styles.listContent, entries.length === 0 && styles.emptyList]}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => load(true)} tintColor={COLORS.primary} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => load(true)}
+            tintColor={COLORS.primary}
+          />
         }
         ListEmptyComponent={
           !error && <Text style={styles.emptyText}>Aucune entrée pour le moment.</Text>
@@ -262,7 +286,11 @@ function MetricRow({ label, visual, band, accessibilityLabel }) {
 
 function MoodDots({ mood, color }) {
   return (
-    <View style={styles.dotsRow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <View
+      style={styles.dotsRow}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       {MOOD_SCALE.map((value) => (
         <View key={value} style={[styles.dot, value === mood && { backgroundColor: color }]} />
       ))}
@@ -304,9 +332,17 @@ function TreatmentCard({ treatment, patientName, onToggle }) {
         style={styles.treatmentCardHeader}
         accessible
         accessibilityRole="text"
-        accessibilityLabel={allTaken ? 'Tous les horaires du jour sont pris' : 'Certains horaires du jour restent à prendre'}
+        accessibilityLabel={
+          allTaken
+            ? 'Tous les horaires du jour sont pris'
+            : 'Certains horaires du jour restent à prendre'
+        }
       >
-        <Text style={styles.treatmentIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Text
+          style={styles.treatmentIcon}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
           {allTaken ? '✅' : '⭕'}
         </Text>
 
@@ -345,7 +381,11 @@ function TreatmentScheduleRow({ treatment, schedule, isLast, onToggle }) {
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <Text style={styles.treatmentIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Text
+        style={styles.treatmentIcon}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
         {taken ? '✅' : '⭕'}
       </Text>
 

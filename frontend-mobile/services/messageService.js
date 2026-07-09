@@ -1,7 +1,9 @@
 import httpClient from './httpClient';
 
 export async function fetchMessages(conversationUserId) {
-  const response = await httpClient.get('/messages', { params: { conversation: conversationUserId } });
+  const response = await httpClient.get('/messages', {
+    params: { conversation: conversationUserId },
+  });
   return response.data;
 }
 

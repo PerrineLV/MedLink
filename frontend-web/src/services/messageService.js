@@ -1,21 +1,23 @@
-import httpClient from './httpClient'
+import httpClient from './httpClient';
 
 export async function fetchMessages(conversationUserId) {
-  const response = await httpClient.get('/messages', { params: { conversation: conversationUserId } })
+  const response = await httpClient.get('/messages', {
+    params: { conversation: conversationUserId },
+  });
 
-  return response.data
+  return response.data;
 }
 
 export async function sendMessage(recipientId, content) {
-  const response = await httpClient.post('/messages', { recipientId, content })
+  const response = await httpClient.post('/messages', { recipientId, content });
 
-  return response.data
+  return response.data;
 }
 
 export async function markMessageRead(messageId) {
-  const response = await httpClient.patch(`/messages/${messageId}/read`)
+  const response = await httpClient.patch(`/messages/${messageId}/read`);
 
-  return response.data
+  return response.data;
 }
 
 /**
@@ -30,7 +32,7 @@ export async function markMessageRead(messageId) {
  * correspond à quel patient.
  */
 export async function fetchContacts() {
-  const response = await httpClient.get('/message-contacts')
+  const response = await httpClient.get('/message-contacts');
 
-  return response.data
+  return response.data;
 }

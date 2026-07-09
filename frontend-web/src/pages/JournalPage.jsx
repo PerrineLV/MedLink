@@ -1,63 +1,69 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Circle } from 'lucide-react'
-import AppLayout from '../components/AppLayout'
-import Badge from '../components/Badge'
-import { createJournalEntry, fetchJournalEntries } from '../services/journalEntryService'
-import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
-import { fetchPatients } from '../services/patientService'
-import { fetchTreatments, scheduleLabel, toggleTreatmentIntake } from '../services/treatmentService'
-import './JournalPage.css'
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Circle } from 'lucide-react';
+import AppLayout from '../components/AppLayout';
+import Badge from '../components/Badge';
+import { createJournalEntry, fetchJournalEntries } from '../services/journalEntryService';
+import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation';
+import { fetchPatients } from '../services/patientService';
+import {
+  fetchTreatments,
+  scheduleLabel,
+  toggleTreatmentIntake,
+} from '../services/treatmentService';
+import './JournalPage.css';
 
-const MOOD_OPTIONS = [1, 2, 3, 4, 5]
-const PAIN_OPTIONS = Array.from({ length: 11 }, (_, painLevel) => painLevel)
-const BLOOD_PRESSURE_PATTERN = /^\d{1,3}$/
-const GENERIC_CREATE_ERROR = "Impossible d'enregistrer cette entrée, réessayez."
-const SECURITY_BANNER_TEXT = "Données chiffrées — accessibles uniquement à l'équipe soignante désignée"
+const MOOD_OPTIONS = [1, 2, 3, 4, 5];
+const PAIN_OPTIONS = Array.from({ length: 11 }, (_, painLevel) => painLevel);
+const BLOOD_PRESSURE_PATTERN = /^\d{1,3}$/;
+const GENERIC_CREATE_ERROR = "Impossible d'enregistrer cette entrée, réessayez.";
+const SECURITY_BANNER_TEXT =
+  "Données chiffrées — accessibles uniquement à l'équipe soignante désignée";
 
 export default function JournalPage() {
-  const [entries, setEntries] = useState(null)
-  const [treatments, setTreatments] = useState(null)
-  const [patients, setPatients] = useState([])
-  const [error, setError] = useState(null)
+  const [entries, setEntries] = useState(null);
+  const [treatments, setTreatments] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
-    setError(null)
-    setEntries(null)
-    setTreatments(null)
+    setError(null);
+    setEntries(null);
+    setTreatments(null);
 
     try {
       const [fetchedEntries, fetchedPatients, fetchedTreatments] = await Promise.all([
         fetchJournalEntries(),
         fetchPatients(),
         fetchTreatments(),
-      ])
-      setEntries(fetchedEntries)
-      setPatients(fetchedPatients)
-      setTreatments(fetchedTreatments)
+      ]);
+      setEntries(fetchedEntries);
+      setPatients(fetchedPatients);
+      setTreatments(fetchedTreatments);
     } catch (requestError) {
       if (requestError.response?.status === 403) {
-        setError("Vous n'avez pas accès à ce journal.")
+        setError("Vous n'avez pas accès à ce journal.");
       } else {
-        setError('Impossible de charger le journal. Vérifiez votre connexion.')
+        setError('Impossible de charger le journal. Vérifiez votre connexion.');
       }
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   const handleEntryCreated = useCallback((entry) => {
-    setEntries((current) => [entry, ...(current ?? [])])
-  }, [])
+    setEntries((current) => [entry, ...(current ?? [])]);
+  }, []);
 
   const showPatientName = useMemo(
-    () => new Set([...(entries ?? []), ...(treatments ?? [])].map((item) => item.patientId)).size > 1,
+    () =>
+      new Set([...(entries ?? []), ...(treatments ?? [])].map((item) => item.patientId)).size > 1,
     [entries, treatments],
-  )
+  );
 
-  const entriesByPatientId = useMemo(() => groupByPatientId(entries ?? []), [entries])
-  const treatmentsByPatientId = useMemo(() => groupByPatientId(treatments ?? []), [treatments])
+  const entriesByPatientId = useMemo(() => groupByPatientId(entries ?? []), [entries]);
+  const treatmentsByPatientId = useMemo(() => groupByPatientId(treatments ?? []), [treatments]);
 
   const applyScheduleIntake = useCallback((treatmentId, scheduleId, todayIntake) => {
     setTreatments((current) =>
@@ -71,31 +77,31 @@ export default function JournalPage() {
               ),
             },
       ),
-    )
-  }, [])
+    );
+  }, []);
 
   const handleToggleIntake = useCallback(
     (treatment, schedule) => {
-      const previousIntake = schedule.todayIntake
+      const previousIntake = schedule.todayIntake;
       const optimisticIntake = {
         ...previousIntake,
         taken: !previousIntake.taken,
         takenAt: previousIntake.taken ? null : new Date().toISOString(),
-      }
+      };
 
-      applyScheduleIntake(treatment.id, schedule.id, optimisticIntake)
+      applyScheduleIntake(treatment.id, schedule.id, optimisticIntake);
 
       toggleTreatmentIntake(previousIntake.id)
         .then((updatedIntake) => {
-          applyScheduleIntake(treatment.id, schedule.id, updatedIntake)
+          applyScheduleIntake(treatment.id, schedule.id, updatedIntake);
         })
         .catch(() => {
-          applyScheduleIntake(treatment.id, schedule.id, previousIntake)
-          setError('Impossible de mettre à jour ce traitement. Réessayez.')
-        })
+          applyScheduleIntake(treatment.id, schedule.id, previousIntake);
+          setError('Impossible de mettre à jour ce traitement. Réessayez.');
+        });
     },
     [applyScheduleIntake],
-  )
+  );
 
   return (
     <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
@@ -140,33 +146,34 @@ export default function JournalPage() {
         </>
       )}
     </AppLayout>
-  )
+  );
 }
 
 function groupByPatientId(items) {
   return items.reduce((groups, item) => {
-    const group = groups[item.patientId] ?? []
-    group.push(item)
-    groups[item.patientId] = group
+    const group = groups[item.patientId] ?? [];
+    group.push(item);
+    groups[item.patientId] = group;
 
-    return groups
-  }, {})
+    return groups;
+  }, {});
 }
 
 function PatientGroupedJournal({ patients, entriesByPatientId, treatmentsByPatientId, onToggle }) {
   const patientsWithData = patients.filter(
-    (patient) => entriesByPatientId[patient.id]?.length > 0 || treatmentsByPatientId[patient.id]?.length > 0,
-  )
+    (patient) =>
+      entriesByPatientId[patient.id]?.length > 0 || treatmentsByPatientId[patient.id]?.length > 0,
+  );
 
   if (patientsWithData.length === 0) {
-    return <p className="journal-empty">Aucune entrée pour le moment.</p>
+    return <p className="journal-empty">Aucune entrée pour le moment.</p>;
   }
 
   return (
     <div className="journal-patient-groups">
       {patientsWithData.map((patient) => {
-        const patientEntries = entriesByPatientId[patient.id] ?? []
-        const patientTreatments = treatmentsByPatientId[patient.id] ?? []
+        const patientEntries = entriesByPatientId[patient.id] ?? [];
+        const patientTreatments = treatmentsByPatientId[patient.id] ?? [];
 
         return (
           <section key={patient.id} className="journal-patient-group">
@@ -192,10 +199,10 @@ function PatientGroupedJournal({ patients, entriesByPatientId, treatmentsByPatie
               </div>
             </div>
           </section>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 function TreatmentsPanel({ treatments, onToggle }) {
@@ -213,18 +220,24 @@ function TreatmentsPanel({ treatments, onToggle }) {
         </ul>
       )}
     </section>
-  )
+  );
 }
 
 function TreatmentCard({ treatment, onToggle }) {
-  const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken)
+  const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken);
 
   return (
     <li className="treatment-card">
-      <div className={`treatment-card-header ${allTaken ? 'treatment-row-taken' : 'treatment-row-pending'}`}>
+      <div
+        className={`treatment-card-header ${allTaken ? 'treatment-row-taken' : 'treatment-row-pending'}`}
+      >
         <span
           role="img"
-          aria-label={allTaken ? 'Tous les horaires du jour sont pris' : 'Certains horaires du jour restent à prendre'}
+          aria-label={
+            allTaken
+              ? 'Tous les horaires du jour sont pris'
+              : 'Certains horaires du jour restent à prendre'
+          }
         >
           {allTaken ? (
             <CheckCircle2 className="treatment-icon" aria-hidden="true" />
@@ -251,14 +264,14 @@ function TreatmentCard({ treatment, onToggle }) {
         ))}
       </ul>
     </li>
-  )
+  );
 }
 
 function TreatmentScheduleRow({ treatment, schedule, onToggle }) {
-  const { taken, takenAt } = schedule.todayIntake ?? { taken: false, takenAt: null }
+  const { taken, takenAt } = schedule.todayIntake ?? { taken: false, takenAt: null };
   const label = taken
     ? `${treatment.name} ${treatment.dosage}, pris à ${formatTime(takenAt)}`
-    : `${treatment.name} ${treatment.dosage}, à prendre : ${scheduleLabel(schedule)} — appuyer pour marquer comme pris`
+    : `${treatment.name} ${treatment.dosage}, à prendre : ${scheduleLabel(schedule)} — appuyer pour marquer comme pris`;
 
   return (
     <li>
@@ -279,55 +292,55 @@ function TreatmentScheduleRow({ treatment, schedule, onToggle }) {
         </span>
       </button>
     </li>
-  )
+  );
 }
 
 function formatTime(isoDate) {
-  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
 function NewEntryPanel({ patients, onEntryCreated }) {
-  const [isCreating, setIsCreating] = useState(false)
-  const [selectedPatientId, setSelectedPatientId] = useState(null)
-  const [mood, setMood] = useState(3)
-  const [painLevel, setPainLevel] = useState(0)
-  const [systolic, setSystolic] = useState('')
-  const [diastolic, setDiastolic] = useState('')
-  const [note, setNote] = useState('')
-  const [error, setError] = useState(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCreating, setIsCreating] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [mood, setMood] = useState(3);
+  const [painLevel, setPainLevel] = useState(0);
+  const [systolic, setSystolic] = useState('');
+  const [diastolic, setDiastolic] = useState('');
+  const [note, setNote] = useState('');
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const resolvedPatientId = selectedPatientId ?? patients[0]?.id ?? null
+  const resolvedPatientId = selectedPatientId ?? patients[0]?.id ?? null;
 
   const openPanel = () => {
-    setIsCreating(true)
-  }
+    setIsCreating(true);
+  };
 
   const resetForm = () => {
-    setSelectedPatientId(null)
-    setMood(3)
-    setPainLevel(0)
-    setSystolic('')
-    setDiastolic('')
-    setNote('')
-    setError(null)
-  }
+    setSelectedPatientId(null);
+    setMood(3);
+    setPainLevel(0);
+    setSystolic('');
+    setDiastolic('');
+    setNote('');
+    setError(null);
+  };
 
   const cancelPanel = () => {
-    setIsCreating(false)
-    resetForm()
-  }
+    setIsCreating(false);
+    resetForm();
+  };
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    setError(null)
+    event.preventDefault();
+    setError(null);
 
     if (!BLOOD_PRESSURE_PATTERN.test(systolic) || !BLOOD_PRESSURE_PATTERN.test(diastolic)) {
-      setError('La tension doit être au format "120/80".')
-      return
+      setError('La tension doit être au format "120/80".');
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const entry = await createJournalEntry({
         patientId: resolvedPatientId,
@@ -335,20 +348,25 @@ function NewEntryPanel({ patients, onEntryCreated }) {
         painLevel,
         bloodPressure: `${systolic}/${diastolic}`,
         note: note.trim(),
-      })
-      onEntryCreated(entry)
-      setIsCreating(false)
-      resetForm()
+      });
+      onEntryCreated(entry);
+      setIsCreating(false);
+      resetForm();
     } catch (requestError) {
-      setError(requestError.response?.data?.detail ?? GENERIC_CREATE_ERROR)
+      setError(requestError.response?.data?.detail ?? GENERIC_CREATE_ERROR);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="journal-new-entry">
-      <button type="button" className="journal-new-entry-toggle" onClick={openPanel} disabled={isCreating}>
+      <button
+        type="button"
+        className="journal-new-entry-toggle"
+        onClick={openPanel}
+        disabled={isCreating}
+      >
         + Nouvelle entrée
       </button>
 
@@ -384,7 +402,11 @@ function NewEntryPanel({ patients, onEntryCreated }) {
           </Field>
 
           <Field label="Douleur">
-            <div className="journal-pill-row journal-pill-row-scroll" role="group" aria-label="Douleur">
+            <div
+              className="journal-pill-row journal-pill-row-scroll"
+              role="group"
+              aria-label="Douleur"
+            >
               {PAIN_OPTIONS.map((value) => (
                 <Pill
                   key={value}
@@ -448,7 +470,7 @@ function NewEntryPanel({ patients, onEntryCreated }) {
         </form>
       )}
     </div>
-  )
+  );
 }
 
 function Field({ label, children }) {
@@ -457,7 +479,7 @@ function Field({ label, children }) {
       <span className="journal-field-label">{label}</span>
       {children}
     </div>
-  )
+  );
 }
 
 function Pill({ label, selected, onClick, ariaLabel }) {
@@ -471,13 +493,13 @@ function Pill({ label, selected, onClick, ariaLabel }) {
     >
       {label}
     </button>
-  )
+  );
 }
 
 function JournalEntryCard({ entry }) {
-  const mood = moodBand(entry.mood)
-  const pain = painBand(entry.painLevel)
-  const bloodPressure = bloodPressureBand(entry.bloodPressure)
+  const mood = moodBand(entry.mood);
+  const pain = painBand(entry.painLevel);
+  const bloodPressure = bloodPressureBand(entry.bloodPressure);
   const date = useMemo(
     () =>
       new Date(entry.createdAt).toLocaleDateString('fr-FR', {
@@ -488,13 +510,15 @@ function JournalEntryCard({ entry }) {
         minute: '2-digit',
       }),
     [entry.createdAt],
-  )
+  );
 
   return (
     <li className="journal-entry-card">
       <div className="journal-entry-header">
         <span className="journal-entry-date">{date}</span>
-        {entry.enteredByCaregiver && <span className="journal-entry-caregiver-tag">Saisie par l'aidant</span>}
+        {entry.enteredByCaregiver && (
+          <span className="journal-entry-caregiver-tag">Saisie par l'aidant</span>
+        )}
       </div>
 
       <div className="journal-entry-metrics">
@@ -514,5 +538,5 @@ function JournalEntryCard({ entry }) {
 
       {entry.note && <p className="journal-entry-note">{entry.note}</p>}
     </li>
-  )
+  );
 }

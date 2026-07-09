@@ -1,15 +1,15 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-import SessionExpiryWarning from './components/SessionExpiryWarning'
-import ProtectedRoute from './components/ProtectedRoute'
-import LoginPage from './pages/LoginPage'
-import DashboardPage from './pages/DashboardPage'
-import PatientsPage from './pages/PatientsPage'
-import PatientJournalPage from './pages/PatientJournalPage'
-import JournalPage from './pages/JournalPage'
-import LiaisonsPage from './pages/LiaisonsPage'
-import InvitationsPage from './pages/InvitationsPage'
-import MessagingPage from './pages/MessagingPage'
-import { ROLE_AIDANT, ROLE_PATIENT, ROLE_SOIGNANT } from './services/roles'
+import { Navigate, Route, Routes } from 'react-router-dom';
+import SessionExpiryWarning from './components/SessionExpiryWarning';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import PatientsPage from './pages/PatientsPage';
+import PatientJournalPage from './pages/PatientJournalPage';
+import JournalPage from './pages/JournalPage';
+import LiaisonsPage from './pages/LiaisonsPage';
+import InvitationsPage from './pages/InvitationsPage';
+import MessagingPage from './pages/MessagingPage';
+import { ROLE_AIDANT, ROLE_PATIENT, ROLE_SOIGNANT } from './services/roles';
 
 function App() {
   return (
@@ -37,7 +37,7 @@ function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

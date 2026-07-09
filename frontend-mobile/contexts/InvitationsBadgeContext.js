@@ -29,7 +29,9 @@ export function InvitationsBadgeProvider({ children }) {
     [pendingInvitationsCount, refresh, decrement],
   );
 
-  return <InvitationsBadgeContext.Provider value={value}>{children}</InvitationsBadgeContext.Provider>;
+  return (
+    <InvitationsBadgeContext.Provider value={value}>{children}</InvitationsBadgeContext.Provider>
+  );
 }
 
 export function useInvitationsBadge() {

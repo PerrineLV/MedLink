@@ -1,41 +1,41 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import AppLayout from '../components/AppLayout'
-import Badge from '../components/Badge'
-import { fetchJournalEntries } from '../services/journalEntryService'
-import { patientStatusBand } from '../services/journalPresentation'
-import { fetchPatients } from '../services/patientService'
-import './PatientsPage.css'
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AppLayout from '../components/AppLayout';
+import Badge from '../components/Badge';
+import { fetchJournalEntries } from '../services/journalEntryService';
+import { patientStatusBand } from '../services/journalPresentation';
+import { fetchPatients } from '../services/patientService';
+import './PatientsPage.css';
 
 function initials(firstName, lastName) {
-  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase()
+  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
 }
 
 export default function PatientsPage() {
-  const navigate = useNavigate()
-  const [patients, setPatients] = useState(null)
-  const [error, setError] = useState(null)
+  const navigate = useNavigate();
+  const [patients, setPatients] = useState(null);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
-    setError(null)
+    setError(null);
 
     try {
-      const fetchedPatients = await fetchPatients()
+      const fetchedPatients = await fetchPatients();
       const withEntries = await Promise.all(
         fetchedPatients.map(async (patient) => ({
           ...patient,
           entries: await fetchJournalEntries(patient.id),
         })),
-      )
-      setPatients(withEntries)
+      );
+      setPatients(withEntries);
     } catch {
-      setError('Impossible de charger la liste des patients. Vérifiez votre connexion.')
+      setError('Impossible de charger la liste des patients. Vérifiez votre connexion.');
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   return (
     <AppLayout>
@@ -56,8 +56,8 @@ export default function PatientsPage() {
       {patients && patients.length > 0 && (
         <ul className="patient-list">
           {patients.map((patient) => {
-            const status = patientStatusBand(patient.entries)
-            const [lastEntry] = patient.entries
+            const status = patientStatusBand(patient.entries);
+            const [lastEntry] = patient.entries;
 
             return (
               <li key={patient.id}>
@@ -82,10 +82,10 @@ export default function PatientsPage() {
                   <Badge level={status.level} label={status.label} />
                 </button>
               </li>
-            )
+            );
           })}
         </ul>
       )}
     </AppLayout>
-  )
+  );
 }

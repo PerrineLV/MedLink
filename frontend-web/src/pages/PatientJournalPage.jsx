@@ -1,92 +1,92 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { CheckCircle2, Circle } from 'lucide-react'
-import AppLayout from '../components/AppLayout'
-import Badge from '../components/Badge'
-import MedicationAutocomplete from '../components/MedicationAutocomplete'
-import { createComment, fetchJournalEntries } from '../services/journalEntryService'
-import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation'
-import { fetchMedicationMetadata } from '../services/medicationService'
-import { fetchPatients } from '../services/patientService'
-import { createTreatment, fetchTreatments, scheduleLabel } from '../services/treatmentService'
-import './PatientJournalPage.css'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { CheckCircle2, Circle } from 'lucide-react';
+import AppLayout from '../components/AppLayout';
+import Badge from '../components/Badge';
+import MedicationAutocomplete from '../components/MedicationAutocomplete';
+import { createComment, fetchJournalEntries } from '../services/journalEntryService';
+import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation';
+import { fetchMedicationMetadata } from '../services/medicationService';
+import { fetchPatients } from '../services/patientService';
+import { createTreatment, fetchTreatments, scheduleLabel } from '../services/treatmentService';
+import './PatientJournalPage.css';
 
-const GENERIC_PRESCRIBE_ERROR = "Impossible d'enregistrer ce traitement, réessayez."
+const GENERIC_PRESCRIBE_ERROR = "Impossible d'enregistrer ce traitement, réessayez.";
 
 const MOMENT_OPTIONS = [
   { value: 'morning', label: 'Matin' },
   { value: 'noon', label: 'Midi' },
   { value: 'evening', label: 'Soir' },
-]
+];
 
 const FILTERS = [
   { key: 'all', label: 'Tout' },
   { key: 'week', label: 'Cette semaine' },
   { key: 'month', label: 'Ce mois' },
-]
+];
 
-const FILTER_WINDOW_DAYS = { week: 7, month: 30 }
+const FILTER_WINDOW_DAYS = { week: 7, month: 30 };
 
 function withinWindow(createdAt, filterKey) {
-  const days = FILTER_WINDOW_DAYS[filterKey]
-  if (!days) return true
+  const days = FILTER_WINDOW_DAYS[filterKey];
+  if (!days) return true;
 
-  return Date.now() - new Date(createdAt).getTime() <= days * 86_400_000
+  return Date.now() - new Date(createdAt).getTime() <= days * 86_400_000;
 }
 
 export default function PatientJournalPage() {
-  const { patientId } = useParams()
-  const [patientName, setPatientName] = useState(null)
-  const [entries, setEntries] = useState(null)
-  const [treatments, setTreatments] = useState(null)
-  const [error, setError] = useState(null)
-  const [filter, setFilter] = useState('all')
+  const { patientId } = useParams();
+  const [patientName, setPatientName] = useState(null);
+  const [entries, setEntries] = useState(null);
+  const [treatments, setTreatments] = useState(null);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all');
 
   const load = useCallback(async () => {
-    setError(null)
-    setEntries(null)
-    setTreatments(null)
-    setPatientName(null)
+    setError(null);
+    setEntries(null);
+    setTreatments(null);
+    setPatientName(null);
 
     try {
       const [patients, fetchedEntries, fetchedTreatments] = await Promise.all([
         fetchPatients(),
         fetchJournalEntries(patientId),
         fetchTreatments(patientId),
-      ])
-      const patient = patients.find((candidate) => String(candidate.id) === String(patientId))
-      setPatientName(patient ? `${patient.firstName} ${patient.lastName}` : null)
-      setEntries(fetchedEntries)
-      setTreatments(fetchedTreatments)
+      ]);
+      const patient = patients.find((candidate) => String(candidate.id) === String(patientId));
+      setPatientName(patient ? `${patient.firstName} ${patient.lastName}` : null);
+      setEntries(fetchedEntries);
+      setTreatments(fetchedTreatments);
     } catch (requestError) {
       if (requestError.response?.status === 403) {
-        setError("Vous n'avez pas accès au journal de ce patient.")
+        setError("Vous n'avez pas accès au journal de ce patient.");
       } else {
-        setError('Impossible de charger ce journal. Vérifiez votre connexion.')
+        setError('Impossible de charger ce journal. Vérifiez votre connexion.');
       }
     }
-  }, [patientId])
+  }, [patientId]);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   const handleTreatmentCreated = useCallback((treatment) => {
-    setTreatments((current) => [...(current ?? []), treatment])
-  }, [])
+    setTreatments((current) => [...(current ?? []), treatment]);
+  }, []);
 
   const filteredEntries = useMemo(
     () => (entries ?? []).filter((entry) => withinWindow(entry.createdAt, filter)),
     [entries, filter],
-  )
+  );
 
   const handleCommentAdded = useCallback((entryId, comment) => {
     setEntries((current) =>
       current.map((entry) =>
         entry.id === entryId ? { ...entry, comments: [...entry.comments, comment] } : entry,
       ),
-    )
-  }, [])
+    );
+  }, []);
 
   return (
     <AppLayout>
@@ -140,63 +140,70 @@ export default function PatientJournalPage() {
 
           <div className="journal-column">
             <ReadOnlyTreatmentsPanel treatments={treatments} />
-            <PrescribeTreatmentPanel patientId={patientId} onTreatmentCreated={handleTreatmentCreated} />
+            <PrescribeTreatmentPanel
+              patientId={patientId}
+              onTreatmentCreated={handleTreatmentCreated}
+            />
           </div>
         </div>
       )}
     </AppLayout>
-  )
+  );
 }
 
 function JournalEntryCard({ entry, onCommentAdded }) {
-  const mood = moodBand(entry.mood)
-  const pain = painBand(entry.painLevel)
-  const bloodPressure = bloodPressureBand(entry.bloodPressure)
+  const mood = moodBand(entry.mood);
+  const pain = painBand(entry.painLevel);
+  const bloodPressure = bloodPressureBand(entry.bloodPressure);
   const date = new Date(entry.createdAt).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  })
+  });
 
-  const [isCommenting, setIsCommenting] = useState(false)
-  const [commentText, setCommentText] = useState('')
-  const [commentError, setCommentError] = useState(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCommenting, setIsCommenting] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [commentError, setCommentError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cancelComment = () => {
-    setIsCommenting(false)
-    setCommentError(null)
-    setCommentText('')
-  }
+    setIsCommenting(false);
+    setCommentError(null);
+    setCommentText('');
+  };
 
   const handleSubmitComment = async (event) => {
-    event.preventDefault()
-    setCommentError(null)
+    event.preventDefault();
+    setCommentError(null);
 
     if (!commentText.trim()) {
-      setCommentError('Le commentaire ne peut pas être vide.')
-      return
+      setCommentError('Le commentaire ne peut pas être vide.');
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const comment = await createComment(entry.id, commentText.trim())
-      onCommentAdded(comment)
-      cancelComment()
+      const comment = await createComment(entry.id, commentText.trim());
+      onCommentAdded(comment);
+      cancelComment();
     } catch (requestError) {
-      setCommentError(requestError.response?.data?.detail ?? "Impossible d'enregistrer ce commentaire.")
+      setCommentError(
+        requestError.response?.data?.detail ?? "Impossible d'enregistrer ce commentaire.",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <li className="journal-entry-card">
       <div className="journal-entry-header">
         <span className="journal-entry-date">{date}</span>
-        {entry.enteredByCaregiver && <span className="journal-entry-caregiver-tag">Saisie par l'aidant</span>}
+        {entry.enteredByCaregiver && (
+          <span className="journal-entry-caregiver-tag">Saisie par l'aidant</span>
+        )}
       </div>
 
       <div className="journal-entry-metrics">
@@ -252,12 +259,16 @@ function JournalEntryCard({ entry, onCommentAdded }) {
           </div>
         </form>
       ) : (
-        <button type="button" className="journal-entry-comment-toggle" onClick={() => setIsCommenting(true)}>
+        <button
+          type="button"
+          className="journal-entry-comment-toggle"
+          onClick={() => setIsCommenting(true)}
+        >
           Ajouter un commentaire
         </button>
       )}
     </li>
-  )
+  );
 }
 
 function ReadOnlyTreatmentsPanel({ treatments }) {
@@ -272,15 +283,19 @@ function ReadOnlyTreatmentsPanel({ treatments }) {
       ) : (
         <ul className="treatments-list">
           {treatments.map((treatment) => {
-            const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken)
+            const allTaken = treatment.schedules.every((schedule) => schedule.todayIntake?.taken);
 
             return (
               <li key={treatment.id} className="treatment-card">
-                <div className={`treatment-card-header ${allTaken ? 'treatment-row-taken' : 'treatment-row-pending'}`}>
+                <div
+                  className={`treatment-card-header ${allTaken ? 'treatment-row-taken' : 'treatment-row-pending'}`}
+                >
                   <span
                     role="img"
                     aria-label={
-                      allTaken ? 'Tous les horaires du jour sont pris' : 'Certains horaires du jour restent à prendre'
+                      allTaken
+                        ? 'Tous les horaires du jour sont pris'
+                        : 'Certains horaires du jour restent à prendre'
                     }
                   >
                     {allTaken ? (
@@ -299,7 +314,10 @@ function ReadOnlyTreatmentsPanel({ treatments }) {
 
                 <ul className="treatment-schedule-list">
                   {treatment.schedules.map((schedule) => {
-                    const { taken, takenAt } = schedule.todayIntake ?? { taken: false, takenAt: null }
+                    const { taken, takenAt } = schedule.todayIntake ?? {
+                      taken: false,
+                      takenAt: null,
+                    };
 
                     return (
                       <li
@@ -313,109 +331,113 @@ function ReadOnlyTreatmentsPanel({ treatments }) {
                         )}
 
                         <span className="treatment-status">
-                          {taken ? `Pris à ${formatTime(takenAt)}` : `À prendre : ${scheduleLabel(schedule)}`}
+                          {taken
+                            ? `Pris à ${formatTime(takenAt)}`
+                            : `À prendre : ${scheduleLabel(schedule)}`}
                         </span>
                       </li>
-                    )
+                    );
                   })}
                 </ul>
               </li>
-            )
+            );
           })}
         </ul>
       )}
     </section>
-  )
+  );
 }
 
 function formatTime(isoDate) {
-  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
 function formatExtractionDate(isoDate) {
-  return new Date(isoDate).toLocaleDateString('fr-FR')
+  return new Date(isoDate).toLocaleDateString('fr-FR');
 }
 
 function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
-  const [isCreating, setIsCreating] = useState(false)
-  const [name, setName] = useState('')
-  const [dosage, setDosage] = useState('')
-  const [selectedMoments, setSelectedMoments] = useState([])
-  const [customLabels, setCustomLabels] = useState([])
-  const [error, setError] = useState(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [addedCount, setAddedCount] = useState(0)
-  const [medicationExtractedAt, setMedicationExtractedAt] = useState(null)
-  const nameInputRef = useRef(null)
+  const [isCreating, setIsCreating] = useState(false);
+  const [name, setName] = useState('');
+  const [dosage, setDosage] = useState('');
+  const [selectedMoments, setSelectedMoments] = useState([]);
+  const [customLabels, setCustomLabels] = useState([]);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addedCount, setAddedCount] = useState(0);
+  const [medicationExtractedAt, setMedicationExtractedAt] = useState(null);
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     if (!isCreating) {
-      return
+      return;
     }
 
-    let cancelled = false
+    let cancelled = false;
 
     fetchMedicationMetadata()
       .then(({ extractedAt }) => {
         if (!cancelled) {
-          setMedicationExtractedAt(extractedAt)
+          setMedicationExtractedAt(extractedAt);
         }
       })
-      .catch(() => {})
+      .catch(() => {});
 
     return () => {
-      cancelled = true
-    }
-  }, [isCreating])
+      cancelled = true;
+    };
+  }, [isCreating]);
 
   const resetForm = () => {
-    setName('')
-    setDosage('')
-    setSelectedMoments([])
-    setCustomLabels([])
-    setError(null)
-  }
+    setName('');
+    setDosage('');
+    setSelectedMoments([]);
+    setCustomLabels([]);
+    setError(null);
+  };
 
   const cancelPanel = () => {
-    setIsCreating(false)
-    setAddedCount(0)
-    resetForm()
-  }
+    setIsCreating(false);
+    setAddedCount(0);
+    resetForm();
+  };
 
   const toggleMoment = (moment) => {
     setSelectedMoments((current) =>
       current.includes(moment) ? current.filter((value) => value !== moment) : [...current, moment],
-    )
-  }
+    );
+  };
 
   const addCustomLabel = () => {
-    setCustomLabels((current) => [...current, ''])
-  }
+    setCustomLabels((current) => [...current, '']);
+  };
 
   const updateCustomLabel = (index, value) => {
-    setCustomLabels((current) => current.map((label, i) => (i === index ? value : label)))
-  }
+    setCustomLabels((current) => current.map((label, i) => (i === index ? value : label)));
+  };
 
   const removeCustomLabel = (index) => {
-    setCustomLabels((current) => current.filter((_, i) => i !== index))
-  }
+    setCustomLabels((current) => current.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    setError(null)
+    event.preventDefault();
+    setError(null);
 
-    const trimmedCustomLabels = customLabels.map((label) => label.trim()).filter((label) => label !== '')
+    const trimmedCustomLabels = customLabels
+      .map((label) => label.trim())
+      .filter((label) => label !== '');
     const schedules = [
       ...selectedMoments.map((moment) => ({ moment, label: null })),
       ...trimmedCustomLabels.map((label) => ({ moment: 'custom', label })),
-    ]
+    ];
 
     if (schedules.length === 0) {
-      setError('Choisissez au moins un horaire.')
-      return
+      setError('Choisissez au moins un horaire.');
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       const treatment = await createTreatment({
@@ -423,21 +445,26 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
         name,
         dosage,
         schedules,
-      })
-      onTreatmentCreated(treatment)
-      setAddedCount((count) => count + 1)
-      resetForm()
-      nameInputRef.current?.focus()
+      });
+      onTreatmentCreated(treatment);
+      setAddedCount((count) => count + 1);
+      resetForm();
+      nameInputRef.current?.focus();
     } catch (requestError) {
-      setError(requestError.response?.data?.detail ?? GENERIC_PRESCRIBE_ERROR)
+      setError(requestError.response?.data?.detail ?? GENERIC_PRESCRIBE_ERROR);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="journal-new-entry">
-      <button type="button" className="journal-new-entry-toggle" onClick={() => setIsCreating(true)} disabled={isCreating}>
+      <button
+        type="button"
+        className="journal-new-entry-toggle"
+        onClick={() => setIsCreating(true)}
+        disabled={isCreating}
+      >
         + Prescrire un traitement
       </button>
 
@@ -445,8 +472,8 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
         <form className="journal-new-entry-panel" onSubmit={handleSubmit}>
           {addedCount > 0 && (
             <p className="journal-new-entry-success" role="status">
-              {addedCount} traitement{addedCount > 1 ? 's' : ''} ajouté{addedCount > 1 ? 's' : ''}. Vous pouvez en
-              prescrire un autre ou terminer.
+              {addedCount} traitement{addedCount > 1 ? 's' : ''} ajouté{addedCount > 1 ? 's' : ''}.
+              Vous pouvez en prescrire un autre ou terminer.
             </p>
           )}
 
@@ -458,14 +485,15 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
               onChange={setName}
               onSelectMedication={(medication) => {
                 if (medication.suggestedDosage) {
-                  setDosage(medication.suggestedDosage)
+                  setDosage(medication.suggestedDosage);
                 }
               }}
               required
             />
             <span className="journal-field-hint">
               Source : Base de données publique des médicaments (ANSM)
-              {medicationExtractedAt && `, extraction du ${formatExtractionDate(medicationExtractedAt)}`}
+              {medicationExtractedAt &&
+                `, extraction du ${formatExtractionDate(medicationExtractedAt)}`}
             </span>
           </div>
 
@@ -542,5 +570,5 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
         </form>
       )}
     </div>
-  )
+  );
 }
