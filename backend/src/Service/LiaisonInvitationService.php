@@ -60,14 +60,7 @@ final class LiaisonInvitationService
         $this->entityManager->persist($relation);
         $this->entityManager->flush();
 
-        return new LiaisonInvitation(
-            (int) $relation->getId(),
-            (int) $patient->getId(),
-            (int) $aidant->getId(),
-            User::ROLE_AIDANT,
-            $relation->isActive(),
-            $relation->getCreatedAt(),
-        );
+        return LiaisonInvitation::forAidantRelation($relation);
     }
 
     private function createSoignantInvitation(User $patient, User $soignant): LiaisonInvitation
@@ -82,13 +75,36 @@ final class LiaisonInvitationService
         $this->entityManager->persist($relation);
         $this->entityManager->flush();
 
-        return new LiaisonInvitation(
-            (int) $relation->getId(),
-            (int) $patient->getId(),
-            (int) $soignant->getId(),
-            User::ROLE_SOIGNANT,
-            $relation->isActive(),
-            $relation->getCreatedAt(),
-        );
+        return LiaisonInvitation::forSoignantRelation($relation);
+    }
+
+    public function accept(PatientAidant|PatientSoignant $relation): LiaisonInvitation
+    {
+        if ($relation->isActive()) {
+            throw new ConflictHttpException('Cette invitation a déjà été traitée.');
+        }
+
+        $relation->setActive(true);
+        $this->entityManager->flush();
+
+        return $relation instanceof PatientAidant
+            ? LiaisonInvitation::forAidantRelation($relation)
+            : LiaisonInvitation::forSoignantRelation($relation);
+    }
+
+    public function reject(PatientAidant|PatientSoignant $relation): LiaisonInvitation
+    {
+        if ($relation->isActive()) {
+            throw new ConflictHttpException('Cette invitation a déjà été traitée.');
+        }
+
+        $invitation = $relation instanceof PatientAidant
+            ? LiaisonInvitation::forAidantRelation($relation)
+            : LiaisonInvitation::forSoignantRelation($relation);
+
+        $this->entityManager->remove($relation);
+        $this->entityManager->flush();
+
+        return $invitation;
     }
 }

@@ -160,6 +160,96 @@ final class LiaisonInvitationServiceTest extends TestCase
         $this->service->invite($invitee);
     }
 
+    public function testAcceptActivatesAPendingAidantLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $aidant = $this->makeUser(2, User::ROLE_AIDANT);
+        $relation = $this->makeAidantRelation($patient, $aidant, 5);
+
+        $this->entityManager->expects(self::never())->method('persist');
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $invitation = $this->service->accept($relation);
+
+        self::assertTrue($relation->isActive());
+        self::assertSame('aidant-5', $invitation->id);
+        self::assertTrue($invitation->active);
+    }
+
+    public function testAcceptActivatesAPendingSoignantLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $relation = $this->makeSoignantRelation($patient, $soignant, 5);
+
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $invitation = $this->service->accept($relation);
+
+        self::assertTrue($relation->isActive());
+        self::assertSame('soignant-5', $invitation->id);
+        self::assertTrue($invitation->active);
+    }
+
+    public function testAcceptThrowsConflictWhenTheLinkIsAlreadyActive(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $aidant = $this->makeUser(2, User::ROLE_AIDANT);
+        $relation = $this->makeAidantRelation($patient, $aidant, 5);
+        $relation->setActive(true);
+
+        $this->entityManager->expects(self::never())->method('flush');
+
+        $this->expectException(ConflictHttpException::class);
+
+        $this->service->accept($relation);
+    }
+
+    public function testRejectRemovesAPendingAidantLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $aidant = $this->makeUser(2, User::ROLE_AIDANT);
+        $relation = $this->makeAidantRelation($patient, $aidant, 5);
+
+        $this->entityManager->expects(self::once())->method('remove')->with($relation);
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $invitation = $this->service->reject($relation);
+
+        self::assertSame('aidant-5', $invitation->id);
+        self::assertFalse($invitation->active);
+    }
+
+    public function testRejectRemovesAPendingSoignantLink(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $relation = $this->makeSoignantRelation($patient, $soignant, 5);
+
+        $this->entityManager->expects(self::once())->method('remove')->with($relation);
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $invitation = $this->service->reject($relation);
+
+        self::assertSame('soignant-5', $invitation->id);
+        self::assertFalse($invitation->active);
+    }
+
+    public function testRejectThrowsConflictWhenTheLinkIsAlreadyActive(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $relation = $this->makeSoignantRelation($patient, $soignant, 5);
+        $relation->setActive(true);
+
+        $this->entityManager->expects(self::never())->method('remove');
+        $this->entityManager->expects(self::never())->method('flush');
+
+        $this->expectException(ConflictHttpException::class);
+
+        $this->service->reject($relation);
+    }
+
     private function makeUser(int $id, string $role): User
     {
         $user = new User(sprintf('user-%d@medlink.test', $id), 'Prenom', 'Nom');
@@ -168,5 +258,25 @@ final class LiaisonInvitationServiceTest extends TestCase
         (new \ReflectionProperty(User::class, 'id'))->setValue($user, $id);
 
         return $user;
+    }
+
+    private function makeAidantRelation(User $patient, User $aidant, int $id): PatientAidant
+    {
+        $relation = new PatientAidant($patient, $aidant);
+        $relation->setActive(false);
+
+        (new \ReflectionProperty(PatientAidant::class, 'id'))->setValue($relation, $id);
+
+        return $relation;
+    }
+
+    private function makeSoignantRelation(User $patient, User $soignant, int $id): PatientSoignant
+    {
+        $relation = new PatientSoignant($patient, $soignant);
+        $relation->setActive(false);
+
+        (new \ReflectionProperty(PatientSoignant::class, 'id'))->setValue($relation, $id);
+
+        return $relation;
     }
 }
