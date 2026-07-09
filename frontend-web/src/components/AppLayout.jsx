@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext'
+import { useMessagesBadge } from '../contexts/MessagesBadgeContext'
 import { ROLE_AIDANT, ROLE_LABELS, ROLE_SOIGNANT, getPrimaryRole, getSidebarItems } from '../services/roles'
 import './AppLayout.css'
 
@@ -17,9 +18,11 @@ export default function AppLayout({ children, securityBanner }) {
   const sidebarItems = getSidebarItems(roles)
   const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT)
   const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } = useInvitationsBadge()
+  const { unreadMessagesCount, refresh: refreshUnreadMessagesCount } = useMessagesBadge()
 
   useEffect(() => {
     if (canReceiveInvitations) refreshPendingInvitationsCount()
+    refreshUnreadMessagesCount()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canReceiveInvitations])
 
@@ -74,10 +77,15 @@ export default function AppLayout({ children, securityBanner }) {
         <nav className="app-sidebar" aria-label="Navigation principale">
           <ul>
             {sidebarItems.map((item) => {
-              const showBadge = item.key === 'invitations' && pendingInvitationsCount > 0
-              const badgeLabel = showBadge
-                ? ` (${pendingInvitationsCount} invitation${pendingInvitationsCount > 1 ? 's' : ''} en attente)`
-                : ''
+              const isInvitations = item.key === 'invitations'
+              const isMessages = item.to === '/messages'
+              const badgeCount = isInvitations ? pendingInvitationsCount : isMessages ? unreadMessagesCount : 0
+              const showBadge = badgeCount > 0
+              const badgeLabel = !showBadge
+                ? ''
+                : isInvitations
+                  ? ` (${badgeCount} invitation${badgeCount > 1 ? 's' : ''} en attente)`
+                  : ` (${badgeCount} message${badgeCount > 1 ? 's' : ''} non lu${badgeCount > 1 ? 's' : ''})`
 
               return (
                 <li key={item.key}>
@@ -90,7 +98,7 @@ export default function AppLayout({ children, securityBanner }) {
                       {item.label}
                       {showBadge && (
                         <span className="app-sidebar-badge" aria-hidden="true">
-                          {pendingInvitationsCount}
+                          {badgeCount}
                         </span>
                       )}
                     </NavLink>

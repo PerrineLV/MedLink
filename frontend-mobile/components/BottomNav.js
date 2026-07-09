@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext';
+import { useMessagesBadge } from '../contexts/MessagesBadgeContext';
 import { COLORS, TYPE } from '../services/journalPresentation';
 import { ROLE_AIDANT, ROLE_SOIGNANT } from '../services/roles';
 
@@ -42,7 +43,7 @@ export function openProfileMenu(navigation, logout, roles = []) {
 
 const BOTTOM_NAV_ITEMS = [
   { key: 'Journal', icon: '📓', screen: 'Journal' },
-  { key: 'Messages', icon: '💬', screen: null },
+  { key: 'Messages', icon: '💬', screen: 'Messages' },
   { key: 'RDV', icon: '📅', screen: null },
   { key: 'Export', icon: '📤', screen: null },
   { key: 'Profil', icon: '👤', screen: null },
@@ -51,18 +52,23 @@ const BOTTOM_NAV_ITEMS = [
 export default function BottomNav({ navigation, activeKey, onProfilePress, roles = [] }) {
   const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT);
   const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } = useInvitationsBadge();
+  const { unreadMessagesCount, refresh: refreshUnreadMessagesCount } = useMessagesBadge();
 
   useFocusEffect(
     useCallback(() => {
       if (canReceiveInvitations) refreshPendingInvitationsCount();
-    }, [canReceiveInvitations, refreshPendingInvitationsCount]),
+      refreshUnreadMessagesCount();
+    }, [canReceiveInvitations, refreshPendingInvitationsCount, refreshUnreadMessagesCount]),
   );
 
   return (
     <View style={styles.bottomNav}>
       {BOTTOM_NAV_ITEMS.map((item) => {
         const isActive = item.key === activeKey;
-        const showBadge = item.key === 'Profil' && canReceiveInvitations && pendingInvitationsCount > 0;
+        const isProfil = item.key === 'Profil';
+        const isMessages = item.key === 'Messages';
+        const badgeCount = isProfil && canReceiveInvitations ? pendingInvitationsCount : isMessages ? unreadMessagesCount : 0;
+        const showBadge = badgeCount > 0;
 
         const onPress = () => {
           if (item.key === 'Profil') return onProfilePress();
@@ -71,6 +77,10 @@ export default function BottomNav({ navigation, activeKey, onProfilePress, roles
           return notifyComingSoon();
         };
 
+        const badgeAccessibilityLabel = isProfil
+          ? `${badgeCount} invitation${badgeCount > 1 ? 's' : ''} en attente`
+          : `${badgeCount} message${badgeCount > 1 ? 's' : ''} non lu${badgeCount > 1 ? 's' : ''}`;
+
         return (
           <TouchableOpacity
             key={item.key}
@@ -78,11 +88,7 @@ export default function BottomNav({ navigation, activeKey, onProfilePress, roles
             onPress={onPress}
             accessibilityRole="button"
             accessibilityState={{ selected: isActive }}
-            accessibilityLabel={
-              showBadge
-                ? `${item.key}, ${pendingInvitationsCount} invitation${pendingInvitationsCount > 1 ? 's' : ''} en attente`
-                : item.key
-            }
+            accessibilityLabel={showBadge ? `${item.key}, ${badgeAccessibilityLabel}` : item.key}
           >
             <View style={styles.bottomNavIconWrapper}>
               <Text
@@ -94,7 +100,7 @@ export default function BottomNav({ navigation, activeKey, onProfilePress, roles
               </Text>
               {showBadge && (
                 <View style={styles.bottomNavBadge} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                  <Text style={styles.bottomNavBadgeText}>{pendingInvitationsCount}</Text>
+                  <Text style={styles.bottomNavBadgeText}>{badgeCount}</Text>
                 </View>
               )}
             </View>

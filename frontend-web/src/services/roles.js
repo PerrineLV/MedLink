@@ -37,7 +37,7 @@ const SOIGNANT_SIDEBAR_ITEMS = [
   { key: 'dashboard', label: 'Tableau de bord', to: '/dashboard' },
   { key: 'patients', label: 'Patients', to: '/patients' },
   { key: 'invitations', label: 'Invitations', to: '/invitations' },
-  { key: 'messages', label: 'Messages', to: null },
+  { key: 'messages', label: 'Messages', to: '/messages' },
   { key: 'agenda', label: 'Agenda', to: null },
   { key: 'parametres', label: 'Paramètres', to: null },
 ]
@@ -46,7 +46,7 @@ const PATIENT_SIDEBAR_ITEMS = [
   { key: 'journal', label: 'Journal', to: '/journal' },
   { key: 'traitements', label: 'Traitements', to: null },
   { key: 'liaisons', label: 'Mes liaisons', to: '/liaisons' },
-  { key: 'messagerie', label: 'Messagerie', to: null },
+  { key: 'messagerie', label: 'Messagerie', to: '/messages' },
   { key: 'rdv', label: 'Rendez-vous', to: null },
   { key: 'export', label: 'Export PDF', to: null },
 ]

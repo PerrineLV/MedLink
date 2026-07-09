@@ -5,11 +5,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { InvitationsBadgeProvider } from './contexts/InvitationsBadgeContext';
+import { MessagesBadgeProvider } from './contexts/MessagesBadgeContext';
 import LoginScreen from './screens/LoginScreen';
 import JournalScreen from './screens/JournalScreen';
 import NewEntryScreen from './screens/NewEntryScreen';
 import LiaisonsScreen from './screens/LiaisonsScreen';
 import InvitationsScreen from './screens/InvitationsScreen';
+import MessagesScreen from './screens/MessagesScreen';
+import ConversationScreen from './screens/ConversationScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
 
 const Stack = createStackNavigator();
@@ -29,6 +32,8 @@ function RootNavigator() {
             <Stack.Screen name="NewEntry" component={NewEntryScreen} />
             <Stack.Screen name="Liaisons" component={LiaisonsScreen} />
             <Stack.Screen name="Invitations" component={InvitationsScreen} />
+            <Stack.Screen name="Messages" component={MessagesScreen} />
+            <Stack.Screen name="Conversation" component={ConversationScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -59,11 +64,13 @@ export default function App() {
     <GestureHandlerRootView style={styles.flexFill}>
       <AuthProvider>
         <InvitationsBadgeProvider>
-          <ActivityCapture>
-            <RootNavigator />
-            <SessionExpiryWarning />
-            <StatusBar style="auto" />
-          </ActivityCapture>
+          <MessagesBadgeProvider>
+            <ActivityCapture>
+              <RootNavigator />
+              <SessionExpiryWarning />
+              <StatusBar style="auto" />
+            </ActivityCapture>
+          </MessagesBadgeProvider>
         </InvitationsBadgeProvider>
       </AuthProvider>
     </GestureHandlerRootView>
