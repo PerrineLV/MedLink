@@ -4,9 +4,12 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { InvitationsBadgeProvider } from './contexts/InvitationsBadgeContext';
 import LoginScreen from './screens/LoginScreen';
 import JournalScreen from './screens/JournalScreen';
 import NewEntryScreen from './screens/NewEntryScreen';
+import LiaisonsScreen from './screens/LiaisonsScreen';
+import InvitationsScreen from './screens/InvitationsScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
 
 const Stack = createStackNavigator();
@@ -24,6 +27,8 @@ function RootNavigator() {
           <>
             <Stack.Screen name="Journal" component={JournalScreen} />
             <Stack.Screen name="NewEntry" component={NewEntryScreen} />
+            <Stack.Screen name="Liaisons" component={LiaisonsScreen} />
+            <Stack.Screen name="Invitations" component={InvitationsScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -53,11 +58,13 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.flexFill}>
       <AuthProvider>
-        <ActivityCapture>
-          <RootNavigator />
-          <SessionExpiryWarning />
-          <StatusBar style="auto" />
-        </ActivityCapture>
+        <InvitationsBadgeProvider>
+          <ActivityCapture>
+            <RootNavigator />
+            <SessionExpiryWarning />
+            <StatusBar style="auto" />
+          </ActivityCapture>
+        </InvitationsBadgeProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );

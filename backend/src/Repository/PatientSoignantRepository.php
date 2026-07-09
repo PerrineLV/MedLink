@@ -48,4 +48,33 @@ class PatientSoignantRepository extends ServiceEntityRepository
 
         return array_map(static fn (array $row): int => (int) $row['patientId'], $result);
     }
+
+    /**
+     * @return list<PatientSoignant>
+     */
+    public function findVisibleForPatient(User $patient): array
+    {
+        return $this->createQueryBuilder('ps')
+            ->andWhere('ps.patient = :patient')
+            ->andWhere('ps.revokedAt IS NULL')
+            ->setParameter('patient', $patient)
+            ->orderBy('ps.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<PatientSoignant>
+     */
+    public function findPendingForSoignant(User $soignant): array
+    {
+        return $this->createQueryBuilder('ps')
+            ->andWhere('ps.soignant = :soignant')
+            ->andWhere('ps.active = false')
+            ->andWhere('ps.revokedAt IS NULL')
+            ->setParameter('soignant', $soignant)
+            ->orderBy('ps.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

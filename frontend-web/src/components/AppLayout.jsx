@@ -1,6 +1,8 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { ROLE_LABELS, getPrimaryRole, getSidebarItems } from '../services/roles'
+import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext'
+import { ROLE_AIDANT, ROLE_LABELS, ROLE_SOIGNANT, getPrimaryRole, getSidebarItems } from '../services/roles'
 import './AppLayout.css'
 
 function notifyComingSoon() {
@@ -9,9 +11,17 @@ function notifyComingSoon() {
 
 export default function AppLayout({ children, securityBanner }) {
   const { roles, firstName, logout } = useAuth()
+  const navigate = useNavigate()
   const primaryRole = getPrimaryRole(roles)
   const displayName = firstName ?? (primaryRole ? ROLE_LABELS[primaryRole] : 'Utilisateur')
   const sidebarItems = getSidebarItems(roles)
+  const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT)
+  const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } = useInvitationsBadge()
+
+  useEffect(() => {
+    if (canReceiveInvitations) refreshPendingInvitationsCount()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canReceiveInvitations])
 
   return (
     <div className="app-layout">
@@ -30,6 +40,25 @@ export default function AppLayout({ children, securityBanner }) {
           </div>
         </div>
         <div className="app-header-actions">
+          {canReceiveInvitations && (
+            <button
+              type="button"
+              className="app-header-bell"
+              onClick={() => navigate('/invitations')}
+              aria-label={
+                pendingInvitationsCount > 0
+                  ? `${pendingInvitationsCount} invitation${pendingInvitationsCount > 1 ? 's' : ''} en attente`
+                  : 'Invitations en attente'
+              }
+            >
+              <span aria-hidden="true">🔔</span>
+              {pendingInvitationsCount > 0 && (
+                <span className="app-header-bell-badge" aria-hidden="true">
+                  {pendingInvitationsCount}
+                </span>
+              )}
+            </button>
+          )}
           <span className="app-header-lock" role="img" aria-label="Connexion sécurisée" title="Connexion sécurisée">
             🔒
           </span>
@@ -44,19 +73,35 @@ export default function AppLayout({ children, securityBanner }) {
       <div className="app-body">
         <nav className="app-sidebar" aria-label="Navigation principale">
           <ul>
-            {sidebarItems.map((item) => (
-              <li key={item.key}>
-                {item.to ? (
-                  <NavLink to={item.to} className={({ isActive }) => (isActive ? 'active' : undefined)}>
-                    {item.label}
-                  </NavLink>
-                ) : (
-                  <button type="button" onClick={notifyComingSoon}>
-                    {item.label}
-                  </button>
-                )}
-              </li>
-            ))}
+            {sidebarItems.map((item) => {
+              const showBadge = item.key === 'invitations' && pendingInvitationsCount > 0
+              const badgeLabel = showBadge
+                ? ` (${pendingInvitationsCount} invitation${pendingInvitationsCount > 1 ? 's' : ''} en attente)`
+                : ''
+
+              return (
+                <li key={item.key}>
+                  {item.to ? (
+                    <NavLink
+                      to={item.to}
+                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      aria-label={showBadge ? `${item.label}${badgeLabel}` : undefined}
+                    >
+                      {item.label}
+                      {showBadge && (
+                        <span className="app-sidebar-badge" aria-hidden="true">
+                          {pendingInvitationsCount}
+                        </span>
+                      )}
+                    </NavLink>
+                  ) : (
+                    <button type="button" onClick={notifyComingSoon}>
+                      {item.label}
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </nav>
 

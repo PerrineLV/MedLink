@@ -32,6 +32,9 @@ class PatientSoignant
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $revokedAt = null;
+
     public function __construct(User $patient, User $soignant)
     {
         $this->patient = $patient;
@@ -69,5 +72,17 @@ class PatientSoignant
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getRevokedAt(): ?\DateTimeImmutable
+    {
+        return $this->revokedAt;
+    }
+
+    public function setRevokedAt(?\DateTimeImmutable $revokedAt): static
+    {
+        $this->revokedAt = $revokedAt;
+
+        return $this;
     }
 }
