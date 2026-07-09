@@ -13,3 +13,4 @@ api_platform:
         App\Exception\InvalidJournalEntryCommentException: 422
         App\Exception\InvalidTreatmentException: 422
         App\Exception\InvalidMessageException: 422
+        App\Exception\InvalidAppointmentException: 422

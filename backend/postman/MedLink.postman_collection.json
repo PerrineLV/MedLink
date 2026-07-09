@@ -76,6 +76,14 @@
     {
       "key": "message_id",
       "value": ""
+    },
+    {
+      "key": "appointment_id",
+      "value": ""
+    },
+    {
+      "key": "future_appointment_at",
+      "value": ""
     }
   ],
   "item": [
@@ -2746,6 +2754,411 @@
               "path": [
                 "api",
                 "messages"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-27 - Rendez-vous",
+      "description": "POST/GET/PATCH/DELETE /api/appointments : un soignant peut creer/modifier/annuler/supprimer un RDV pour un patient dont il est le referent actif (PatientSoignant.active = true) ; un patient consulte ses propres RDV. Seul le soignant referent peut agir (ni le patient, ni son aidant, ni un soignant non rattache). Regle metier confirmee : une date de RDV dans le passe est rejetee (422) a la creation comme lors d'une reprogrammation.",
+      "item": [
+        {
+          "name": "POST - Creer un RDV (nominal, soignant -> patient1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('future_appointment_at', new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('associe au bon patient et statut planned', () => {",
+                  "  pm.expect(json.patientId).to.eql(pm.collectionVariables.get('patient1_id'));",
+                  "  pm.expect(json.status).to.eql('planned');",
+                  "});",
+                  "pm.collectionVariables.set('appointment_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"{{future_appointment_at}}\",\n  \"notes\": \"Consultation de suivi (test Postman ML-27).\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET - Liste RDV (patient1 voit son RDV)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('contient le RDV cree juste avant', () => pm.expect(json.member.map((a) => a.id)).to.include(pm.collectionVariables.get('appointment_id')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - Annuler le RDV (nominal, soignant, status=cancelled)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('statut = cancelled', () => pm.expect(pm.response.json().status).to.eql('cancelled'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/merge-patch+json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelled\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 403 patient tente de creer son propre RDV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"{{future_appointment_at}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 403 aidant tente de creer un RDV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"{{future_appointment_at}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 403 soignant2 non rattache a patient1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"{{future_appointment_at}}\"\n}"
+            }
+          },
+          "description": "soignant2 n'a aucune relation PatientSoignant active avec patient1 dans les fixtures ML-42."
+        },
+        {
+          "name": "POST - 422 date passee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"2020-01-01T10:00:00+00:00\"\n}"
+            }
+          },
+          "description": "Regle metier confirmee (ticket ML-27) : un RDV ne peut pas etre cree avec une date deja passee."
+        },
+        {
+          "name": "PATCH - 403 soignant2 non rattache tente de modifier le RDV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/merge-patch+json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Tentative non autorisee.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE - 403 soignant2 non rattache tente de supprimer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE - Supprimer le RDV (nominal, soignant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointment_id}}"
               ]
             }
           }

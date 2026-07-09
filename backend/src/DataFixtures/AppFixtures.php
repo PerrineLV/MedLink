@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataFixtures;
 
+use App\Entity\Appointment;
 use App\Entity\JournalEntry;
 use App\Entity\Message;
 use App\Entity\PatientAidant;
@@ -127,6 +128,13 @@ class AppFixtures extends Fixture
         $this->createMessage($manager, $aidant1, $soignant, "Bonjour, je suis l'aidant d'Alice. Un point sur son suivi ?", '-1 days', read: true);
         $this->createMessage($manager, $soignant, $aidant1, 'Bonjour, tout va bien, sa tension est stable.', '-1 days +15 minutes', read: false);
 
+        // Rendez-vous patient1 <-> soignant (ML-27) : un RDV passé (déjà
+        // terminé), un RDV à plus de 24h et un RDV à moins de 24h, ce dernier
+        // servant à tester le rappel visuel de ML-28.
+        $this->createAppointment($manager, $patient1, $soignant, '-5 days', Appointment::STATUS_COMPLETED, 'Consultation de suivi.');
+        $this->createAppointment($manager, $patient1, $soignant, '+3 days', Appointment::STATUS_PLANNED);
+        $this->createAppointment($manager, $patient1, $soignant, '+18 hours', Appointment::STATUS_PLANNED, 'Contrôle de la tension.');
+
         $manager->flush();
     }
 
@@ -222,6 +230,22 @@ class AppFixtures extends Fixture
         }
 
         $manager->persist($intake);
+    }
+
+    private function createAppointment(
+        ObjectManager $manager,
+        User $patient,
+        User $soignant,
+        string $scheduledAtModifier,
+        string $status,
+        ?string $notes = null,
+    ): void {
+        $appointment = new Appointment($patient, $soignant, new \DateTimeImmutable($scheduledAtModifier), $notes);
+        if (Appointment::STATUS_PLANNED !== $status) {
+            $appointment->setStatus($status);
+        }
+
+        $manager->persist($appointment);
     }
 
     /**
