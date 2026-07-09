@@ -5,13 +5,16 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { InvitationsBadgeProvider } from './contexts/InvitationsBadgeContext.jsx'
+import { MessagesBadgeProvider } from './contexts/MessagesBadgeContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <InvitationsBadgeProvider>
-          <App />
+          <MessagesBadgeProvider>
+            <App />
+          </MessagesBadgeProvider>
         </InvitationsBadgeProvider>
       </AuthProvider>
     </BrowserRouter>
