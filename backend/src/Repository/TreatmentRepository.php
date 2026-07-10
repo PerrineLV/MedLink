@@ -37,4 +37,23 @@ class TreatmentRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @param list<int> $patientIds
+     *
+     * @return list<Treatment>
+     */
+    public function findByPatientIds(array $patientIds): array
+    {
+        if ([] === $patientIds) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.patient IN (:patientIds)')
+            ->setParameter('patientIds', $patientIds)
+            ->orderBy('t.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

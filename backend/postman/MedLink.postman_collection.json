@@ -108,6 +108,18 @@
     {
       "key": "register_rate_limit_attempts",
       "value": "0"
+    },
+    {
+      "key": "me_test_email",
+      "value": ""
+    },
+    {
+      "key": "me_test_id",
+      "value": ""
+    },
+    {
+      "key": "me_test_token",
+      "value": ""
     }
   ],
   "item": [
@@ -4122,6 +4134,668 @@
             }
           },
           "description": "A envoyer 6 fois de suite (bouton Send, ou Collection Runner x6 iterations sur cet item seul) pour declencher le blocage register_by_ip (5/heure). Reinitialiser register_rate_limit_attempts a 0 dans les variables de la collection avant de rejouer, ou cote backend : docker compose exec app php bin/console cache:pool:clear cache.rate_limiter"
+        }
+      ]
+    },
+    {
+      "name": "ML-67 - Mon compte (mot de passe, export, suppression RGPD)",
+      "description": "Endpoints GET/PATCH/DELETE /api/me* : toutes les actions sont resolues depuis le token JWT (token.getUser()), jamais un id en parametre. Utilise un compte jetable cree en debut de dossier (me_test_*) car il est anonymise a la fin ; les exports aidant/soignant reutilisent en lecture seule les fixtures aidant1/soignant deja rattachees a des patients (ML-44,45,46), sans impact sur les autres dossiers.",
+      "item": [
+        {
+          "name": "POST - Creer un compte de test jetable (patient)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Compte\",\n  \"lastName\": \"DeTest\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('me_test_email', json.email);",
+                  "pm.collectionVariables.set('me_test_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "description": "Compte jetable dedie a ce dossier (jamais reutilise ailleurs) car il sera supprime (anonymise) en fin de parcours."
+        },
+        {
+          "name": "POST - Login compte de test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{me_test_email}}\",\n  \"password\": \"ValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('me_test_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Consulter mon compte (nominal)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('email = compte de test', () => pm.expect(json.email).to.eql(pm.collectionVariables.get('me_test_email')));",
+                  "pm.test('roles = [ROLE_PATIENT]', () => pm.expect(json.roles).to.eql(['ROLE_PATIENT']));",
+                  "pm.test('password absent de la reponse', () => pm.expect(json.password).to.eql(undefined));",
+                  "pm.test('createdAt present', () => pm.expect(json.createdAt).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 401 sans authentification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 403 mot de passe actuel incorrect",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"MotDePasseIncorrect1\",\n  \"newPassword\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 400 nouveau mot de passe trop faible",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"ValidPass1\",\n  \"newPassword\": \"1234\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 400 champ newPassword manquant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"ValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - Changer le mot de passe (nominal)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"ValidPass1\",\n  \"newPassword\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - Login avec le nouveau mot de passe (nominal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{me_test_email}}\",\n  \"password\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('token JWT retourne', () => pm.expect(pm.response.json().token).to.be.a('string'));",
+                  "pm.collectionVariables.set('me_test_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "description": "Confirme que le changement de mot de passe (item precedent) a bien ete pris en compte."
+        },
+        {
+          "name": "GET - Export de mes donnees (nominal, patient)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "export"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Content-Disposition en piece jointe\", () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));",
+                  "const json = pm.response.json();",
+                  "pm.test('account.email present', () => pm.expect(json.account.email).to.eql(pm.collectionVariables.get('me_test_email')));",
+                  "pm.test('journalEntries present (tableau)', () => pm.expect(json.journalEntries).to.be.an('array'));",
+                  "pm.test('treatments present (tableau)', () => pm.expect(json.treatments).to.be.an('array'));",
+                  "pm.test('pas de cle liaisons pour un patient', () => pm.expect(json.liaisons).to.eql(undefined));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Export de mes donnees (nominal, aidant1) - liaisons sans donnees medicales",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "export"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('pas de journalEntries pour un aidant', () => pm.expect(json.journalEntries).to.eql(undefined));",
+                  "pm.test('au moins une liaison (patient1 rattache)', () => pm.expect(json.liaisons.length).to.be.above(0));",
+                  "const liaison = json.liaisons[0];",
+                  "pm.test('liaison identifie le patient (patientId)', () => pm.expect(liaison.patientId).to.be.a('number'));",
+                  "pm.test(\"liaison n'expose aucune donnee medicale (mood/painLevel absents)\", () => {",
+                  "    pm.expect(liaison.mood).to.eql(undefined);",
+                  "    pm.expect(liaison.painLevel).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "description": "Reutilise le fixture aidant1 (rattache a patient1/patient2 via ML-44,45,46) : lecture seule, aucun impact sur les autres dossiers de tests."
+        },
+        {
+          "name": "GET - Export de mes donnees (nominal, soignant) - liaisons",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "export"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('au moins une liaison', () => pm.expect(json.liaisons.length).to.be.above(0));"
+                ]
+              }
+            }
+          ],
+          "description": "Reutilise le fixture soignant (rattache a patient1/2/3) : lecture seule."
+        },
+        {
+          "name": "DELETE - 403 mot de passe incorrect",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"MotDePasseIncorrect1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE - 400 champ password manquant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE - Supprimer mon compte (nominal, anonymisation)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "description": "Anonymise le compte de test (email/nom remplaces, mot de passe invalide) au lieu d'une suppression physique en cascade (decision ML-67)."
+        },
+        {
+          "name": "POST - 401 login avec les anciens identifiants apres suppression",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{me_test_email}}\",\n  \"password\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 401 le token existant est rejete apres suppression",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "description": "Le JWT emis avant suppression redevient invalide des la requete suivante : l'authentificateur recharge l'utilisateur par email et l'email a change (voir securite du ticket ML-67)."
         }
       ]
     }

@@ -118,4 +118,16 @@ final class UserTest extends TestCase
 
         self::assertSame($consentAt, $user->getConsentAt());
     }
+
+    public function testDeletedAtIsMutable(): void
+    {
+        $user = new User('patient@medlink.test', 'Jeanne', 'Dupont');
+
+        self::assertNull($user->getDeletedAt());
+
+        $deletedAt = new \DateTimeImmutable('-1 minute');
+        $user->setDeletedAt($deletedAt);
+
+        self::assertSame($deletedAt, $user->getDeletedAt());
+    }
 }

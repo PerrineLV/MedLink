@@ -96,4 +96,17 @@ class PatientSoignantRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<PatientSoignant>
+     */
+    public function findForSoignant(User $soignant): array
+    {
+        return $this->createQueryBuilder('ps')
+            ->andWhere('ps.soignant = :soignant')
+            ->setParameter('soignant', $soignant)
+            ->orderBy('ps.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
