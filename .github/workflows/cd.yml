@@ -28,6 +28,7 @@ jobs:
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           sha=${{ github.event.workflow_run.head_sha }}
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
           echo "image=ghcr.io/${owner}/medlink-backend:${sha}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to ghcr.io
@@ -44,7 +45,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.image.outputs.image }}
-            ghcr.io/${{ github.repository_owner }}/medlink-backend:latest
+            ghcr.io/${{ steps.image.outputs.owner }}/medlink-backend:latest
 
   deploy:
     name: Deploy to production
