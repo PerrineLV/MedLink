@@ -1,0 +1,206 @@
+.account-title {
+  margin: 0 0 24px;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+}
+
+.account-loading {
+  color: var(--color-text-muted);
+}
+
+.account-error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  max-width: 480px;
+}
+
+.account-success {
+  background: var(--color-green-bg);
+  color: var(--color-green-text);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  max-width: 480px;
+  font-weight: 600;
+}
+
+.account-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.account-section {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin: 0;
+}
+
+.account-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--color-primary);
+  font-size: 1.125rem;
+}
+
+.account-section-description {
+  margin: 0 0 16px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.account-info-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.account-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.account-info-row dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.account-info-row dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 600;
+  text-align: right;
+}
+
+.account-rgpd-text {
+  margin: 0;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.account-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 360px;
+}
+
+.form-field {
+  margin-bottom: 0;
+  text-align: left;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.form-field input[type='password'] {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  font-size: 16px;
+  font-family: inherit;
+}
+
+.field-error {
+  margin: 6px 0 0;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.account-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: flex-start;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: white;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 12px 24px;
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.account-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account-delete-button {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-red-text);
+  color: white;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 12px 24px;
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.account-delete-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.account-delete-confirm {
+  border: 1px solid var(--color-red-text);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  max-width: 400px;
+}
+
+.account-delete-confirm p {
+  margin: 0 0 12px;
+  color: var(--color-text);
+}
+
+.account-delete-confirm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.account-cancel-button {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-weight: 600;
+  padding: 12px 20px;
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.account-cancel-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

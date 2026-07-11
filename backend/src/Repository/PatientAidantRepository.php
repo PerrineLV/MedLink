@@ -96,4 +96,17 @@ class PatientAidantRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<PatientAidant>
+     */
+    public function findForAidant(User $aidant): array
+    {
+        return $this->createQueryBuilder('pa')
+            ->andWhere('pa.aidant = :aidant')
+            ->setParameter('aidant', $aidant)
+            ->orderBy('pa.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
