@@ -1,0 +1,20 @@
+name: Test SSH deploy (ML-36, temporaire)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-ssh:
+    name: Test connexion SSH vers le VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            echo "Connexion SSH OK, connecté en tant que $(whoami)"
+            ls -la ${{ secrets.DEPLOY_PATH }}
