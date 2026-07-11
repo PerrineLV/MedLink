@@ -31,4 +31,62 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
     }
+
+    /**
+     * Paginated admin listing (ML-53), optionally filtered by a full role
+     * string (e.g. User::ROLE_PATIENT) and/or by active status.
+     *
+     * `roles` is stored as plain Postgres `json` (not `jsonb`), which has no
+     * LIKE/text operator of its own, so the role filter is resolved as a
+     * raw-SQL id lookup first and then applied to the DQL query as an
+     * `id IN (...)` restriction.
+     *
+     * @return array{items: list<User>, total: int}
+     */
+    public function search(?string $role, ?bool $active, int $page, int $perPage): array
+    {
+        $qb = $this->createQueryBuilder('u');
+
+        if (null !== $role) {
+            $matchingIds = $this->findIdsByRole($role);
+            if ([] === $matchingIds) {
+                return ['items' => [], 'total' => 0];
+            }
+
+            $qb->andWhere('u.id IN (:ids)')->setParameter('ids', $matchingIds);
+        }
+
+        if (null !== $active) {
+            $qb->andWhere('u.active = :active')->setParameter('active', $active);
+        }
+
+        // The ORDER BY is added only after cloning for the count query: Postgres
+        // rejects ORDER BY u.created_at alongside a bare COUNT() aggregate.
+        $total = (int) (clone $qb)
+            ->select('COUNT(u.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $items = $qb
+            ->orderBy('u.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+
+        return ['items' => $items, 'total' => $total];
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function findIdsByRole(string $role): array
+    {
+        $ids = $this->getEntityManager()->getConnection()->fetchFirstColumn(
+            'SELECT id FROM "user" WHERE roles::text LIKE :pattern',
+            ['pattern' => '%"'.$role.'"%'],
+        );
+
+        return array_map('intval', $ids);
+    }
 }
