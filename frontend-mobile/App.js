@@ -18,20 +18,35 @@ import AppointmentScreen from './screens/AppointmentScreen';
 import NewAppointmentScreen from './screens/NewAppointmentScreen';
 import ExportScreen from './screens/ExportScreen';
 import AccountScreen from './screens/AccountScreen';
+import AdminBlockedScreen from './screens/AdminBlockedScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
+import { isAdminOnlySession } from './services/roles';
 
 const Stack = createStackNavigator();
 
 function RootNavigator() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, roles } = useAuth();
+  const adminOnly = isAuthenticated && isAdminOnlySession(roles);
 
   return (
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
-        initialRouteName={isAuthenticated ? 'Journal' : 'Login'}
+        initialRouteName={!isAuthenticated ? 'Login' : adminOnly ? 'AdminBlocked' : 'Journal'}
       >
-        {isAuthenticated ? (
+        {!isAuthenticated ? (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        ) : adminOnly ? (
+          // ML-73: admin has no mobile interface. Registering only this one
+          // screen — not the full authenticated stack below — is what
+          // actually guarantees the block: there is no route for a stray
+          // navigation.navigate('Journal') to land on, structurally, not
+          // just by default-route choice.
+          <Stack.Screen name="AdminBlocked" component={AdminBlockedScreen} />
+        ) : (
           <>
             <Stack.Screen name="Journal" component={JournalScreen} />
             <Stack.Screen name="NewEntry" component={NewEntryScreen} />
@@ -43,11 +58,6 @@ function RootNavigator() {
             <Stack.Screen name="NewAppointment" component={NewAppointmentScreen} />
             <Stack.Screen name="Export" component={ExportScreen} />
             <Stack.Screen name="Account" component={AccountScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
           </>
         )}
       </Stack.Navigator>
