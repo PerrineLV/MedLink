@@ -36,6 +36,7 @@ export function openProfileMenu(navigation, logout, roles = []) {
 
   Alert.alert('Profil', undefined, [
     menuItem,
+    { text: 'Mon compte', onPress: () => navigation.navigate('Account') },
     { text: 'Se déconnecter', style: 'destructive', onPress: () => confirmLogout(logout) },
     { text: 'Annuler', style: 'cancel' },
   ]);

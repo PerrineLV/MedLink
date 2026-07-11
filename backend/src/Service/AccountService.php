@@ -10,14 +10,17 @@ use App\Repository\JournalEntryRepository;
 use App\Repository\PatientAidantRepository;
 use App\Repository\PatientSoignantRepository;
 use App\Repository\TreatmentRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AccountService
 {
     private const PASSWORD_MIN_LENGTH = 8;
+    private const EMAIL_MAX_LENGTH = 180;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -26,6 +29,7 @@ final class AccountService
         private readonly TreatmentRepository $treatmentRepository,
         private readonly PatientAidantRepository $patientAidantRepository,
         private readonly PatientSoignantRepository $patientSoignantRepository,
+        private readonly UserRepository $userRepository,
     ) {
     }
 
@@ -38,6 +42,35 @@ final class AccountService
         $this->assertPasswordIsRobust($newPassword);
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $newPassword));
+        $this->entityManager->flush();
+    }
+
+    /**
+     * L'e-mail est l'identifiant de connexion (username) du JWT : le
+     * changer invalide immédiatement le token en cours (l'authentificateur
+     * recharge l'utilisateur par e-mail à chaque requête) et casse toute
+     * réutilisation d'un refresh token émis sous l'ancien e-mail. Le
+     * frontend force une déconnexion après un changement réussi plutôt que
+     * de tenter de réémettre un token — voir ML-68.
+     */
+    public function changeEmail(User $user, string $password, string $newEmail): void
+    {
+        if (!$this->passwordHasher->isPasswordValid($user, $password)) {
+            throw new AccessDeniedHttpException('Mot de passe incorrect.');
+        }
+
+        $this->assertEmailIsValid($newEmail);
+
+        $existing = $this->userRepository->findOneBy(['email' => $newEmail]);
+        if (null !== $existing && $existing->getId() !== $user->getId()) {
+            throw new ConflictHttpException('Cet email est déjà utilisé.');
+        }
+
+        $originalEmail = $user->getEmail();
+        $user->setEmail($newEmail);
+
+        $this->revokeRefreshTokens($originalEmail);
+
         $this->entityManager->flush();
     }
 
@@ -140,12 +173,17 @@ final class AccountService
         $user->setPassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))));
         $user->setDeletedAt(new \DateTimeImmutable());
 
-        $refreshTokenRepository = $this->entityManager->getRepository(RefreshToken::class);
-        foreach ($refreshTokenRepository->findBy(['username' => $originalEmail]) as $refreshToken) {
-            $this->entityManager->remove($refreshToken);
-        }
+        $this->revokeRefreshTokens($originalEmail);
 
         $this->entityManager->flush();
+    }
+
+    private function revokeRefreshTokens(string $username): void
+    {
+        $refreshTokenRepository = $this->entityManager->getRepository(RefreshToken::class);
+        foreach ($refreshTokenRepository->findBy(['username' => $username]) as $refreshToken) {
+            $this->entityManager->remove($refreshToken);
+        }
     }
 
     private function assertPasswordIsRobust(string $password): void
@@ -155,6 +193,13 @@ final class AccountService
             || 1 !== preg_match('/[A-Za-z]/', $password)
         ) {
             throw new BadRequestHttpException(sprintf('Le mot de passe doit contenir au moins %d caractères, dont un chiffre et une lettre.', self::PASSWORD_MIN_LENGTH));
+        }
+    }
+
+    private function assertEmailIsValid(string $email): void
+    {
+        if (!filter_var($email, \FILTER_VALIDATE_EMAIL) || mb_strlen($email) > self::EMAIL_MAX_LENGTH) {
+            throw new BadRequestHttpException('Adresse email invalide.');
         }
     }
 }

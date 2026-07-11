@@ -14,6 +14,7 @@ use App\Repository\JournalEntryRepository;
 use App\Repository\PatientAidantRepository;
 use App\Repository\PatientSoignantRepository;
 use App\Repository\TreatmentRepository;
+use App\Repository\UserRepository;
 use App\Service\AccountService;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
@@ -23,6 +24,7 @@ use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AccountServiceTest extends TestCase
@@ -33,6 +35,7 @@ final class AccountServiceTest extends TestCase
     private TreatmentRepository&Stub $treatmentRepository;
     private PatientAidantRepository&Stub $patientAidantRepository;
     private PatientSoignantRepository&Stub $patientSoignantRepository;
+    private UserRepository&Stub $userRepository;
     private AccountService $service;
 
     protected function setUp(): void
@@ -44,6 +47,7 @@ final class AccountServiceTest extends TestCase
         $this->treatmentRepository = $this->createStub(TreatmentRepository::class);
         $this->patientAidantRepository = $this->createStub(PatientAidantRepository::class);
         $this->patientSoignantRepository = $this->createStub(PatientSoignantRepository::class);
+        $this->userRepository = $this->createStub(UserRepository::class);
 
         $this->service = new AccountService(
             $this->entityManager,
@@ -52,6 +56,7 @@ final class AccountServiceTest extends TestCase
             $this->treatmentRepository,
             $this->patientAidantRepository,
             $this->patientSoignantRepository,
+            $this->userRepository,
         );
     }
 
@@ -148,6 +153,82 @@ final class AccountServiceTest extends TestCase
 
         self::assertCount(1, $data['liaisons']);
         self::assertSame(2, $data['liaisons'][0]['patientId']);
+    }
+
+    public function testChangeEmailThrowsAccessDeniedWhenPasswordIsWrong(): void
+    {
+        $user = $this->makeUser(1, User::ROLE_PATIENT);
+        $this->passwordHasher->method('isPasswordValid')->willReturn(false);
+
+        $this->entityManager->expects(self::never())->method('flush');
+
+        $this->expectException(AccessDeniedHttpException::class);
+
+        $this->service->changeEmail($user, 'WrongPass1', 'nouveau@medlink.test');
+    }
+
+    public function testChangeEmailThrowsBadRequestForInvalidEmail(): void
+    {
+        $user = $this->makeUser(1, User::ROLE_PATIENT);
+        $this->passwordHasher->method('isPasswordValid')->willReturn(true);
+
+        $this->entityManager->expects(self::never())->method('flush');
+
+        $this->expectException(BadRequestHttpException::class);
+
+        $this->service->changeEmail($user, 'CurrentPass1', 'pas-un-email');
+    }
+
+    public function testChangeEmailThrowsConflictWhenEmailAlreadyUsedByAnotherAccount(): void
+    {
+        $user = $this->makeUser(1, User::ROLE_PATIENT);
+        $other = $this->makeUser(2, User::ROLE_PATIENT);
+        $this->passwordHasher->method('isPasswordValid')->willReturn(true);
+        $this->userRepository->method('findOneBy')->willReturn($other);
+
+        $this->entityManager->expects(self::never())->method('flush');
+
+        $this->expectException(ConflictHttpException::class);
+
+        $this->service->changeEmail($user, 'CurrentPass1', 'aidant-2@medlink.test');
+    }
+
+    public function testChangeEmailUpdatesTheEmailAndRevokesRefreshTokens(): void
+    {
+        $user = $this->makeUser(1, User::ROLE_PATIENT);
+        $originalEmail = $user->getEmail();
+        $this->passwordHasher->method('isPasswordValid')->willReturn(true);
+        $this->userRepository->method('findOneBy')->willReturn(null);
+
+        $refreshToken = new RefreshToken();
+        $refreshToken->setUsername($originalEmail);
+
+        $refreshTokenRepository = $this->createStub(EntityRepository::class);
+        $refreshTokenRepository->method('findBy')->with(['username' => $originalEmail])->willReturn([$refreshToken]);
+
+        $this->entityManager->method('getRepository')->willReturn($refreshTokenRepository);
+        $this->entityManager->expects(self::once())->method('remove')->with($refreshToken);
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $this->service->changeEmail($user, 'CurrentPass1', 'nouveau@medlink.test');
+
+        self::assertSame('nouveau@medlink.test', $user->getEmail());
+    }
+
+    public function testChangeEmailAllowsKeepingTheSameEmailForTheSameAccount(): void
+    {
+        $user = $this->makeUser(1, User::ROLE_PATIENT);
+        $this->passwordHasher->method('isPasswordValid')->willReturn(true);
+        $this->userRepository->method('findOneBy')->willReturn($user);
+
+        $refreshTokenRepository = $this->createStub(EntityRepository::class);
+        $refreshTokenRepository->method('findBy')->willReturn([]);
+        $this->entityManager->method('getRepository')->willReturn($refreshTokenRepository);
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $this->service->changeEmail($user, 'CurrentPass1', $user->getEmail());
+
+        self::assertSame('patient-1@medlink.test', $user->getEmail());
     }
 
     public function testDeleteAccountThrowsAccessDeniedWhenPasswordIsWrong(): void

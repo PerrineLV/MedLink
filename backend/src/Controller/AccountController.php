@@ -59,6 +59,25 @@ final class AccountController
         return new JsonResponse(['message' => 'Mot de passe mis à jour.']);
     }
 
+    #[Route('/api/me/email', name: 'api_me_change_email', methods: ['PATCH'])]
+    public function changeEmail(Request $request): JsonResponse
+    {
+        $user = $this->requireCurrentUser();
+
+        try {
+            $data = $this->decodeJsonBody($request);
+            $this->accountService->changeEmail(
+                $user,
+                $this->requireString($data, 'password'),
+                $this->requireString($data, 'newEmail'),
+            );
+        } catch (HttpExceptionInterface $e) {
+            return new JsonResponse(['message' => $e->getMessage()], $e->getStatusCode());
+        }
+
+        return new JsonResponse(['message' => 'Adresse e-mail mise à jour.']);
+    }
+
     #[Route('/api/me/export', name: 'api_me_export', methods: ['GET'])]
     public function export(): Response
     {

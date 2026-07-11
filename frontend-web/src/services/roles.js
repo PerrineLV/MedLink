@@ -41,6 +41,7 @@ const SOIGNANT_SIDEBAR_ITEMS = [
   { key: 'agenda', label: 'Agenda', to: '/agenda' },
   { key: 'export', label: 'Export', to: '/export' },
   { key: 'parametres', label: 'Paramètres', to: null },
+  { key: 'compte', label: 'Mon compte', to: '/account' },
 ];
 
 const PATIENT_SIDEBAR_ITEMS = [
@@ -50,6 +51,7 @@ const PATIENT_SIDEBAR_ITEMS = [
   { key: 'messagerie', label: 'Messagerie', to: '/messages' },
   { key: 'rdv', label: 'Rendez-vous', to: '/agenda' },
   { key: 'export', label: 'Export PDF', to: '/export' },
+  { key: 'compte', label: 'Mon compte', to: '/account' },
 ];
 
 const AIDANT_SIDEBAR_ITEMS = [

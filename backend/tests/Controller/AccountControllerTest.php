@@ -10,6 +10,7 @@ use App\Repository\JournalEntryRepository;
 use App\Repository\PatientAidantRepository;
 use App\Repository\PatientSoignantRepository;
 use App\Repository\TreatmentRepository;
+use App\Repository\UserRepository;
 use App\Service\AccountService;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
@@ -50,6 +51,7 @@ final class AccountControllerTest extends TestCase
             $this->createStub(TreatmentRepository::class),
             $this->createStub(PatientAidantRepository::class),
             $this->createStub(PatientSoignantRepository::class),
+            $this->createStub(UserRepository::class),
         );
 
         $this->controller = new AccountController($this->security, $accountService);
@@ -80,6 +82,7 @@ final class AccountControllerTest extends TestCase
             $this->createStub(TreatmentRepository::class),
             $this->createStub(PatientAidantRepository::class),
             $this->createStub(PatientSoignantRepository::class),
+            $this->createStub(UserRepository::class),
         );
         $controller = new AccountController($security, $accountService);
 
@@ -126,6 +129,51 @@ final class AccountControllerTest extends TestCase
         $request = Request::create('/api/me/password', 'PATCH', server: ['CONTENT_TYPE' => 'application/json'], content: '{invalid');
 
         $response = $this->controller->changePassword($request);
+
+        self::assertSame(400, $response->getStatusCode());
+    }
+
+    public function testChangeEmailReturns200OnSuccess(): void
+    {
+        $this->passwordHasher->method('isPasswordValid')->willReturn(true);
+
+        $response = $this->controller->changeEmail($this->jsonRequest([
+            'password' => 'CurrentPass1',
+            'newEmail' => 'nouveau@medlink.test',
+        ]));
+
+        self::assertSame(200, $response->getStatusCode());
+    }
+
+    public function testChangeEmailReturns403WhenPasswordIsWrong(): void
+    {
+        $this->passwordHasher->method('isPasswordValid')->willReturn(false);
+
+        $response = $this->controller->changeEmail($this->jsonRequest([
+            'password' => 'WrongPass1',
+            'newEmail' => 'nouveau@medlink.test',
+        ]));
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    public function testChangeEmailReturns400ForInvalidEmail(): void
+    {
+        $this->passwordHasher->method('isPasswordValid')->willReturn(true);
+
+        $response = $this->controller->changeEmail($this->jsonRequest([
+            'password' => 'CurrentPass1',
+            'newEmail' => 'pas-un-email',
+        ]));
+
+        self::assertSame(400, $response->getStatusCode());
+    }
+
+    public function testChangeEmailReturns400WhenNewEmailIsMissing(): void
+    {
+        $response = $this->controller->changeEmail($this->jsonRequest([
+            'password' => 'CurrentPass1',
+        ]));
 
         self::assertSame(400, $response->getStatusCode());
     }
