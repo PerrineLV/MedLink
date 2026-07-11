@@ -62,9 +62,9 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
             docker inspect --format='{{.Config.Image}}' medlink_app > .previous_image 2>/dev/null || echo "" > .previous_image
-            echo "BACKEND_IMAGE=${{ needs.build-and-push.outputs.image }}" > .env.deploy
-            docker compose --env-file .env.deploy -f docker-compose.prod.yml pull app
-            docker compose --env-file .env.deploy -f docker-compose.prod.yml up -d
+            export BACKEND_IMAGE="${{ needs.build-and-push.outputs.image }}"
+            docker compose -f docker-compose.prod.yml pull app
+            docker compose -f docker-compose.prod.yml up -d
 
       - name: Healthcheck
         run: |
@@ -83,8 +83,8 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
             previous=$(cat .previous_image)
             if [ -n "$previous" ]; then
-              echo "BACKEND_IMAGE=${previous}" > .env.deploy
-              docker compose --env-file .env.deploy -f docker-compose.prod.yml up -d
+              export BACKEND_IMAGE="${previous}"
+              docker compose -f docker-compose.prod.yml up -d
               echo "Rolled back to ${previous}"
             else
               echo "No previous image recorded, manual intervention required" >&2

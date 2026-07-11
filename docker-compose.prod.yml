@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./jwt:/var/www/html/config/jwt
     env_file:
       - path: ./backend/.env
         required: false

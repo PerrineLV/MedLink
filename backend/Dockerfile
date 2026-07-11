@@ -27,6 +27,6 @@ COPY . .
 EXPOSE 80
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=5 \
-    CMD curl -f http://localhost/healthz || exit 1
+    CMD curl -f http://localhost/health || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
