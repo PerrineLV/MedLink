@@ -78,6 +78,19 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
+     * Number of active accounts holding the given role (ML-55 admin
+     * supervision screen). Same raw-SQL role match as {@see search()}, but
+     * counted directly rather than through an id lookup + DQL round trip.
+     */
+    public function countActiveByRole(string $role): int
+    {
+        return (int) $this->getEntityManager()->getConnection()->fetchOne(
+            'SELECT COUNT(*) FROM "user" WHERE active = true AND roles::text LIKE :pattern',
+            ['pattern' => '%"'.$role.'"%'],
+        );
+    }
+
+    /**
      * @return list<int>
      */
     private function findIdsByRole(string $role): array

@@ -31,6 +31,17 @@ final class AdminVoterTest extends TestCase
         );
     }
 
+    public function testAdminIsGrantedAccessToSupervision(): void
+    {
+        $admin = $this->makeUser(User::ROLE_ADMIN);
+        $token = $this->tokenFor($admin);
+
+        self::assertSame(
+            VoterInterface::ACCESS_GRANTED,
+            $this->voter->vote($token, null, [AdminVoter::VIEW_SUPERVISION]),
+        );
+    }
+
     #[DataProvider('nonAdminRoleProvider')]
     public function testNonAdminIsDeniedAccess(string $role): void
     {
@@ -40,6 +51,18 @@ final class AdminVoterTest extends TestCase
         self::assertSame(
             VoterInterface::ACCESS_DENIED,
             $this->voter->vote($token, null, [AdminVoter::MANAGE_USERS]),
+        );
+    }
+
+    #[DataProvider('nonAdminRoleProvider')]
+    public function testNonAdminIsDeniedAccessToSupervision(string $role): void
+    {
+        $user = $this->makeUser($role);
+        $token = $this->tokenFor($user);
+
+        self::assertSame(
+            VoterInterface::ACCESS_DENIED,
+            $this->voter->vote($token, null, [AdminVoter::VIEW_SUPERVISION]),
         );
     }
 

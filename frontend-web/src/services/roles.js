@@ -62,6 +62,7 @@ const AIDANT_SIDEBAR_ITEMS = [
 
 const ADMIN_SIDEBAR_ITEMS = [
   { key: 'utilisateurs', label: 'Utilisateurs', to: '/admin/users' },
+  { key: 'supervision', label: 'Supervision', to: '/admin/supervision' },
   { key: 'compte', label: 'Mon compte', to: '/account' },
 ];
 

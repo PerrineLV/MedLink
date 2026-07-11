@@ -19,3 +19,9 @@ export async function updateUserStatus(id, active) {
 
   return response.data;
 }
+
+export async function fetchHealthSummary() {
+  const response = await httpClient.get('/admin/health-summary');
+
+  return response.data;
+}
