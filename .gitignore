@@ -18,7 +18,7 @@
 /frontend-mobile/.env.local
 
 # Docker
-.env
+/.env
 .env.production
 
 # OS

@@ -1,0 +1,5836 @@
+{
+  "info": {
+    "name": "MedLink API",
+    "description": "Collection de tests manuels pour l'API MedLink. Prealable : charger les fixtures ML-42 (docker compose exec app php bin/console doctrine:fixtures:load), puis lancer le dossier '0. Setup' pour s'authentifier et recuperer automatiquement les IDs patients (les IDs Doctrine ne sont pas stables d'un environnement a l'autre). Le dossier 'ML-22 - Journal de suivi' couvre ensuite les endpoints JournalEntry (POST/GET) et les scenarios de securite (patient / aidant / soignant) en s'appuyant sur les relations actives/inactives des fixtures.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "patient1_token",
+      "value": ""
+    },
+    {
+      "key": "patient2_token",
+      "value": ""
+    },
+    {
+      "key": "patient3_token",
+      "value": ""
+    },
+    {
+      "key": "patient4_token",
+      "value": ""
+    },
+    {
+      "key": "aidant1_token",
+      "value": ""
+    },
+    {
+      "key": "aidant2_token",
+      "value": ""
+    },
+    {
+      "key": "soignant_token",
+      "value": ""
+    },
+    {
+      "key": "patient1_id",
+      "value": ""
+    },
+    {
+      "key": "patient2_id",
+      "value": ""
+    },
+    {
+      "key": "patient3_id",
+      "value": ""
+    },
+    {
+      "key": "entry_id",
+      "value": ""
+    },
+    {
+      "key": "long_note",
+      "value": ""
+    },
+    {
+      "key": "soignant2_token",
+      "value": ""
+    },
+    {
+      "key": "invitation_aidant_id",
+      "value": ""
+    },
+    {
+      "key": "invitation_soignant_id",
+      "value": ""
+    },
+    {
+      "key": "soignant_id",
+      "value": ""
+    },
+    {
+      "key": "message_id",
+      "value": ""
+    },
+    {
+      "key": "appointment_id",
+      "value": ""
+    },
+    {
+      "key": "future_appointment_at",
+      "value": ""
+    },
+    {
+      "key": "export_from",
+      "value": ""
+    },
+    {
+      "key": "export_to",
+      "value": ""
+    },
+    {
+      "key": "export_future_to",
+      "value": ""
+    },
+    {
+      "key": "register_patient_email",
+      "value": ""
+    },
+    {
+      "key": "register_patient_id",
+      "value": ""
+    },
+    {
+      "key": "register_rate_limit_attempts",
+      "value": "0"
+    },
+    {
+      "key": "me_test_email",
+      "value": ""
+    },
+    {
+      "key": "me_test_id",
+      "value": ""
+    },
+    {
+      "key": "me_test_token",
+      "value": ""
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "admin_test_email",
+      "value": ""
+    },
+    {
+      "key": "admin_test_id",
+      "value": ""
+    },
+    {
+      "key": "health_summary_failed_before",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup",
+      "description": "A executer dans l'ordre (Run collection) juste apres doctrine:fixtures:load. Chaque patient s'authentifie puis liste ses propres entrees de journal (fixtures ML-42, GET s'auto-filtre sur l'utilisateur connecte) : la reponse revele son patientId sans coder en dur des IDs Doctrine fragiles. patient1 fournit aussi entry_id pour le test GET par id.",
+      "item": [
+        {
+          "name": "Login - patient1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('patient1_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient1@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Setup - patient1 id (+ entry_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('a au moins une entree (fixtures ML-42)', () => pm.expect(json.member.length).to.be.above(0));",
+                  "pm.collectionVariables.set('patient1_id', json.member[0].patientId);",
+                  "pm.collectionVariables.set('entry_id', json.member[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          },
+          "description": "patient1 a plusieurs entrees dans les fixtures ML-42 ; GET s'auto-filtre sur l'utilisateur connecte, donc member[0].patientId est fiable quel que soit l'ID Doctrine reel."
+        },
+        {
+          "name": "Login - patient2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('patient2_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient2@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Setup - patient2 id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('a au moins une entree (fixtures ML-42)', () => pm.expect(json.member.length).to.be.above(0));",
+                  "pm.collectionVariables.set('patient2_id', json.member[0].patientId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login - patient3",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('patient3_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient3@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Setup - patient3 id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('a au moins une entree (fixtures ML-42)', () => pm.expect(json.member.length).to.be.above(0));",
+                  "pm.collectionVariables.set('patient3_id', json.member[0].patientId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient3_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login - patient4",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('patient4_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient4@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login - aidant1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('aidant1_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aidant1@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "description": "aidant1 (fixtures ML-42) : rattache actif a patient1 ET patient2."
+        },
+        {
+          "name": "Login - aidant2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('aidant2_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aidant2@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "description": "aidant2 (fixtures ML-42) : rattache a patient3 mais avec active=false (revoque). Jamais rattache a patient1/patient2."
+        },
+        {
+          "name": "Login - soignant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('soignant_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"soignant@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "description": "soignant (fixtures ML-42) : referent actif de patient1/2/3, mais relation active=false avec patient4."
+        },
+        {
+          "name": "Login - soignant2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('soignant2_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"soignant2@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login - admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('admin_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@medlink.test\",\n  \"password\": \"MedLink2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-22 - Journal de suivi",
+      "description": "A executer apres le dossier '0. Setup'. S'appuie sur les relations actives/inactives des fixtures ML-42 : aidant1<->patient1 (actif), aidant2<->patient3 (revoque), aidant2<->patient1 (jamais rattache).",
+      "item": [
+        {
+          "name": "POST - Creer une entree (nominal, patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"RAS\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - Creer une entree sans note (champ optionnel)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 5,\n  \"painLevel\": 1,\n  \"bloodPressure\": \"115/75\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 422 humeur hors plage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 8,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 422 douleur hors plage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 11,\n  \"bloodPressure\": \"120/80\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 422 tension mal formatee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"abc\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 422 note trop longue (>1000 car.)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('long_note', 'a'.repeat(1001));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"{{long_note}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          },
+          "description": "long_note est genere par un pre-request script ('a'.repeat(1001)) plutot que {{$randomLoremParagraphs}} : cette derniere insere des retours a la ligne bruts qui cassent le JSON du corps et provoquent un 500 au lieu du 422 attendu."
+        },
+        {
+          "name": "POST - 201 aidant1 rattache actif (saisie par aidant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('marquee saisie par aidant', () => pm.expect(json.enteredByCaregiver).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\",\n  \"note\": \"Saisie par aidant\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          },
+          "description": "aidant1 est rattache actif a patient1 (fixtures ML-42)."
+        },
+        {
+          "name": "POST - 403 aidant2 jamais rattache (patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant2_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          },
+          "description": "aidant2 n'a jamais eu de relation PatientAidant avec patient1 (fixtures ML-42)."
+        },
+        {
+          "name": "POST - 403 aidant2 relation desactivee (patient3)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant2_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient3_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          },
+          "description": "aidant2<->patient3 existe en base mais active=false (revocation, fixtures ML-42) : l'acces doit rester refuse sans avoir a desactiver quoi que ce soit manuellement."
+        },
+        {
+          "name": "POST - 403 soignant ne peut pas creer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 4,\n  \"bloodPressure\": \"120/80\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Une entree par id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries/{{entry_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries",
+                "{{entry_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Liste (patient1, voit ses propres entrees)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Liste (aidant1, voit patient1 + patient2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Liste (soignant, lecture seule patient1/2/3)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Liste filtree par patient (soignant sur patient1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries?patient={{patient1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ],
+              "query": [
+                {
+                  "key": "patient",
+                  "value": "{{patient1_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - 403 filtre sur patient inexistant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries?patient=999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ],
+              "query": [
+                {
+                  "key": "patient",
+                  "value": "999999"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-23 - Selection patient (aidant)",
+      "description": "GET /api/patients : liste les patients pour lesquels l'utilisateur connecte peut saisir/consulter une entree (lui-meme pour un patient, ses patients actifs pour un aidant/soignant). Utilise par l'app mobile pour proposer le bon patient a l'aidant avant de creer une entree (ML-23).",
+      "item": [
+        {
+          "name": "GET - Liste patients (aidant1, voit patient1 + patient2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('2 patients rattaches actifs', () => pm.expect(json.length).to.eql(2));",
+                  "pm.test('expose uniquement id/prenom/nom', () => json.forEach((patient) => pm.expect(Object.keys(patient).sort()).to.eql(['firstName', 'id', 'lastName'])));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Liste patients (aidant2, relation desactivee => vide)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('aucun patient (relation avec patient3 desactivee)', () => pm.expect(pm.response.json().length).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Liste patients (patient1, se voit lui-meme)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('un seul patient : lui-meme', () => pm.expect(json.length).to.eql(1));",
+                  "pm.test('id correspond a patient1_id', () => pm.expect(json[0].id).to.eql(pm.collectionVariables.get('patient1_id')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Liste patients (soignant, voit patient1/2/3)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('3 patients rattaches actifs', () => pm.expect(pm.response.json().length).to.eql(3));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - 401 sans authentification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-24 - Commentaires soignant (journal)",
+      "description": "POST /api/journal_entry_comments : un soignant peut commenter une entree du journal d'un patient dont il est le referent actif (PatientSoignant.active = true) ; ni le patient ni son aidant ne le peuvent. Le controle d'acces sur la liste/detail d'un patient non rattache (403) est deja couvert par 'GET - 403 filtre sur patient inexistant' du dossier ML-22 (meme chemin de code : patientId hors de la liste des patients visibles).",
+      "item": [
+        {
+          "name": "POST - Soignant commente une entree (nominal, patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('le commentaire est associe au bon auteur', () => pm.expect(json.text).to.eql('A surveiller de pres.'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"A surveiller de pres.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entry_comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entry_comments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Le commentaire apparait dans le fil (patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "const entry = json.find((e) => e.id === pm.collectionVariables.get('entry_id'));",
+                  "pm.test(\"le commentaire du soignant est visible dans l'entree\", () => pm.expect(entry.comments.some((c) => c.text === 'A surveiller de pres.')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 403 patient tente de commenter sa propre entree",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entry_comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entry_comments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 403 aidant tente de commenter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entry_comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entry_comments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 422 commentaire vide",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"   \"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entry_comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entry_comments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 422 commentaire trop long (>1000 car.)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('long_note', 'a'.repeat(1001));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journalEntryId\": {{entry_id}},\n  \"text\": \"{{long_note}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entry_comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entry_comments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 404 entree de journal introuvable",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journalEntryId\": 999999,\n  \"text\": \"test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/journal_entry_comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entry_comments"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-44,45,46 - Liaisons (invitations)",
+      "item": [
+        {
+          "name": "POST - Invitation aidant (nominal, patient1 -> aidant2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('active = false (en attente)', () => pm.expect(json.active).to.eql(false));",
+                  "pm.test(\"role = ROLE_AIDANT\", () => pm.expect(json.inviteeRole).to.eql('ROLE_AIDANT'));",
+                  "pm.collectionVariables.set('invitation_aidant_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aidant2@medlink.test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH - 403 un tiers (aidant1) tente d'accepter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations/{{invitation_aidant_id}}/accepter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations",
+                "{{invitation_aidant_id}}",
+                "accepter"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - 403 le patient a l'origine tente d'accepter lui-meme",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations/{{invitation_aidant_id}}/accepter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations",
+                "{{invitation_aidant_id}}",
+                "accepter"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - Accepter (nominal, aidant2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('active = true', () => pm.expect(json.active).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations/{{invitation_aidant_id}}/accepter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations",
+                "{{invitation_aidant_id}}",
+                "accepter"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - Revoquer (nominal, patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('active = false', () => pm.expect(json.active).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/{{invitation_aidant_id}}/revoquer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "{{invitation_aidant_id}}",
+                "revoquer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Lister mes liaisons (nominal, patient1) - lien revoque absent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('reponse = collection avec member[]', () => pm.expect(json.member).to.be.an('array'));",
+                  "pm.test('le lien aidant revoque (etape precedente) est absent, pas seulement inactif', () => {",
+                  "  const ids = json.member.map((liaison) => liaison.id);",
+                  "  pm.expect(ids).to.not.include(pm.collectionVariables.get('invitation_aidant_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Lister mes invitations recues (nominal, aidant2) - ML-48",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('reponse = collection avec member[]', () => pm.expect(json.member).to.be.an('array'));",
+                  "pm.test('invitation deja acceptee (etape precedente) absente de la liste', () => {",
+                  "  const ids = json.member.map((invitation) => invitation.id);",
+                  "  pm.expect(ids).to.not.include(pm.collectionVariables.get('invitation_aidant_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 403 aidant2 revoque a perdu l'acces au journal de patient1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/journal_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "journal_entries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"mood\": 3,\n  \"painLevel\": 3,\n  \"bloodPressure\": \"120/80\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH - 403 patient2 tente de revoquer un lien qui n'est pas le sien",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/{{invitation_aidant_id}}/revoquer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "{{invitation_aidant_id}}",
+                "revoquer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - Invitation soignant (nominal, patient4 -> soignant2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('active = false (en attente)', () => pm.expect(json.active).to.eql(false));",
+                  "pm.collectionVariables.set('invitation_soignant_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient4_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"soignant2@medlink.test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH - Refuser (nominal, soignant2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('active = false', () => pm.expect(json.active).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations/{{invitation_soignant_id}}/refuser",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations",
+                "{{invitation_soignant_id}}",
+                "refuser"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - 404 accepter une invitation refusee (supprimee)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations/{{invitation_soignant_id}}/accepter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations",
+                "{{invitation_soignant_id}}",
+                "accepter"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 404 email inconnu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"personne@medlink.test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 404 email d'un compte patient (ni aidant ni soignant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient2@medlink.test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 409 aidant deja rattache (actif)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aidant1@medlink.test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 409 aidant deja rattache (en attente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient3_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aidant2@medlink.test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 403 aidant tente d'inviter (pas patient)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"soignant@medlink.test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 403 soignant tente d'inviter (pas patient)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aidant1@medlink.test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH - 404 id malforme (mauvais prefixe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations/patient-1/refuser",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations",
+                "patient-1",
+                "refuser"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - 404 id numerique inexistant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/liaisons/invitations/aidant-999999/refuser",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "liaisons",
+                "invitations",
+                "aidant-999999",
+                "refuser"
+              ]
+            }
+          }
+        }
+      ],
+      "description": "Recharger les fixtures avant CHAQUE run de ce dossier : docker compose exec app php bin/console doctrine:fixtures:load --no-interaction. Les requetes d'invitation nominale (patient1->aidant2, patient4->soignant2) supposent qu'aucun lien n'existe encore entre ces comptes. Comme ML-46 ne supprime jamais un lien (active=false conserve, tracabilite HDS), un deuxieme run sans recharger les fixtures fait echouer ces requetes en 409 au lieu de 201, ce qui laisse invitation_aidant_id/invitation_soignant_id vides et fait echouer en cascade (404) toutes les requetes suivantes qui en dependent."
+    },
+    {
+      "name": "ML-25 - Messagerie",
+      "description": "A executer apres le dossier '0. Setup'. Aucun endpoint ne renvoie l'id de l'utilisateur connecte : la premiere requete (soignant -> patient1, lien deja actif dans les fixtures ML-42) sert donc uniquement a recuperer soignant_id via le senderId de la reponse, sur le meme principe que patient1_id/patient2_id/patient3_id dans '0. Setup'.",
+      "item": [
+        {
+          "name": "POST - Setup : soignant envoie un message a patient1 (recupere soignant_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('destinataire = patient1', () => pm.expect(json.recipientId).to.eql(pm.collectionVariables.get('patient1_id')));",
+                  "pm.collectionVariables.set('soignant_id', json.senderId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{patient1_id}},\n  \"content\": \"Setup ML-25 : recuperation de soignant_id.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - Creer un message (nominal, patient1 -> soignant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('sender/recipient corrects', () => {",
+                  "  pm.expect(json.senderId).to.eql(pm.collectionVariables.get('patient1_id'));",
+                  "  pm.expect(json.recipientId).to.eql(pm.collectionVariables.get('soignant_id'));",
+                  "});",
+                  "pm.test('non lu a la creation', () => pm.expect(json.read).to.eql(false));",
+                  "pm.collectionVariables.set('message_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{soignant_id}},\n  \"content\": \"Bonjour docteur, test ML-25.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Conversation patient1 <-> soignant (filtree)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('contient le message cree juste avant', () => pm.expect(json.member.map((m) => m.id)).to.include(pm.collectionVariables.get('message_id')));",
+                  "pm.test(\"ne contient que des messages entre patient1 et soignant (pas d'autre conversation)\", () => {",
+                  "  const patient1Id = pm.collectionVariables.get('patient1_id');",
+                  "  const soignantId = pm.collectionVariables.get('soignant_id');",
+                  "  json.member.forEach((m) => {",
+                  "    pm.expect([patient1Id, soignantId]).to.include(m.senderId);",
+                  "    pm.expect([patient1Id, soignantId]).to.include(m.recipientId);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages?conversation={{soignant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "conversation",
+                  "value": "{{soignant_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - Marquer comme lu (nominal, soignant destinataire)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('read = true', () => pm.expect(pm.response.json().read).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages/{{message_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "{{message_id}}",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - 403 l'expediteur ne peut pas marquer son propre message comme lu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages/{{message_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "{{message_id}}",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - 403 un tiers hors conversation ne peut pas marquer comme lu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages/{{message_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "{{message_id}}",
+                "read"
+              ]
+            }
+          },
+          "description": "soignant2 n'a aucune part dans cette conversation (fixtures ML-42 : aucun lien avec patient1)."
+        },
+        {
+          "name": "POST - 403 destinataire non rattache (patient1 -> patient2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{patient2_id}},\n  \"content\": \"Ne doit pas passer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          },
+          "description": "patient2 est utilise comme destinataire non rattache (aucune relation PatientAidant/PatientSoignant entre deux patients) : c'est le meme chemin de rejet MessageVoter::areLinked que 'patient vers un soignant qui n'est pas le sien' du plan de tests ML-25, sans avoir a exposer l'id de soignant2 (aucun endpoint ne le fournit)."
+        },
+        {
+          "name": "POST - 422 message vide",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{soignant_id}},\n  \"content\": \"   \"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 422 message trop long (>2000 car.)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('long_note', 'a'.repeat(2001));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{soignant_id}},\n  \"content\": \"{{long_note}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 404 destinataire introuvable",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": 999999,\n  \"content\": \"test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-27 - Rendez-vous",
+      "description": "POST/GET/PATCH/DELETE /api/appointments : un soignant peut creer/modifier/annuler/supprimer un RDV pour un patient dont il est le referent actif (PatientSoignant.active = true) ; un patient consulte ses propres RDV. Seul le soignant referent peut agir (ni le patient, ni son aidant, ni un soignant non rattache). Regle metier confirmee : une date de RDV dans le passe est rejetee (422) a la creation comme lors d'une reprogrammation.",
+      "item": [
+        {
+          "name": "POST - Creer un RDV (nominal, soignant -> patient1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('future_appointment_at', new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('associe au bon patient et statut planned', () => {",
+                  "  pm.expect(json.patientId).to.eql(pm.collectionVariables.get('patient1_id'));",
+                  "  pm.expect(json.status).to.eql('planned');",
+                  "});",
+                  "pm.collectionVariables.set('appointment_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"{{future_appointment_at}}\",\n  \"notes\": \"Consultation de suivi (test Postman ML-27).\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET - Liste RDV (patient1 voit son RDV)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('contient le RDV cree juste avant', () => pm.expect(json.member.map((a) => a.id)).to.include(pm.collectionVariables.get('appointment_id')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH - Annuler le RDV (nominal, soignant, status=cancelled)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('statut = cancelled', () => pm.expect(pm.response.json().status).to.eql('cancelled'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/merge-patch+json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelled\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 403 patient tente de creer son propre RDV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"{{future_appointment_at}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 403 aidant tente de creer un RDV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"{{future_appointment_at}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 403 soignant2 non rattache a patient1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"{{future_appointment_at}}\"\n}"
+            }
+          },
+          "description": "soignant2 n'a aucune relation PatientSoignant active avec patient1 dans les fixtures ML-42."
+        },
+        {
+          "name": "POST - 422 date passee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient1_id}},\n  \"scheduledAt\": \"2020-01-01T10:00:00+00:00\"\n}"
+            }
+          },
+          "description": "Regle metier confirmee (ticket ML-27) : un RDV ne peut pas etre cree avec une date deja passee."
+        },
+        {
+          "name": "PATCH - 403 soignant2 non rattache tente de modifier le RDV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/merge-patch+json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Tentative non autorisee.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE - 403 soignant2 non rattache tente de supprimer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE - Supprimer le RDV (nominal, soignant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-29 - Export PDF du suivi",
+      "description": "GET /api/export/pdf : genere un export PDF du journal de suivi sur une periode. Un patient exporte toujours son propre journal (parametre patient ignore) ; un aidant/soignant doit fournir ?patient=<id> (verifie via le voter PATIENT_VIEW, memes regles que ML-22/23). Le script prerequest du dossier calcule des dates relatives a 'aujourd'hui' pour rester valide quelle que soit la date d'execution : export_from/export_to couvrent large (400 jours) pour englober toutes les entrees des fixtures ML-42, export_future_to est dans le futur pour tester le rejet explicite.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const toDate = new Date();",
+              "pm.collectionVariables.set('export_to', toDate.toISOString().slice(0, 10));",
+              "const fromDate = new Date();",
+              "fromDate.setDate(fromDate.getDate() - 400);",
+              "pm.collectionVariables.set('export_from', fromDate.toISOString().slice(0, 10));",
+              "const futureDate = new Date();",
+              "futureDate.setDate(futureDate.getDate() + 30);",
+              "pm.collectionVariables.set('export_future_to', futureDate.toISOString().slice(0, 10));"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "GET - Export PDF (nominal, patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type application/pdf', () => pm.response.to.have.header('Content-Type', 'application/pdf'));",
+                  "pm.test('nom de fichier medlink_suivi_AAAA-MM-JJ.pdf', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('medlink_suivi_'));",
+                  "pm.test('debute par la signature PDF', () => pm.expect(pm.response.text().startsWith('%PDF-')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                }
+              ]
+            }
+          },
+          "description": "patient1 (fixtures ML-42) a des entrees sur < 7j, 7-30j et > 30j, dont une saisie par aidant1 : a verifier visuellement dans le PDF telecharge (toutes les entrees presentes, mention 'saisie par un aidant')."
+        },
+        {
+          "name": "GET - 400 periode vide (patient4, aucune entree)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient4_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                }
+              ]
+            }
+          },
+          "description": "patient4 (fixtures ML-42) n'a aucune entree de journal : l'erreur doit rester explicite plutot qu'un PDF vide."
+        },
+        {
+          "name": "GET - 400 date de fin dans le futur",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_future_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_future_to}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - 400 date de debut posterieure a la date de fin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_to}}&to={{export_from}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_to}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_from}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - 400 parametre patient manquant (aidant1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Export PDF (nominal, aidant1 sur patient1 via ?patient=)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type application/pdf', () => pm.response.to.have.header('Content-Type', 'application/pdf'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}&patient={{patient1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                },
+                {
+                  "key": "patient",
+                  "value": "{{patient1_id}}"
+                }
+              ]
+            }
+          },
+          "description": "aidant1 est rattache actif a patient1 (fixtures ML-42)."
+        },
+        {
+          "name": "GET - 403 aidant2 relation desactivee (patient3)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}&patient={{patient3_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                },
+                {
+                  "key": "patient",
+                  "value": "{{patient3_id}}"
+                }
+              ]
+            }
+          },
+          "description": "aidant2<->patient3 existe en base mais active=false (revocation, fixtures ML-42)."
+        },
+        {
+          "name": "GET - Export PDF (nominal, soignant sur patient1, lecture seule)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type application/pdf', () => pm.response.to.have.header('Content-Type', 'application/pdf'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}&patient={{patient1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                },
+                {
+                  "key": "patient",
+                  "value": "{{patient1_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - 401 sans authentification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/export/pdf?from={{export_from}}&to={{export_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{export_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{export_to}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML-57 - Inscription self-service (tous roles)",
+      "description": "Endpoint public POST /api/auth/register, sans authentification prealable (voir access_control PUBLIC_ACCESS dans security.yaml). Les tests nominaux utilisent {{$randomEmail}} pour rester rejouables sans recharger les fixtures. Le dernier item (429) est isole expres : il consomme la limite register_by_ip (5/heure) et ne doit pas etre inclus dans un Run collection global sur tout ce fichier.",
+      "item": [
+        {
+          "name": "POST - Creer un compte patient (nominal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('roles = [ROLE_PATIENT]', () => pm.expect(json.roles).to.eql(['ROLE_PATIENT']));",
+                  "pm.test('title absent pour un patient', () => pm.expect(json.title).to.eql(null));",
+                  "pm.test('password absent de la reponse', () => pm.expect(json.password).to.eql(undefined));",
+                  "pm.collectionVariables.set('register_patient_email', json.email);",
+                  "pm.collectionVariables.set('register_patient_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Jeanne\",\n  \"lastName\": \"Dupont\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - Login apres inscription (nominal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('token JWT retourne', () => pm.expect(pm.response.json().token).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{register_patient_email}}\",\n  \"password\": \"ValidPass1\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 201 compte soignant avec title persiste",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('roles = [ROLE_SOIGNANT]', () => pm.expect(json.roles).to.eql(['ROLE_SOIGNANT']));",
+                  "pm.test(\"title = 'Dr'\", () => pm.expect(json.title).to.eql('Dr'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Camille\",\n  \"lastName\": \"Dubois\",\n  \"role\": \"soignant\",\n  \"title\": \"Dr\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 201 compte aidant (title ignore silencieusement)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('roles = [ROLE_AIDANT]', () => pm.expect(json.roles).to.eql(['ROLE_AIDANT']));",
+                  "pm.test('title ignore (non pertinent hors soignant)', () => pm.expect(json.title).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Bruno\",\n  \"lastName\": \"Nguyen\",\n  \"role\": \"aidant\",\n  \"title\": \"Dr\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 409 email deja utilise (fixture patient1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient1@medlink.test\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Doublon\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 role admin refuse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Admin\",\n  \"role\": \"admin\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 role inconnu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Role\",\n  \"role\": \"invite\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 mot de passe trop faible",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"1234\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Faible\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 consentement manquant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"SansConsentement\",\n  \"role\": \"patient\",\n  \"consent\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 champ email manquant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"SansEmail\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - 400 corps JSON invalide",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ceci n'est pas du json"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - 429 apres 6 tentatives rapprochees (ISOLE - ne pas lancer avec le reste)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const n = parseInt(pm.collectionVariables.get('register_rate_limit_attempts') || '0') + 1;",
+                  "pm.collectionVariables.set('register_rate_limit_attempts', n.toString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const n = parseInt(pm.collectionVariables.get('register_rate_limit_attempts'));",
+                  "if (n <= 5) {",
+                  "    pm.test('tentative ' + n + '/5 acceptee (201)', () => pm.response.to.have.status(201));",
+                  "} else {",
+                  "    pm.test('limite depassee (429)', () => pm.response.to.have.status(429));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"RateLimit\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          },
+          "description": "A envoyer 6 fois de suite (bouton Send, ou Collection Runner x6 iterations sur cet item seul) pour declencher le blocage register_by_ip (5/heure). Reinitialiser register_rate_limit_attempts a 0 dans les variables de la collection avant de rejouer, ou cote backend : docker compose exec app php bin/console cache:pool:clear cache.rate_limiter"
+        }
+      ]
+    },
+    {
+      "name": "ML-67 - Mon compte (mot de passe, export, suppression RGPD)",
+      "description": "Endpoints GET/PATCH/DELETE /api/me* : toutes les actions sont resolues depuis le token JWT (token.getUser()), jamais un id en parametre. Utilise un compte jetable cree en debut de dossier (me_test_*) car il est anonymise a la fin ; les exports aidant/soignant reutilisent en lecture seule les fixtures aidant1/soignant deja rattachees a des patients (ML-44,45,46), sans impact sur les autres dossiers.",
+      "item": [
+        {
+          "name": "POST - Creer un compte de test jetable (patient)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Compte\",\n  \"lastName\": \"DeTest\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('me_test_email', json.email);",
+                  "pm.collectionVariables.set('me_test_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "description": "Compte jetable dedie a ce dossier (jamais reutilise ailleurs) car il sera supprime (anonymise) en fin de parcours."
+        },
+        {
+          "name": "POST - Login compte de test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{me_test_email}}\",\n  \"password\": \"ValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('me_test_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Consulter mon compte (nominal)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('email = compte de test', () => pm.expect(json.email).to.eql(pm.collectionVariables.get('me_test_email')));",
+                  "pm.test('roles = [ROLE_PATIENT]', () => pm.expect(json.roles).to.eql(['ROLE_PATIENT']));",
+                  "pm.test('password absent de la reponse', () => pm.expect(json.password).to.eql(undefined));",
+                  "pm.test('createdAt present', () => pm.expect(json.createdAt).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 401 sans authentification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 403 mot de passe actuel incorrect",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"MotDePasseIncorrect1\",\n  \"newPassword\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 400 nouveau mot de passe trop faible",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"ValidPass1\",\n  \"newPassword\": \"1234\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 400 champ newPassword manquant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"ValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - Changer le mot de passe (nominal)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"ValidPass1\",\n  \"newPassword\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - Login avec le nouveau mot de passe (nominal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{me_test_email}}\",\n  \"password\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('token JWT retourne', () => pm.expect(pm.response.json().token).to.be.a('string'));",
+                  "pm.collectionVariables.set('me_test_token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "description": "Confirme que le changement de mot de passe (item precedent) a bien ete pris en compte."
+        },
+        {
+          "name": "GET - Export de mes donnees (nominal, patient)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "export"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Content-Disposition en piece jointe\", () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));",
+                  "const json = pm.response.json();",
+                  "pm.test('account.email present', () => pm.expect(json.account.email).to.eql(pm.collectionVariables.get('me_test_email')));",
+                  "pm.test('journalEntries present (tableau)', () => pm.expect(json.journalEntries).to.be.an('array'));",
+                  "pm.test('treatments present (tableau)', () => pm.expect(json.treatments).to.be.an('array'));",
+                  "pm.test('pas de cle liaisons pour un patient', () => pm.expect(json.liaisons).to.eql(undefined));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Export de mes donnees (nominal, aidant1) - liaisons sans donnees medicales",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{aidant1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "export"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('pas de journalEntries pour un aidant', () => pm.expect(json.journalEntries).to.eql(undefined));",
+                  "pm.test('au moins une liaison (patient1 rattache)', () => pm.expect(json.liaisons.length).to.be.above(0));",
+                  "const liaison = json.liaisons[0];",
+                  "pm.test('liaison identifie le patient (patientId)', () => pm.expect(liaison.patientId).to.be.a('number'));",
+                  "pm.test(\"liaison n'expose aucune donnee medicale (mood/painLevel absents)\", () => {",
+                  "    pm.expect(liaison.mood).to.eql(undefined);",
+                  "    pm.expect(liaison.painLevel).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "description": "Reutilise le fixture aidant1 (rattache a patient1/patient2 via ML-44,45,46) : lecture seule, aucun impact sur les autres dossiers de tests."
+        },
+        {
+          "name": "GET - Export de mes donnees (nominal, soignant) - liaisons",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "export"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('au moins une liaison', () => pm.expect(json.liaisons.length).to.be.above(0));"
+                ]
+              }
+            }
+          ],
+          "description": "Reutilise le fixture soignant (rattache a patient1/2/3) : lecture seule."
+        },
+        {
+          "name": "DELETE - 403 mot de passe incorrect",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"MotDePasseIncorrect1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE - 400 champ password manquant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE - Supprimer mon compte (nominal, anonymisation)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "description": "Anonymise le compte de test (email/nom remplaces, mot de passe invalide) au lieu d'une suppression physique en cascade (decision ML-67)."
+        },
+        {
+          "name": "POST - 401 login avec les anciens identifiants apres suppression",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{me_test_email}}\",\n  \"password\": \"NewValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 401 le token existant est rejete apres suppression",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{me_test_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "description": "Le JWT emis avant suppression redevient invalide des la requete suivante : l'authentificateur recharge l'utilisateur par email et l'email a change (voir securite du ticket ML-67)."
+        }
+      ]
+    },
+    {
+      "name": "ML-53 - Endpoints admin (gestion des comptes)",
+      "item": [
+        {
+          "name": "POST - Creer un compte de test jetable (patient)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"ValidPass1\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"TestCompte\",\n  \"role\": \"patient\",\n  \"consent\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('admin_test_email', json.email);",
+                  "pm.collectionVariables.set('admin_test_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "description": "Compte jetable dedie a ce dossier (ML-53) pour tester l'activation/desactivation admin sans toucher aux comptes fixtures."
+        },
+        {
+          "name": "POST - Login compte de test (avant desactivation)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_test_email}}\",\n  \"password\": \"ValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Liste des utilisateurs (nominal, admin, sans filtre)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('total est un nombre', () => pm.expect(json.total).to.be.a('number'));",
+                  "pm.test('le compte de test jetable, cree en dernier, est en tete de liste (tri par createdAt DESC)', () => pm.expect(json.items[0].email).to.eql(pm.collectionVariables.get('admin_test_email')));",
+                  "pm.test('aucune donnee medicale exposee', () => { const keys = Object.keys(json.items[0]); ['journalEntries','treatments','messages'].forEach(k => pm.expect(keys).to.not.include(k)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Liste filtree par role=patient",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users?role=patient",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "patient"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('tous les items ont ROLE_PATIENT', () => json.items.forEach(u => pm.expect(u.roles).to.include('ROLE_PATIENT')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Liste filtree par status=actif",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users?status=actif",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "actif"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('tous les items sont actifs', () => json.items.forEach(u => pm.expect(u.active).to.eql(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Liste filtree role=patient&status=actif (combinee)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users?role=patient&status=actif",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "patient"
+                },
+                {
+                  "key": "status",
+                  "value": "actif"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('tous les items sont des patients actifs', () => json.items.forEach(u => { pm.expect(u.roles).to.include('ROLE_PATIENT'); pm.expect(u.active).to.eql(true); }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 400 filtre role invalide",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users?role=superadmin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "superadmin"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 400 filtre status invalide",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users?status=archive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "archive"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 403 soignant tente de lister les utilisateurs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 401 sans authentification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 403 soignant tente de changer le statut d'un compte",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/{{admin_test_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{admin_test_id}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 400 champ active manquant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/{{admin_test_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{admin_test_id}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 400 champ active n'est pas un booleen",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/{{admin_test_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{admin_test_id}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": \"yes\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - 404 utilisateur introuvable",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/999999999/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "999999999",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - Desactiver le compte de test (nominal, admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/{{admin_test_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{admin_test_id}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('active = false', () => pm.expect(json.active).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - 401 le compte desactive ne peut plus se connecter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_test_email}}\",\n  \"password\": \"ValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - Reactiver le compte de test (nominal, admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/{{admin_test_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{admin_test_id}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('active = true', () => pm.expect(json.active).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - Login apres reactivation (nominal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_test_email}}\",\n  \"password\": \"ValidPass1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ML-55 - Supervision technique (admin)",
+      "item": [
+        {
+          "name": "GET - Resume sante avant echecs (nominal, admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/health-summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "health-summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"health.status vaut 'ok'\", () => pm.expect(json.health.status).to.eql('ok'));",
+                  "pm.test('failedLoginAttempts.last24h est un nombre', () => pm.expect(json.failedLoginAttempts.last24h).to.be.a('number'));",
+                  "pm.test('activeAccountsByRole contient patient/aidant/soignant', () => {",
+                  "  pm.expect(json.activeAccountsByRole).to.have.property('patient');",
+                  "  pm.expect(json.activeAccountsByRole).to.have.property('aidant');",
+                  "  pm.expect(json.activeAccountsByRole).to.have.property('soignant');",
+                  "});",
+                  "pm.test(\"aucune donnee nominative (pas d'arobase dans la reponse)\", () => pm.expect(pm.response.text()).to.not.include('@'));",
+                  "pm.collectionVariables.set('health_summary_failed_before', json.failedLoginAttempts.last24h);"
+                ]
+              }
+            }
+          ],
+          "description": "Capture le compteur avant de provoquer des echecs de connexion volontaires (cf. test manuel ML-55)."
+        },
+        {
+          "name": "POST - 401 tentative de connexion echouee volontaire (1/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient1@medlink.test\",\n  \"password\": \"MotDePasseIncorrect1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - 401 tentative de connexion echouee volontaire (2/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient1@medlink.test\",\n  \"password\": \"MotDePasseIncorrect1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - 401 tentative de connexion echouee volontaire (3/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient1@medlink.test\",\n  \"password\": \"MotDePasseIncorrect1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - Resume sante apres echecs, le compteur a augmente (nominal, admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/health-summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "health-summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "const before = pm.collectionVariables.get('health_summary_failed_before');",
+                  "pm.test('le compteur a augmente d\\'au moins 3 (les echecs volontaires)', () => pm.expect(json.failedLoginAttempts.last24h).to.be.at.least(Number(before) + 3));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 403 soignant tente d'acceder a la supervision",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{soignant_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/health-summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "health-summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET - 401 sans authentification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/health-summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "health-summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

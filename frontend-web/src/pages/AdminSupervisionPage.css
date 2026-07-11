@@ -1,0 +1,62 @@
+.admin-supervision-title {
+  margin: 0 0 24px;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+}
+
+.admin-supervision-error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.admin-supervision-loading {
+  color: var(--color-text-muted);
+}
+
+.admin-supervision-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.admin-supervision-section-heading {
+  margin: 0 0 12px;
+  color: var(--color-primary);
+  font-size: 1.125rem;
+}
+
+.admin-supervision-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  max-width: 1200px;
+}
+
+.admin-supervision-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 28px 32px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+.admin-supervision-card-label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-supervision-card-value {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 2.75rem;
+  font-weight: 700;
+}

@@ -1,0 +1,54 @@
+:root {
+  --color-primary: #2e3862;
+  --color-primary-light: #7491f7;
+  --color-bg: #f4f6fb;
+  --color-surface: #ffffff;
+  --color-text: #1c2338;
+  --color-text-muted: #5b6178;
+  --color-border: #e1e4ef;
+  --color-danger: #c1352b;
+  --color-danger-bg: #fbeceb;
+  --color-muted-text: #888888;
+  --color-red-text: #c0143c;
+  --color-red-bg: #fde8ec;
+  --color-orange-text: #92400e;
+  --color-orange-bg: #fdf1dc;
+  --color-green-text: #1e7e46;
+  --color-green-bg: #e3f5ea;
+  --color-contact-active-bg: #e6f1fb;
+  --radius-pill: 33px;
+  --radius-md: 16px;
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  font-family: var(--font-sans);
+  color-scheme: light;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-primary-light);
+  outline-offset: 2px;
+}

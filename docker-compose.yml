@@ -1,0 +1,85 @@
+services:
+  app:
+    build:
+      context: ./backend
+    container_name: medlink_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./backend:/var/www/html
+    env_file:
+      - path: ./backend/.env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 5
+
+  web:
+    build:
+      context: ./frontend-web
+      dockerfile: Dockerfile.dev
+    container_name: medlink_web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    environment:
+      # Reached from inside this container, "localhost" would be the
+      # container itself — go through the compose network instead.
+      VITE_API_PROXY_TARGET: http://app:80
+    volumes:
+      - ./frontend-web:/app
+      - medlink_web_node_modules:/app/node_modules
+    depends_on:
+      - app
+
+  mobile:
+    build:
+      context: ./frontend-mobile
+      dockerfile: Dockerfile.dev
+    container_name: medlink_mobile
+    restart: unless-stopped
+    # Expo Go on a physical phone must reach the Metro bundler over the LAN.
+    # host networking is the simplest way to make that work reliably from a
+    # container (Linux only — see the note in .env.example).
+    network_mode: host
+    environment:
+      # Without this, Expo advertises the container's own hostname/IP in the
+      # QR code and dev server URL, which the phone can't reach.
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${HOST_LAN_IP}
+      EXPO_PUBLIC_API_URL: http://${HOST_LAN_IP}:${APP_PORT:-8080}/api
+    volumes:
+      - ./frontend-mobile:/app
+      - medlink_mobile_node_modules:/app/node_modules
+    depends_on:
+      - app
+
+  db:
+    image: postgres:16-alpine
+    container_name: medlink_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medlink}
+      POSTGRES_USER: ${POSTGRES_USER:-medlink}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - medlink_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medlink} -d ${POSTGRES_DB:-medlink}"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 5
+
+volumes:
+  medlink_db_data:
+  medlink_web_node_modules:
+  medlink_mobile_node_modules:

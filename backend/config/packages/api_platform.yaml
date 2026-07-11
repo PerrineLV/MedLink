@@ -1,0 +1,16 @@
+api_platform:
+    title: Hello API Platform
+    version: 1.0.0
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+    exception_to_status:
+        App\Exception\InvalidJournalEntryException: 422
+        App\Exception\InvalidJournalEntryCommentException: 422
+        App\Exception\InvalidTreatmentException: 422
+        App\Exception\InvalidMessageException: 422
+        App\Exception\InvalidAppointmentException: 422

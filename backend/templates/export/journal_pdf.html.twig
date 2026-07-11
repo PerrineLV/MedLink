@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Suivi MedLink - {{ patient.firstName }} {{ patient.lastName }}</title>
+    <style>
+        body {
+            font-family: "DejaVu Sans", sans-serif;
+            color: #2e3862;
+            font-size: 11px;
+        }
+        header {
+            background-color: #2e3862;
+            color: #ffffff;
+            padding: 16px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+        header p {
+            margin: 4px 0 0;
+            font-size: 12px;
+        }
+        .meta {
+            margin: 16px 0;
+        }
+        .meta p {
+            margin: 2px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #cccccc;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f4f6fb;
+            color: #2e3862;
+        }
+        .author-aidant {
+            color: #92400e;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MedLink — Suivi du patient</h1>
+        <p>Données chiffrées — accès soignants et patient uniquement</p>
+    </header>
+    <div class="meta">
+        <p><strong>Patient :</strong> {{ patient.firstName }} {{ patient.lastName }}</p>
+        <p><strong>Période :</strong> du {{ from|date('d/m/Y') }} au {{ to|date('d/m/Y') }}</p>
+        <p><strong>Généré le :</strong> {{ generatedAt|date('d/m/Y à H:i') }}</p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Humeur</th>
+                <th>Douleur</th>
+                <th>Tension</th>
+                <th>Note</th>
+                <th>Saisi par</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.createdAt|date('d/m/Y H:i') }}</td>
+                <td>{{ entry.mood }}/5</td>
+                <td>{{ entry.painLevel }}/10</td>
+                <td>{{ entry.bloodPressure }}</td>
+                <td>{{ entry.note|default('') }}</td>
+                <td>
+                    {{ entry.author.firstName }} {{ entry.author.lastName }}
+                    {% if entry.enteredByCaregiver %}
+                        <br><span class="author-aidant">(saisie par un aidant)</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
