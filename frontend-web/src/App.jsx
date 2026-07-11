@@ -13,7 +13,9 @@ import MessagingPage from './pages/MessagingPage';
 import AgendaPage from './pages/AgendaPage';
 import ExportPage from './pages/ExportPage';
 import AccountPage from './pages/AccountPage';
-import { ROLE_AIDANT, ROLE_PATIENT, ROLE_SOIGNANT } from './services/roles';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminSupervisionPage from './pages/AdminSupervisionPage';
+import { ROLE_ADMIN, ROLE_AIDANT, ROLE_PATIENT, ROLE_SOIGNANT } from './services/roles';
 
 function App() {
   return (
@@ -41,6 +43,10 @@ function App() {
         </Route>
         <Route element={<ProtectedRoute roles={[ROLE_AIDANT, ROLE_SOIGNANT]} />}>
           <Route path="/invitations" element={<InvitationsPage />} />
+        </Route>
+        <Route element={<ProtectedRoute roles={[ROLE_ADMIN]} />}>
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/supervision" element={<AdminSupervisionPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

@@ -22,13 +22,14 @@ export function getPrimaryRole(roles = []) {
 
 /**
  * Where to land right after login. A soignant goes straight to their
- * patient list (ML-24), a patient/aidant to their own journal (ML-41);
- * other roles (admin) keep the generic dashboard until their own dedicated
- * page exists.
+ * patient list (ML-24), a patient/aidant to their own journal (ML-41), an
+ * admin to the user management screen (ML-54); anyone else keeps the
+ * generic dashboard.
  */
 export function getHomeRoute(roles = []) {
   if (roles.includes(ROLE_SOIGNANT)) return '/patients';
   if (roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT)) return '/journal';
+  if (roles.includes(ROLE_ADMIN)) return '/admin/users';
 
   return '/dashboard';
 }
@@ -59,6 +60,12 @@ const AIDANT_SIDEBAR_ITEMS = [
   { key: 'invitations', label: 'Invitations', to: '/invitations' },
 ];
 
+const ADMIN_SIDEBAR_ITEMS = [
+  { key: 'utilisateurs', label: 'Utilisateurs', to: '/admin/users' },
+  { key: 'supervision', label: 'Supervision', to: '/admin/supervision' },
+  { key: 'compte', label: 'Mon compte', to: '/account' },
+];
+
 /**
  * Sidebar menu for AppLayout: patient/aidant get their own shortcuts
  * (Journal/Traitements/Messagerie/Rendez-vous/Export PDF, ML-41), everyone
@@ -71,6 +78,7 @@ const AIDANT_SIDEBAR_ITEMS = [
 export function getSidebarItems(roles = []) {
   if (roles.includes(ROLE_PATIENT)) return PATIENT_SIDEBAR_ITEMS;
   if (roles.includes(ROLE_AIDANT)) return AIDANT_SIDEBAR_ITEMS;
+  if (roles.includes(ROLE_ADMIN)) return ADMIN_SIDEBAR_ITEMS;
 
   return SOIGNANT_SIDEBAR_ITEMS;
 }
