@@ -47,6 +47,53 @@ jobs:
             ${{ steps.image.outputs.image }}
             ghcr.io/${{ steps.image.outputs.owner }}/medlink-backend:latest
 
+  deploy-frontend:
+    name: Build & deploy frontend web
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install & build
+        working-directory: frontend-web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload build to server (staging dir)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "frontend-web/dist/*"
+          target: "${{ secrets.DEPLOY_PATH }}/frontend/dist_new"
+          strip_components: 2
+
+      - name: Atomically swap build into place
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}/frontend
+            rm -rf dist_old
+            [ -d dist ] && mv dist dist_old || true
+            mv dist_new dist
+            rm -rf dist_old
+
   deploy:
     name: Deploy to production
     needs: build-and-push
