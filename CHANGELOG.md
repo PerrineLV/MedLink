@@ -14,6 +14,9 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Processus de consignation des anomalies : template GitHub Issues et labels de priorité (ML-39)
 - Suivi automatisé des mises à jour de dépendances via Dependabot sur les 3 écosystèmes du monorepo (ML-40)
 
+### Changed
+- Mise à jour de dépendances via Dependabot après revue individuelle : backend (api-platform/doctrine-orm, api-platform/symfony, phpstan/phpstan, phpstan/phpdoc-parser, php-cs-fixer) et frontend web (oxlint, vite, prettier) (ML-40)
+
 ### Fixed
 - Corrections du pipeline CD (ML-37, ML-38)
 - Perte de session au rechargement de page sur le web malgré un JWT valide (ML-39)
