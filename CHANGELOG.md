@@ -21,6 +21,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Corrections du pipeline CD (ML-37, ML-38)
 - Perte de session au rechargement de page sur le web malgré un JWT valide (ML-39)
 - Contrainte de version PHP dans composer.json incohérente avec l'image Docker/CI, bloquant la résolution des mises à jour de dépendances backend par Dependabot (ML-40)
+- Tag `environment` Sentry non mappé sur `APP_ENV`, empêchant le filtrage des issues par environnement ; conteneur de production tournant en réalité avec `APP_ENV=dev`/`APP_DEBUG=1` faute de surcharge explicite dans `docker-compose.prod.yml` (ML-88)
 
 ## [1.0.0] - 2026-07-11
 
