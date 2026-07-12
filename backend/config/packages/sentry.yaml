@@ -1,0 +1,14 @@
+# ML-31 : le recipe contrib de sentry/sentry-symfony est ignoré (allow-contrib:
+# false dans composer.json), cette config est donc écrite à la main.
+#
+# DSN vide par défaut (voir .env) : le SDK Sentry ne fait rien tant qu'aucun
+# DSN n'est fourni, donc pas besoin de désactiver le bundle en test.
+sentry:
+    dsn: '%env(SENTRY_DSN)%'
+    options:
+        environment: '%kernel.environment%'
+        # RGPD : jamais d'IP/cookies/headers utilisateur, ni de corps de
+        # requête (peut contenir humeur/douleur/tension/messages, données de
+        # santé) envoyés à Sentry.
+        send_default_pii: false
+        max_request_body_size: 'none'
