@@ -6,7 +6,7 @@
 sentry:
     dsn: '%env(SENTRY_DSN)%'
     options:
-        environment: '%kernel.environment%'
+        environment: '%env(APP_ENV)%'
         # RGPD : jamais d'IP/cookies/headers utilisateur, ni de corps de
         # requête (peut contenir humeur/douleur/tension/messages, données de
         # santé) envoyés à Sentry.

@@ -10,6 +10,13 @@ services:
     env_file:
       - path: ./backend/.env
         required: false
+    environment:
+      # Real environment variables take precedence over .env file values in
+      # Symfony's Dotenv bootstrap — backend/.env commits APP_ENV=dev as its
+      # default, so prod must override it explicitly here rather than rely
+      # on an uncommitted .env.local, which env_file above would never load.
+      APP_ENV: prod
+      APP_DEBUG: 0
     depends_on:
       db:
         condition: service_healthy
