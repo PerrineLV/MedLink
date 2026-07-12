@@ -7,6 +7,12 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Fixed
+- Drift de trigger CI entre `main`/`develop` et les anciennes branches `epicX--` provoquant des runs en double (push + pull_request) sur une même PR ; ajout d'un bloc `concurrency` à `ci.yml` pour absorber ce type de cas à l'avenir (ML-86)
+
+### Changed
+- `pull_request.branches` de `ci.yml` inclut désormais `"epic*"`, pour permettre le workflow "une sous-branche par ticket" (PR `ticket → epicX--` vérifiée individuellement avant la PR finale `epicX-- → develop`) (ML-86)
+
 ## [1.1.0] - 2026-07-12
 
 ### Added
