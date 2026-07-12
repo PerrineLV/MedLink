@@ -11,9 +11,13 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Intégration Sentry et journalisation Monolog des événements de sécurité (login échoué, 403, 5xx) sans donnée personnelle (ML-31)
 - Sauvegarde automatisée de la base de données en production (ML-74)
 - Déploiement du frontend web en production (ML-75)
+- Processus de consignation des anomalies : template GitHub Issues et labels de priorité (ML-39)
+- Suivi automatisé des mises à jour de dépendances via Dependabot sur les 3 écosystèmes du monorepo (ML-40)
 
 ### Fixed
 - Corrections du pipeline CD (ML-37, ML-38)
+- Perte de session au rechargement de page sur le web malgré un JWT valide (ML-39)
+- Contrainte de version PHP dans composer.json incohérente avec l'image Docker/CI, bloquant la résolution des mises à jour de dépendances backend par Dependabot (ML-40)
 
 ## [1.0.0] - 2026-07-11
 
