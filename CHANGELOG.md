@@ -7,6 +7,8 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-12
+
 ### Added
 - Intégration Sentry et journalisation Monolog des événements de sécurité (login échoué, 403, 5xx) sans donnée personnelle (ML-31)
 - Sauvegarde automatisée de la base de données en production (ML-74)
