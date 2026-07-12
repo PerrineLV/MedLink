@@ -16,12 +16,14 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Changed
 - Mise à jour de dépendances via Dependabot après revue individuelle : backend (api-platform/doctrine-orm, api-platform/symfony, phpstan/phpstan, phpstan/phpdoc-parser, php-cs-fixer) et frontend web (oxlint, vite, prettier) (ML-40)
+- Tentative de montée de version de l'écosystème Expo/React Native (SDK 57, puis 56, puis 55) : abandonnée, Expo Go (Play Store) ne supportant encore aucun de ces SDK ; reste sur SDK 54 (ML-90)
 
 ### Fixed
 - Corrections du pipeline CD (ML-37, ML-38)
 - Perte de session au rechargement de page sur le web malgré un JWT valide (ML-39)
 - Contrainte de version PHP dans composer.json incohérente avec l'image Docker/CI, bloquant la résolution des mises à jour de dépendances backend par Dependabot (ML-40)
 - Tag `environment` Sentry non mappé sur `APP_ENV`, empêchant le filtrage des issues par environnement ; conteneur de production tournant en réalité avec `APP_ENV=dev`/`APP_DEBUG=1` faute de surcharge explicite dans `docker-compose.prod.yml` (ML-88)
+- Vulnérabilités de sécurité modérées sur `postcss` (XSS) et `uuid` (dépassement de tampon) via des dépendances transitives d'Expo (`@expo/metro-config`, `xcode`), corrigées par override npm (ML-40, ML-90)
 
 ## [1.0.0] - 2026-07-11
 
