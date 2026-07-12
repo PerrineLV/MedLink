@@ -1,8 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { fetchContacts, fetchMessages } from '../services/messageService';
-import { useAuth } from './AuthContext';
-
-const MessagesBadgeContext = createContext(null);
+import { useAuth } from './useAuth';
+import { MessagesBadgeContext } from './useMessagesBadge';
 
 // Compteur de messages non lus (tous contacts confondus) partagé entre le
 // badge sidebar (AppLayout) et MessagingPage : sans ce contexte commun,
@@ -43,13 +42,4 @@ export function MessagesBadgeProvider({ children }) {
   );
 
   return <MessagesBadgeContext.Provider value={value}>{children}</MessagesBadgeContext.Provider>;
-}
-
-export function useMessagesBadge() {
-  const context = useContext(MessagesBadgeContext);
-  if (!context) {
-    throw new Error('useMessagesBadge must be used within a MessagesBadgeProvider');
-  }
-
-  return context;
 }

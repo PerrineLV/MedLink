@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
-import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext';
+import { useInvitationsBadge } from '../contexts/useInvitationsBadge';
 import {
   acceptInvitation,
   fetchReceivedInvitations,

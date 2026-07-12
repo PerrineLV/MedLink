@@ -1,4 +1,4 @@
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import './SessionExpiryWarning.css';
 
 export default function SessionExpiryWarning() {
