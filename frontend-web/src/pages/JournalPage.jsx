@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Circle } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import Badge from '../components/Badge';
+import { useAuth } from '../contexts/useAuth';
 import { createJournalEntry, fetchJournalEntries } from '../services/journalEntryService';
 import { bloodPressureBand, moodBand, painBand } from '../services/journalPresentation';
 import { fetchPatients } from '../services/patientService';
+import { ROLE_AIDANT, ROLE_PATIENT } from '../services/roles';
 import {
   fetchTreatments,
   scheduleLabel,
@@ -18,8 +20,11 @@ const BLOOD_PRESSURE_PATTERN = /^\d{1,3}$/;
 const GENERIC_CREATE_ERROR = "Impossible d'enregistrer cette entrée, réessayez.";
 const SECURITY_BANNER_TEXT =
   "Données chiffrées — accessibles uniquement à l'équipe soignante désignée";
+const NO_ATTACHED_PATIENT_TEXT =
+  "Aucun patient rattaché pour le moment. C'est le patient qui doit vous inviter depuis son espace pour que vous puissiez saisir des entrées pour lui.";
 
 export default function JournalPage() {
+  const { roles } = useAuth();
   const [entries, setEntries] = useState(null);
   const [treatments, setTreatments] = useState(null);
   const [patients, setPatients] = useState([]);
@@ -61,6 +66,13 @@ export default function JournalPage() {
       new Set([...(entries ?? []), ...(treatments ?? [])].map((item) => item.patientId)).size > 1,
     [entries, treatments],
   );
+
+  const isDataLoaded = entries !== null;
+  const hasNoAttachedPatient =
+    isDataLoaded &&
+    roles.includes(ROLE_AIDANT) &&
+    !roles.includes(ROLE_PATIENT) &&
+    patients.length === 0;
 
   const entriesByPatientId = useMemo(() => groupByPatientId(entries ?? []), [entries]);
   const treatmentsByPatientId = useMemo(() => groupByPatientId(treatments ?? []), [treatments]);
@@ -113,7 +125,13 @@ export default function JournalPage() {
 
       {!error && (
         <>
-          <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
+          {hasNoAttachedPatient ? (
+            <p className="journal-empty" role="status">
+              {NO_ATTACHED_PATIENT_TEXT}
+            </p>
+          ) : (
+            <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
+          )}
 
           {entries === null ? (
             <p className="journal-loading">Chargement…</p>
