@@ -17,12 +17,52 @@ const INACTIVITY_WARNING_MS = INACTIVITY_LOGOUT_MS - 2 * 60 * 1000;
 
 const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
 
+// sessionStorage (not localStorage) so the token doesn't outlive the browser tab.
+const TOKEN_STORAGE_KEY = 'medlink_token';
+
+// Reads a still-valid token back from sessionStorage on mount, so a page
+// reload doesn't force a re-login while the JWT itself is still valid.
+function readStoredSession() {
+  let storedToken;
+  try {
+    storedToken = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+
+  if (!storedToken) {
+    return null;
+  }
+
+  const payload = decodeJwtPayload(storedToken);
+  if (!payload?.exp || payload.exp * 1000 <= Date.now()) {
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    return null;
+  }
+
+  return {
+    token: storedToken,
+    roles: payload.roles ?? [],
+    firstName: payload.firstName ?? null,
+  };
+}
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(null);
-  const [roles, setRoles] = useState([]);
-  const [firstName, setFirstName] = useState(null);
+  // Set eagerly during the initial render (not in an effect) so the header
+  // is already in place before any child's mount effect fires its first
+  // API call — child effects run before this component's own effects, so
+  // an effect-based assignment here would race and lose that first call.
+  const [token, setToken] = useState(() => {
+    const stored = readStoredSession();
+    if (stored?.token) {
+      httpClient.defaults.headers.common.Authorization = `Bearer ${stored.token}`;
+    }
+    return stored?.token ?? null;
+  });
+  const [roles, setRoles] = useState(() => readStoredSession()?.roles ?? []);
+  const [firstName, setFirstName] = useState(() => readStoredSession()?.firstName ?? null);
   const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false);
 
   const warningTimeoutRef = useRef(null);
@@ -35,6 +75,11 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     clearInactivityTimers();
+    try {
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    } catch {
+      // ignore — storage may be unavailable (private browsing, quota...)
+    }
     setToken(null);
     setRoles([]);
     setFirstName(null);
@@ -81,6 +126,12 @@ export function AuthProvider({ children }) {
     const { token: accessToken } = await loginRequest(email, password);
     const payload = decodeJwtPayload(accessToken);
     const grantedRoles = payload?.roles ?? [];
+
+    try {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
+    } catch {
+      // ignore — storage may be unavailable (private browsing, quota...)
+    }
 
     setToken(accessToken);
     setRoles(grantedRoles);
