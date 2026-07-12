@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download, KeyRound, Mail, ShieldCheck, Trash2, User } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import {
   changeEmail,
   changePassword,

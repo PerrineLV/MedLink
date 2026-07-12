@@ -1,7 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { fetchReceivedInvitations } from '../services/liaisonService';
-
-const InvitationsBadgeContext = createContext(null);
+import { InvitationsBadgeContext } from './useInvitationsBadge';
 
 // Compteur d'invitations en attente partagé entre la cloche/le badge sidebar
 // de l'en-tête (AppLayout) et l'écran InvitationsPage : sans ce contexte
@@ -32,13 +31,4 @@ export function InvitationsBadgeProvider({ children }) {
   return (
     <InvitationsBadgeContext.Provider value={value}>{children}</InvitationsBadgeContext.Provider>
   );
-}
-
-export function useInvitationsBadge() {
-  const context = useContext(InvitationsBadgeContext);
-  if (!context) {
-    throw new Error('useInvitationsBadge must be used within an InvitationsBadgeProvider');
-  }
-
-  return context;
 }
