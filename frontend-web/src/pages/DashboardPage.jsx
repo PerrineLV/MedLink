@@ -1,4 +1,4 @@
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import { ROLE_LABELS, getPrimaryRole } from '../services/roles';
 import './DashboardPage.css';
 
