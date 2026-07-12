@@ -35,16 +35,24 @@ const MOOD_SCALE = [1, 2, 3, 4, 5];
 export default function JournalScreen() {
   const navigation = useNavigation();
   const { roles, firstName, logout } = useAuth();
-  const canCreateEntry = roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT);
   const primaryRole = getPrimaryRole(roles);
   const displayName = firstName ?? (primaryRole ? ROLE_LABELS[primaryRole] : 'Utilisateur');
 
   const [entries, setEntries] = useState([]);
   const [treatments, setTreatments] = useState([]);
   const [patientNamesById, setPatientNamesById] = useState({});
+  const [hasAttachedPatients, setHasAttachedPatients] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
+
+  // An aidant with no accepted PatientAidant relation must not see the
+  // entry form: it's always the patient who invites, never the reverse
+  // (cf. ML-44) — hiding the button here avoids a dead-end and matches the
+  // 403 the API now returns if this is bypassed (ML-85).
+  const canCreateEntry =
+    (roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT)) &&
+    !(roles.includes(ROLE_AIDANT) && !roles.includes(ROLE_PATIENT) && !hasAttachedPatients);
 
   const load = useCallback(async (isRefresh) => {
     isRefresh ? setIsRefreshing(true) : setIsLoading(true);
@@ -58,6 +66,7 @@ export default function JournalScreen() {
       ]);
       setEntries(fetchedEntries);
       setTreatments(fetchedTreatments);
+      setHasAttachedPatients(patients.length > 0);
       setPatientNamesById(
         Object.fromEntries(
           patients.map((patient) => [patient.id, `${patient.firstName} ${patient.lastName}`]),
@@ -146,6 +155,13 @@ export default function JournalScreen() {
         >
           <Text style={styles.addButtonText}>+ Ajouter une entrée</Text>
         </TouchableOpacity>
+      )}
+
+      {!canCreateEntry && roles.includes(ROLE_AIDANT) && !roles.includes(ROLE_PATIENT) && (
+        <Text style={styles.noPatientInfo} accessibilityRole="text">
+          Aucun patient rattaché pour le moment. C'est le patient qui doit vous inviter pour que
+          vous puissiez saisir une entrée pour lui.
+        </Text>
       )}
 
       {error && (
@@ -403,6 +419,15 @@ const styles = StyleSheet.create({
   error: {
     backgroundColor: COLORS.red.bg,
     color: COLORS.red.text,
+    borderRadius: 16,
+    padding: 12,
+    margin: 20,
+    marginBottom: 0,
+    fontSize: TYPE.sm,
+  },
+  noPatientInfo: {
+    backgroundColor: COLORS.mutedBackground,
+    color: COLORS.mutedText,
     borderRadius: 16,
     padding: 12,
     margin: 20,
