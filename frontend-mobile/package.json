@@ -29,7 +29,7 @@
   },
   "private": true,
   "devDependencies": {
-    "eslint": "^9.0.0",
+    "eslint": "^10.7.0",
     "eslint-config-expo": "~10.0.0",
     "prettier": "^3.9.5"
   }
