@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   update-medications:
@@ -35,8 +36,10 @@ jobs:
         # (Settings > Actions > General > Workflow permissions). Plutôt que
         # d'élargir ce réglage à tout le dépôt, on pousse directement sur une
         # branche dédiée, à relire et merger manuellement dans develop.
+        id: commit
         run: |
           if git diff --quiet -- backend/resources/medications.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Aucun changement détecté dans medications.json, rien à committer."
             exit 0
           fi
@@ -48,3 +51,30 @@ jobs:
           git add backend/resources/medications.json
           git commit -m "chore(data): update medications.json from BDPM"
           git push --force origin bot/update-medications
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Ouvrir une issue de suivi si une mise à jour attend une revue
+        # Faute de PR auto-créée (cf. étape précédente), c'est le seul signal
+        # qu'une mise à jour est disponible sur bot/update-medications. On
+        # réutilise une issue ouverte existante plutôt que d'en recréer une
+        # à chaque run hebdomadaire tant qu'elle n'a pas été traitée.
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          existing=$(gh issue list --state open \
+            --search "\"MAJ medications.json en attente de revue\" in:title" \
+            --json number --jq '.[0].number // empty')
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Nouvelle mise à jour poussée sur \`bot/update-medications\`. Run : $RUN_URL"
+          else
+            gh issue create \
+              --title "chore(data): MAJ medications.json en attente de revue" \
+              --label "automated" \
+              --body "Le référentiel BDPM a changé. Relire le diff sur la branche \`bot/update-medications\` et ouvrir une PR vers \`develop\` si tout est bon, puis fermer cette issue.
+
+Run : $RUN_URL (ML-96)"
+          fi
