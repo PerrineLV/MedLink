@@ -262,6 +262,8 @@ function ChangeEmailSection({ onEmailChanged }) {
 }
 
 function RgpdSection() {
+  const navigation = useNavigation();
+
   return (
     <Section title="Vos droits (RGPD)">
       <Text style={styles.rgpdText}>
@@ -271,6 +273,13 @@ function RgpdSection() {
         d’utilisation du compte, et chiffrées au repos et en transit. Vous pouvez à tout moment
         consulter, exporter ou supprimer vos données personnelles depuis cet écran.
       </Text>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('PrivacyPolicy')}
+        accessibilityRole="link"
+        accessibilityLabel="Consulter la politique de confidentialité"
+      >
+        <Text style={styles.rgpdLink}>Consulter la politique de confidentialité</Text>
+      </TouchableOpacity>
     </Section>
   );
 }
@@ -569,6 +578,14 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: TYPE.sm, color: COLORS.mutedText, fontWeight: '600' },
   infoValue: { fontSize: TYPE.sm, color: COLORS.primary, fontWeight: '700', flexShrink: 1 },
   rgpdText: { fontSize: TYPE.sm, color: COLORS.primary, lineHeight: 20 },
+  rgpdLink: {
+    fontSize: TYPE.sm,
+    color: COLORS.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    minHeight: 44,
+    textAlignVertical: 'center',
+  },
   field: { gap: 8 },
   label: { fontSize: TYPE.sm, fontWeight: '600', color: COLORS.primary },
   input: {

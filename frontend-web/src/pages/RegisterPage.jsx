@@ -200,7 +200,16 @@ export default function RegisterPage() {
                 aria-describedby={fieldErrors.consent ? 'consent-error' : undefined}
               />
               <span>
-                J’accepte que mes données de santé soient traitées dans le cadre de MedLink.
+                J’ai lu et j’accepte la{' '}
+                <Link
+                  to="/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  politique de confidentialité
+                </Link>{' '}
+                : mes données de santé seront traitées dans le cadre de MedLink.
               </span>
             </label>
             {fieldErrors.consent && (
