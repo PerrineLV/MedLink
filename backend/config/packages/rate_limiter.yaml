@@ -13,6 +13,14 @@ framework:
             limit: 5
             interval: '1 hour'
 
+        # Même politique que login_by_ip ci-dessus (ML-78 reprend explicitement le
+        # mécanisme de ML-20) — voir App\Controller\PasswordResetController. Limite
+        # les demandes, pas la confirmation (protégée par le token lui-même).
+        password_reset_request_by_ip:
+            policy: fixed_window
+            limit: 5
+            interval: '1 minute'
+
 when@dev:
     framework:
         rate_limiter:

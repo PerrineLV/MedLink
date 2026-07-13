@@ -21,6 +21,7 @@ export default function LoginScreen({ navigation, route }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const registered = route?.params?.registered === true;
+  const passwordReset = route?.params?.passwordReset === true;
 
   const handleSubmit = async () => {
     setError(null);
@@ -55,6 +56,12 @@ export default function LoginScreen({ navigation, route }) {
           {registered && (
             <Text style={styles.success} accessibilityRole="text">
               Compte créé, vous pouvez vous connecter.
+            </Text>
+          )}
+
+          {passwordReset && (
+            <Text style={styles.success} accessibilityRole="text">
+              Mot de passe réinitialisé, vous pouvez vous connecter.
             </Text>
           )}
 
@@ -101,6 +108,14 @@ export default function LoginScreen({ navigation, route }) {
             accessibilityLabel="Se connecter"
           >
             <Text style={styles.submitText}>{isSubmitting ? 'Connexion…' : 'Se connecter'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            accessibilityRole="link"
+            accessibilityLabel="Mot de passe oublié"
+          >
+            <Text style={styles.forgotPasswordLink}>Mot de passe oublié ?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -198,8 +213,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  registerLink: {
+  forgotPasswordLink: {
     marginTop: 16,
+    textAlign: 'center',
+    color: COLORS.primaryLight,
+    fontWeight: '600',
+  },
+  registerLink: {
+    marginTop: 8,
     textAlign: 'center',
     color: COLORS.primaryLight,
     fontWeight: '600',
