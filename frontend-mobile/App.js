@@ -10,6 +10,7 @@ import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
+import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import JournalScreen from './screens/JournalScreen';
 import NewEntryScreen from './screens/NewEntryScreen';
 import LiaisonsScreen from './screens/LiaisonsScreen';
@@ -55,6 +56,7 @@ function RootNavigator() {
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
           </>
         ) : adminOnly ? (
           // ML-73: admin has no mobile interface. Registering only this one
@@ -75,6 +77,7 @@ function RootNavigator() {
             <Stack.Screen name="NewAppointment" component={NewAppointmentScreen} />
             <Stack.Screen name="Export" component={ExportScreen} />
             <Stack.Screen name="Account" component={AccountScreen} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
           </>
         )}
       </Stack.Navigator>
