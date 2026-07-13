@@ -64,6 +64,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          gh label create "automated" --color "ededed" --description "Créé automatiquement par un workflow" >/dev/null 2>&1 || true
+
           existing=$(gh issue list --state open \
             --search "\"MAJ medications.json en attente de revue\" in:title" \
             --json number --jq '.[0].number // empty')
