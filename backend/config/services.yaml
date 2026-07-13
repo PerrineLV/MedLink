@@ -8,6 +8,13 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     app.medications_file_path: '%kernel.project_dir%/resources/medications.json'
+    # Base du lien envoyé dans l'email de réinitialisation (ML-78) : l'origine
+    # du frontend web, jamais celle de l'API.
+    app.frontend_url: '%env(FRONTEND_URL)%'
+    app.mailer_from_address: '%env(MAILER_FROM_ADDRESS)%'
+    # Schéma de deep link de l'app mobile (ML-78) : utilisé à la place de
+    # app.frontend_url quand la demande de réinitialisation vient du mobile.
+    app.mobile_app_scheme: '%env(MOBILE_APP_SCHEME)%'
 
 services:
     # default configuration for services in *this* file
@@ -25,3 +32,9 @@ services:
     App\Service\MedicationReferenceService:
         arguments:
             $medicationsFilePath: '%app.medications_file_path%'
+
+    App\Service\PasswordResetMailer:
+        arguments:
+            $frontendUrl: '%app.frontend_url%'
+            $mobileScheme: '%app.mobile_app_scheme%'
+            $fromAddress: '%app.mailer_from_address%'

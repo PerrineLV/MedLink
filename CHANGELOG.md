@@ -7,6 +7,10 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Added
+- Mot de passe oublié : un utilisateur non connecté peut demander un lien de réinitialisation par email et redéfinir son mot de passe (backend `PasswordResetToken` + `POST /api/password-reset/{request,confirm}`, écrans web `/forgot-password` et `/reset-password`, écrans mobile équivalents avec saisie manuelle du code reçu par email en secours). Réponse anti-énumération systématique sur la demande, rate limiting 5/min par IP, token à usage unique valable 1h, invalidation des refresh tokens actifs après reset. Ajoute `symfony/mailer` + Mailpit (service `mailer` dans `docker-compose.yml`, UI sur http://localhost:8025) pour capter les emails en dev (ML-78)
+- Deep link mobile pour la réinitialisation de mot de passe : la requête `/api/password-reset/request` accepte un champ `platform` (`web`/`mobile`) pour choisir le bon lien dans l'email (`https://.../reset-password?token=...` ou `medlink://reset-password?token=...`), `app.json` déclare le schéma `medlink` et `ResetPasswordScreen` pré-remplit le token reçu via le lien. Fonctionne uniquement sur un build natif autonome (EAS build / dev-client) — Expo Go ne gère pas les schémas personnalisés (ML-78)
+
 ### Fixed
 - Un aidant sans patient rattaché pouvait accéder au formulaire de saisie de journal (web + mobile) et déclencher une erreur 500 côté API en le soumettant ; formulaire désormais masqué côté front pour ce cas, et l'endpoint de création d'entrée renvoie une 403 claire en défense en profondeur (ML-85)
 - Drift de trigger CI entre `main`/`develop` et les anciennes branches `epicX--` provoquant des runs en double (push + pull_request) sur une même PR ; ajout d'un bloc `concurrency` à `ci.yml` pour absorber ce type de cas à l'avenir (ML-86)
@@ -15,6 +19,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Changed
 - `pull_request.branches` de `ci.yml` inclut désormais `"epic*"`, pour permettre le workflow "une sous-branche par ticket" (PR `ticket → epicX--` vérifiée individuellement avant la PR finale `epicX-- → develop`) (ML-86)
+- Port du bundler Metro (mobile) rendu configurable via `METRO_PORT` (défaut 8083, au lieu de 8081 en dur) : sur la machine de dev, le port 8081 est déjà occupé par un conteneur d'un autre projet, ce qui faisait échouer Expo Go silencieusement avec "Something went wrong" sans lien avec le réseau
 
 ## [1.1.0] - 2026-07-12
 
