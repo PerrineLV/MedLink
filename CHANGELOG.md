@@ -16,6 +16,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Drift de trigger CI entre `main`/`develop` et les anciennes branches `epicX--` provoquant des runs en double (push + pull_request) sur une même PR ; ajout d'un bloc `concurrency` à `ci.yml` pour absorber ce type de cas à l'avenir (ML-86)
 - Warnings CI de dépréciation Node 20 : mise à jour de `actions/checkout` (v4→v7), `actions/setup-node` (v4→v6), `actions/cache` (v4→v6), `docker/build-push-action` (v6→v7) et `docker/login-action` (v3→v4) vers leurs dernières majeures (runtime Node 24) dans `ci.yml`/`cd.yml` (ML-80)
 - Warning ESLint `react/only-export-components` cassant le Fast Refresh sur `AuthContext.jsx`, `MessagesBadgeContext.jsx` et `InvitationsBadgeContext.jsx` : extraction des hooks (`useAuth`, `useMessagesBadge`, `useInvitationsBadge`) dans des fichiers dédiés, les fichiers de contexte ne conservant plus que le composant Provider (ML-80)
+- Workflow `update-medications.yml` échouait à l'étape de création de PR (`GitHub Actions is not permitted to create or approve pull requests`) : remplacement de `peter-evans/create-pull-request` par un commit + push direct sur la branche dédiée `bot/update-medications`, à relire et merger manuellement — évite d'élargir les permissions Actions à tout le dépôt (ML-96)
 
 ### Changed
 - `pull_request.branches` de `ci.yml` inclut désormais `"epic*"`, pour permettre le workflow "une sous-branche par ticket" (PR `ticket → epicX--` vérifiée individuellement avant la PR finale `epicX-- → develop`) (ML-86)
