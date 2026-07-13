@@ -54,11 +54,24 @@ services:
       # QR code and dev server URL, which the phone can't reach.
       REACT_NATIVE_PACKAGER_HOSTNAME: ${HOST_LAN_IP}
       EXPO_PUBLIC_API_URL: http://${HOST_LAN_IP}:${APP_PORT:-8080}/api
+      # Default 8081 is already taken on this machine by another project's
+      # container (infra_mirth_1), which silently breaks Expo Go with
+      # "Something went wrong" instead of a clear port-conflict error.
+      METRO_PORT: ${METRO_PORT:-8083}
     volumes:
       - ./frontend-mobile:/app
       - medlink_mobile_node_modules:/app/node_modules
     depends_on:
       - app
+
+  mailer:
+    # Capture les emails envoyés en dev (mot de passe oublié, ML-78) sans
+    # jamais les délivrer réellement — UI web sur http://localhost:8025.
+    image: axllent/mailpit
+    container_name: medlink_mailer
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
 
   db:
     image: postgres:16-alpine

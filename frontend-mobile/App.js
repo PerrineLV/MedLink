@@ -8,6 +8,8 @@ import { InvitationsBadgeProvider } from './contexts/InvitationsBadgeContext';
 import { MessagesBadgeProvider } from './contexts/MessagesBadgeContext';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import JournalScreen from './screens/JournalScreen';
 import NewEntryScreen from './screens/NewEntryScreen';
 import LiaisonsScreen from './screens/LiaisonsScreen';
@@ -24,12 +26,25 @@ import { isAdminOnlySession } from './services/roles';
 
 const Stack = createStackNavigator();
 
+// Deep link pour le mail de réinitialisation de mot de passe (ML-78) :
+// medlink://reset-password?token=... route directement sur ResetPassword
+// avec le token pré-rempli. Ne s'ouvre que sur un build natif autonome
+// (EAS build / dev-client) — Expo Go ignore les schémas personnalisés.
+const linking = {
+  prefixes: ['medlink://'],
+  config: {
+    screens: {
+      ResetPassword: 'reset-password',
+    },
+  },
+};
+
 function RootNavigator() {
   const { isAuthenticated, roles } = useAuth();
   const adminOnly = isAuthenticated && isAdminOnlySession(roles);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName={!isAuthenticated ? 'Login' : adminOnly ? 'AdminBlocked' : 'Journal'}
@@ -38,6 +53,8 @@ function RootNavigator() {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         ) : adminOnly ? (
           // ML-73: admin has no mobile interface. Registering only this one
