@@ -109,9 +109,11 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}/frontend
+            mkdir -p downloads
             rm -rf dist_old
             [ -d dist ] && mv dist dist_old || true
             mv dist_new dist
+            ln -sfn ../downloads dist/downloads
             rm -rf dist_old
 
   deploy:
