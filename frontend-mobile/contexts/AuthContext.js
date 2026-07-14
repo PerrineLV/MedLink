@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 import { login as loginRequest } from '../services/authService';
-import httpClient from '../services/httpClient';
+import { setAuthToken } from '../services/httpClient';
 import { decodeJwtPayload } from '../services/jwt';
 
 // 30 min of inactivity logs the user out; a warning appears 2 min before.
@@ -33,6 +33,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     clearInactivityTimers();
+    setAuthToken(null);
     setToken(null);
     setRoles([]);
     setFirstName(null);
@@ -61,19 +62,15 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  useEffect(() => {
-    if (token) {
-      httpClient.defaults.headers.common.Authorization = `Bearer ${token}`;
-    } else {
-      delete httpClient.defaults.headers.common.Authorization;
-    }
-  }, [token]);
-
   const login = useCallback(async (email, password) => {
     const { token: accessToken } = await loginRequest(email, password);
     const payload = decodeJwtPayload(accessToken);
     const grantedRoles = payload?.roles ?? [];
 
+    // Set synchronously, ahead of setToken: httpClient reads this on every
+    // request, so it must be current before JournalScreen's first fetch
+    // fires in the same commit that mounts it (see ML-100).
+    setAuthToken(accessToken);
     setToken(accessToken);
     setRoles(grantedRoles);
     setFirstName(payload?.firstName ?? null);

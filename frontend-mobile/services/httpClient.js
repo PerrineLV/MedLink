@@ -8,4 +8,22 @@ const httpClient = axios.create({
   headers: { Accept: 'application/json' },
 });
 
+// Mutable holder read synchronously by the interceptor below, updated by
+// AuthContext at the same time as setToken (not via a useEffect) so the
+// header is never missing on the first request after login — see ML-100.
+let authToken = null;
+
+export function setAuthToken(token) {
+  authToken = token;
+}
+
+httpClient.interceptors.request.use((config) => {
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`;
+  } else {
+    delete config.headers.Authorization;
+  }
+  return config;
+});
+
 export default httpClient;
