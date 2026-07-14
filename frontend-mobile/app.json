@@ -25,9 +25,7 @@
     "updates": {
       "enabled": false
     },
-    "plugins": [
-      "@react-native-community/datetimepicker"
-    ],
+    "plugins": ["@react-native-community/datetimepicker"],
     "extra": {
       "eas": {
         "projectId": "ecc82037-8598-4128-a1ad-21deed74ae09"
