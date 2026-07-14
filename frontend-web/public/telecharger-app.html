@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Télécharger MedLink pour Android</title>
+    <link rel="icon" href="/favicon.svg" />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          'Inter',
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #f4f6fb;
+        color: #2e3862;
+      }
+
+      header {
+        background: #2e3862;
+        color: #ffffff;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      header .logo {
+        font-weight: 700;
+        font-size: 1.25rem;
+      }
+
+      main {
+        max-width: 40rem;
+        margin: 0 auto;
+        padding: 1.5rem 1.25rem 3rem;
+      }
+
+      .card {
+        background: #ffffff;
+        border-radius: 1.5rem;
+        padding: 1.75rem;
+        box-shadow: 0 2px 12px rgba(46, 56, 98, 0.08);
+        margin-bottom: 1.5rem;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+        margin-top: 0;
+      }
+
+      h2 {
+        font-size: 1.1rem;
+      }
+
+      .download-button {
+        display: inline-block;
+        background: #2e3862;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.9rem 1.75rem;
+        border-radius: 999px;
+        margin: 1rem 0;
+      }
+
+      .download-button:focus-visible {
+        outline: 3px solid #2e3862;
+        outline-offset: 2px;
+      }
+
+      .notice {
+        background: #fdf1dc;
+        color: #92400e;
+        border-radius: 1rem;
+        padding: 1rem 1.25rem;
+        font-size: 0.95rem;
+      }
+
+      ol {
+        padding-left: 1.25rem;
+        line-height: 1.6;
+      }
+
+      footer {
+        text-align: center;
+        font-size: 0.85rem;
+        color: #888888;
+        padding: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="logo">MedLink</span>
+    </header>
+    <main>
+      <div class="card">
+        <h1>Télécharger l'application Android</h1>
+        <p>
+          MedLink n'est pas distribuée sur le Google Play Store. Le fichier
+          d'installation (APK) est proposé directement en téléchargement
+          ci-dessous.
+        </p>
+        <a class="download-button" href="/downloads/medlink-latest.apk">
+          Télécharger l'APK MedLink
+        </a>
+        <p class="notice">
+          Cette installation se fait hors du Play Store. Android affichera un
+          avertissement à ce sujet lors de l'installation : c'est normal, il
+          suffit de suivre les étapes ci-dessous.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Installation sur votre téléphone Android</h2>
+        <ol>
+          <li>
+            Téléchargez le fichier avec le bouton ci-dessus, depuis le
+            navigateur de votre téléphone.
+          </li>
+          <li>
+            Ouvrez le fichier téléchargé depuis vos notifications ou
+            l'application « Fichiers ».
+          </li>
+          <li>
+            Si Android bloque l'installation, ouvrez
+            <strong>Paramètres</strong>, puis autorisez
+            <strong>« Installer des applications inconnues »</strong> (ou
+            <strong>« Sources inconnues »</strong> sur les versions plus
+            anciennes d'Android) pour l'application utilisée pour ouvrir le
+            fichier (navigateur ou gestionnaire de fichiers).
+          </li>
+          <li>Relancez l'installation, puis confirmez.</li>
+        </ol>
+      </div>
+    </main>
+    <footer>MedLink — Coordination du suivi médical à domicile</footer>
+  </body>
+</html>
