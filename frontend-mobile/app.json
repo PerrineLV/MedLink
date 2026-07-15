@@ -8,7 +8,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "fr.medlinkapp.mobile"
     },
     "android": {
       "package": "fr.medlinkapp.mobile",

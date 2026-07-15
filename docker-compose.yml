@@ -58,6 +58,13 @@ services:
       # container (infra_mirth_1), which silently breaks Expo Go with
       # "Something went wrong" instead of a clear port-conflict error.
       METRO_PORT: ${METRO_PORT:-8083}
+      # Since ML-97 linked app.json to an EAS project (extra.eas.projectId),
+      # Expo Go's manifest requests require a signed development certificate,
+      # which the CLI tries to fetch by logging into an Expo account. That
+      # login prompt can't be answered in this non-interactive container and
+      # crashes every manifest request ("Something went wrong" in Expo Go).
+      # EXPO_OFFLINE skips that certificate fetch entirely for local dev.
+      EXPO_OFFLINE: 1
     volumes:
       - ./frontend-mobile:/app
       - medlink_mobile_node_modules:/app/node_modules
