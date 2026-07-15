@@ -15,6 +15,10 @@ parameters:
     # Schéma de deep link de l'app mobile (ML-78) : utilisé à la place de
     # app.frontend_url quand la demande de réinitialisation vient du mobile.
     app.mobile_app_scheme: '%env(MOBILE_APP_SCHEME)%'
+    # Version courante et URL de l'APK (ML-98), exposées via GET /api/app-version
+    # pour l'update-checker mobile.
+    app.version: '%env(APP_VERSION)%'
+    app.apk_download_url: '%env(APK_DOWNLOAD_URL)%'
 
 services:
     # default configuration for services in *this* file
@@ -38,3 +42,8 @@ services:
             $frontendUrl: '%app.frontend_url%'
             $mobileScheme: '%app.mobile_app_scheme%'
             $fromAddress: '%app.mailer_from_address%'
+
+    App\Controller\AppVersionController:
+        arguments:
+            $version: '%app.version%'
+            $apkDownloadUrl: '%app.apk_download_url%'
