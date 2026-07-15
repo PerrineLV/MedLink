@@ -107,6 +107,12 @@
   flex-shrink: 0;
 }
 
+.register-consent-label a {
+  color: var(--color-primary-light);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .field-error {
   margin: 6px 0 0;
   color: var(--color-danger);

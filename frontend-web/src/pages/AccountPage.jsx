@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Download, KeyRound, Mail, ShieldCheck, Trash2, User } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import { useAuth } from '../contexts/useAuth';
@@ -283,6 +284,11 @@ function RgpdSection() {
         compte. Vos données sont conservées pendant toute la durée d’utilisation du compte, et
         chiffrées au repos et en transit. Vous pouvez à tout moment consulter, exporter ou supprimer
         vos données personnelles depuis cette page.
+      </p>
+      <p className="account-rgpd-text">
+        <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer">
+          Consulter la politique de confidentialité
+        </Link>
       </p>
     </section>
   );
