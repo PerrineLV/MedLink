@@ -23,6 +23,7 @@ import ExportScreen from './screens/ExportScreen';
 import AccountScreen from './screens/AccountScreen';
 import AdminBlockedScreen from './screens/AdminBlockedScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
+import UpdateBanner from './components/UpdateBanner';
 import { isAdminOnlySession } from './services/roles';
 
 const Stack = createStackNavigator();
@@ -110,6 +111,7 @@ export default function App() {
             <ActivityCapture>
               <RootNavigator />
               <SessionExpiryWarning />
+              <UpdateBanner />
               <StatusBar style="auto" />
             </ActivityCapture>
           </MessagesBadgeProvider>

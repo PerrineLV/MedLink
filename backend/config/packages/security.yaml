@@ -49,6 +49,7 @@ security:
     access_control:
         - { path: ^/api/auth/(login|refresh|logout|register), roles: PUBLIC_ACCESS }
         - { path: ^/api/password-reset/(request|confirm), roles: PUBLIC_ACCESS }
+        - { path: ^/api/app-version, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
