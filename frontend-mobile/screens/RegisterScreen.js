@@ -182,15 +182,24 @@ export default function RegisterScreen({ navigation }) {
               accessibilityState={{ checked: consent }}
               accessibilityLabel={
                 fieldErrors.consent
-                  ? `J'accepte le traitement de mes données de santé. Erreur : ${fieldErrors.consent}`
-                  : "J'accepte le traitement de mes données de santé"
+                  ? `J'accepte la politique de confidentialité et le traitement de mes données de santé. Erreur : ${fieldErrors.consent}`
+                  : "J'accepte la politique de confidentialité et le traitement de mes données de santé"
               }
             >
               <View style={[styles.checkbox, consent && styles.checkboxChecked]}>
                 {consent && <Text style={styles.checkboxMark}>✓</Text>}
               </View>
               <Text style={styles.consentText}>
-                J’accepte que mes données de santé soient traitées dans le cadre de MedLink.
+                J’ai lu et j’accepte la{' '}
+                <Text
+                  style={styles.consentLink}
+                  onPress={() => navigation.navigate('PrivacyPolicy')}
+                  accessibilityRole="link"
+                  accessibilityLabel="Lire la politique de confidentialité"
+                >
+                  politique de confidentialité
+                </Text>{' '}
+                : mes données de santé seront traitées dans le cadre de MedLink.
               </Text>
             </TouchableOpacity>
             {fieldErrors.consent && <Text style={styles.fieldError}>{fieldErrors.consent}</Text>}
@@ -349,6 +358,7 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   checkboxMark: { color: '#fff', fontSize: 14, fontWeight: '700' },
   consentText: { flex: 1, fontSize: 14, color: COLORS.text },
+  consentLink: { color: COLORS.primaryLight, fontWeight: '600', textDecorationLine: 'underline' },
   error: {
     backgroundColor: COLORS.dangerBg,
     color: COLORS.danger,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import { getHomeRoute } from '../services/roles';
 import './LoginPage.css';
 
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const registered = location.state?.registered === true;
+  const passwordReset = location.state?.passwordReset === true;
 
   if (isAuthenticated) {
     return <Navigate to={getHomeRoute(roles)} replace />;
@@ -50,6 +51,12 @@ export default function LoginPage() {
         {registered && (
           <p className="login-success" role="status">
             Compte créé, vous pouvez vous connecter.
+          </p>
+        )}
+
+        {passwordReset && (
+          <p className="login-success" role="status">
+            Mot de passe réinitialisé, vous pouvez vous connecter.
           </p>
         )}
 
@@ -90,6 +97,10 @@ export default function LoginPage() {
             {isSubmitting ? 'Connexion…' : 'Se connecter'}
           </button>
         </form>
+
+        <p className="login-forgot-password-link">
+          <Link to="/forgot-password">Mot de passe oublié ?</Link>
+        </p>
 
         <p className="login-register-link">
           Pas encore de compte ? <Link to="/register">Créer un compte</Link>

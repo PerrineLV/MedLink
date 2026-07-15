@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
-import { useMessagesBadge } from '../contexts/MessagesBadgeContext';
+import { useMessagesBadge } from '../contexts/useMessagesBadge';
 import {
   fetchContacts,
   fetchMessages,

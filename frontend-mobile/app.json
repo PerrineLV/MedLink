@@ -2,14 +2,17 @@
   "expo": {
     "name": "frontend-mobile",
     "slug": "frontend-mobile",
-    "version": "1.1.0",
+    "version": "1.2.0",
+    "scheme": "medlink",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "fr.medlinkapp.mobile"
     },
     "android": {
+      "package": "fr.medlinkapp.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -23,6 +26,12 @@
     "updates": {
       "enabled": false
     },
-    "plugins": ["@react-native-community/datetimepicker"]
+    "plugins": ["@react-native-community/datetimepicker"],
+    "extra": {
+      "eas": {
+        "projectId": "ecc82037-8598-4128-a1ad-21deed74ae09"
+      }
+    },
+    "owner": "perrine_lv"
   }
 }

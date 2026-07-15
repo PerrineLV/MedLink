@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext';
-import { useMessagesBadge } from '../contexts/MessagesBadgeContext';
+import { useAuth } from '../contexts/useAuth';
+import { useInvitationsBadge } from '../contexts/useInvitationsBadge';
+import { useMessagesBadge } from '../contexts/useMessagesBadge';
 import {
   ROLE_AIDANT,
   ROLE_LABELS,

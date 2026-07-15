@@ -17,7 +17,7 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 2
@@ -38,7 +38,7 @@ jobs:
       image: ${{ steps.image.outputs.image }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
@@ -51,14 +51,14 @@ jobs:
           echo "image=ghcr.io/${owner}/medlink-backend:${sha}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to ghcr.io
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: backend
           push: true
@@ -73,12 +73,12 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -109,9 +109,11 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}/frontend
+            mkdir -p downloads
             rm -rf dist_old
             [ -d dist ] && mv dist dist_old || true
             mv dist_new dist
+            ln -sfn ../downloads dist/downloads
             rm -rf dist_old
 
   deploy:

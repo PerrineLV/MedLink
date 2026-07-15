@@ -7,4 +7,4 @@ RUN npm ci
 
 COPY . .
 
-CMD ["npx", "expo", "start", "--lan"]
+CMD ["sh", "-c", "npx expo start --lan --port ${METRO_PORT:-8081}"]

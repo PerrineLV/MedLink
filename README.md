@@ -24,6 +24,28 @@ cp .env.example .env
 docker compose up -d
 ```
 
+## Hook pre-commit (formatage et lint automatiques)
+
+Un hook Git pre-commit (Husky + lint-staged) formate et lint automatiquement les
+fichiers stagés avant chaque commit : `prettier --write` + `oxlint --fix`
+(frontend-web) ou `eslint --fix` (frontend-mobile) sur les fichiers JS/JSX/TS/TSX/
+CSS/JSON, et `php-cs-fixer fix` sur les fichiers PHP stagés (backend). Le commit est
+auto-corrigé quand c'est possible, ou bloqué avec un message d'erreur clair si une
+erreur ESLint/oxlint ne peut pas être corrigée automatiquement (le check PHPStan
+complet reste réservé à la CI, trop lent en pre-commit).
+
+Installation (une fois le dépôt cloné) :
+
+```bash
+npm install
+```
+
+`npm install` déclenche automatiquement `husky` via le script `prepare` du
+`package.json` racine et active le hook — aucune étape manuelle supplémentaire.
+Le hook s'appuie sur les outils déjà installés dans `backend/vendor`,
+`frontend-web/node_modules` et `frontend-mobile/node_modules` : pense à avoir
+installé les dépendances de ces trois sous-projets au préalable.
+
 ## Jeu de données de développement
 
 Un jeu de fixtures Doctrine (`backend/src/DataFixtures/AppFixtures.php`) fournit des comptes

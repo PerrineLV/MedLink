@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Bell } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import PatientAutocomplete from '../components/PatientAutocomplete';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import {
   APPOINTMENT_STATUS,
   cancelAppointment,

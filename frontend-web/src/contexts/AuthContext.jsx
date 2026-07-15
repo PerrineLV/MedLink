@@ -1,15 +1,8 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { login as loginRequest } from '../services/authService';
 import httpClient from '../services/httpClient';
 import { decodeJwtPayload } from '../services/jwt';
+import { AuthContext } from './useAuth';
 
 // 30 min of inactivity logs the user out; a warning appears 2 min before.
 const INACTIVITY_LOGOUT_MS = 30 * 60 * 1000;
@@ -46,8 +39,6 @@ function readStoredSession() {
     firstName: payload.firstName ?? null,
   };
 }
-
-const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   // Set eagerly during the initial render (not in an effect) so the header
@@ -155,13 +146,4 @@ export function AuthProvider({ children }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-
-  return context;
 }
