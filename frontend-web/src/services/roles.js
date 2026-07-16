@@ -50,7 +50,6 @@ const SOIGNANT_SIDEBAR_ITEMS = [
   { key: 'messages', label: 'Messages', to: '/messages' },
   { key: 'agenda', label: 'Agenda', to: '/agenda' },
   { key: 'export', label: 'Export', to: '/export' },
-  { key: 'parametres', label: 'Paramètres', to: null },
   { key: 'compte', label: 'Mon compte', to: '/account' },
 ];
 
