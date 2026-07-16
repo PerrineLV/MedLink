@@ -103,7 +103,7 @@ export default function ConversationScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flexFill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.header}>
         <TouchableOpacity

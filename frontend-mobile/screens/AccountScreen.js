@@ -3,14 +3,16 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
-  ScrollView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
 import SecurityBanner from '../components/SecurityBanner';
@@ -102,7 +104,7 @@ export default function AccountScreen() {
         <SecurityBanner />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.content} enableOnAndroid>
         <Text style={styles.title}>Mon compte</Text>
 
         {loadError && (
@@ -125,7 +127,7 @@ export default function AccountScreen() {
         )}
 
         <AppVersion />
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
     </View>
@@ -498,7 +500,10 @@ function DeleteAccountSection({ onDeleted }) {
         animationType="fade"
         onRequestClose={closeConfirmation}
       >
-        <View style={styles.overlay}>
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.confirmCard} accessibilityRole="alert">
             <Text style={styles.confirmText}>
               Pour confirmer la suppression définitive de votre compte, saisissez votre mot de
@@ -544,7 +549,7 @@ function DeleteAccountSection({ onDeleted }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Section>
   );
