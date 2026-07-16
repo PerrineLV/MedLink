@@ -7,6 +7,9 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Changed
+- Modale "Profil" mobile (ML-61) : remplacement de l'`Alert.alert` natif (non stylable, incohérent avec le reste de l'appli) par une modale maison reprenant l'identité visuelle MedLink (fond navy `#2E3862`, boutons en pilules arrondies, action "Se déconnecter" mise en évidence), avec le même habillage que la modale de confirmation de suppression de compte. Accessibilité : `accessibilityRole="alert"` + `accessibilityViewIsModal` sur la carte, zones tactiles ≥ 44×44 pt, fermeture au bouton retour Android (`onRequestClose`)
+
 ## [1.2.0] - 2026-07-15
 
 ### Added

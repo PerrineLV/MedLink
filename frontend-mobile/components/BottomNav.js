@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext';
 import { useMessagesBadge } from '../contexts/MessagesBadgeContext';
 import { COLORS, TYPE } from '../services/journalPresentation';
@@ -22,24 +22,77 @@ function confirmLogout(logout) {
   ]);
 }
 
-// L'onglet "Profil" n'a pas d'écran dédié : la barre de navigation étant
-// figée à 5 items (cf. skill medlink-ui-conventions). "Mes liaisons" (ML-47)
-// est réservé au patient (c'est lui qui gère ses propres liens) ; l'aidant et
-// le soignant y voient à la place "Invitations reçues" (ML-48), l'écran
-// symétrique côté destinataire.
-export function openProfileMenu(navigation, logout, roles = []) {
+// Menu "Profil" (ML-61) : l'onglet n'a pas d'écran dédié, la barre de
+// navigation étant figée à 5 items (cf. skill medlink-ui-conventions).
+// Modale maison (au lieu d'un Alert.alert natif) pour reprendre l'identité
+// visuelle MedLink — même habillage que la modale de confirmation de
+// suppression de compte (AccountScreen).
+function ProfileMenuModal({ visible, onClose, navigation, roles, logout }) {
   const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT);
+  // "Mes liaisons" (ML-47) est réservé au patient (c'est lui qui gère ses
+  // propres liens) ; l'aidant et le soignant y voient à la place
+  // "Invitations reçues" (ML-48), l'écran symétrique côté destinataire.
+  const linkItem = canReceiveInvitations
+    ? { key: 'invitations', label: 'Invitations reçues', screen: 'Invitations' }
+    : { key: 'liaisons', label: 'Mes liaisons', screen: 'Liaisons' };
 
-  const menuItem = canReceiveInvitations
-    ? { text: 'Invitations reçues', onPress: () => navigation.navigate('Invitations') }
-    : { text: 'Mes liaisons', onPress: () => navigation.navigate('Liaisons') };
+  const navigateTo = (screen) => {
+    onClose();
+    navigation.navigate(screen);
+  };
 
-  Alert.alert('Profil', undefined, [
-    menuItem,
-    { text: 'Mon compte', onPress: () => navigation.navigate('Account') },
-    { text: 'Se déconnecter', style: 'destructive', onPress: () => confirmLogout(logout) },
-    { text: 'Annuler', style: 'cancel' },
-  ]);
+  const handleLogoutPress = () => {
+    onClose();
+    confirmLogout(logout);
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.menuOverlay}>
+        <View style={styles.menuCard} accessibilityRole="alert" accessibilityViewIsModal>
+          <Text style={styles.menuTitle} accessibilityRole="header">
+            Profil
+          </Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigateTo(linkItem.screen)}
+            accessibilityRole="button"
+            accessibilityLabel={linkItem.label}
+          >
+            <Text style={styles.menuItemText}>{linkItem.label}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigateTo('Account')}
+            accessibilityRole="button"
+            accessibilityLabel="Mon compte"
+          >
+            <Text style={styles.menuItemText}>Mon compte</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuLogoutButton}
+            onPress={handleLogoutPress}
+            accessibilityRole="button"
+            accessibilityLabel="Se déconnecter"
+          >
+            <Text style={styles.menuLogoutText}>Se déconnecter</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuCancelButton}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Annuler"
+          >
+            <Text style={styles.menuCancelText}>Annuler</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
 const BOTTOM_NAV_ITEMS = [
@@ -50,7 +103,8 @@ const BOTTOM_NAV_ITEMS = [
   { key: 'Profil', icon: '👤', screen: null },
 ];
 
-export default function BottomNav({ navigation, activeKey, onProfilePress, roles = [] }) {
+export default function BottomNav({ navigation, activeKey, logout, roles = [] }) {
+  const [isProfileMenuVisible, setIsProfileMenuVisible] = useState(false);
   const canReceiveInvitations = roles.includes(ROLE_AIDANT) || roles.includes(ROLE_SOIGNANT);
   const { pendingInvitationsCount, refresh: refreshPendingInvitationsCount } =
     useInvitationsBadge();
@@ -78,7 +132,7 @@ export default function BottomNav({ navigation, activeKey, onProfilePress, roles
         const showBadge = badgeCount > 0;
 
         const onPress = () => {
-          if (item.key === 'Profil') return onProfilePress();
+          if (item.key === 'Profil') return setIsProfileMenuVisible(true);
           if (item.screen) return navigation.navigate(item.screen);
 
           return notifyComingSoon();
@@ -121,6 +175,14 @@ export default function BottomNav({ navigation, activeKey, onProfilePress, roles
           </TouchableOpacity>
         );
       })}
+
+      <ProfileMenuModal
+        visible={isProfileMenuVisible}
+        onClose={() => setIsProfileMenuVisible(false)}
+        navigation={navigation}
+        roles={roles}
+        logout={logout}
+      />
     </View>
   );
 }
@@ -156,4 +218,55 @@ const styles = StyleSheet.create({
   bottomNavBadgeText: { color: COLORS.onPrimary, fontSize: 10, fontWeight: '700' },
   bottomNavLabel: { fontSize: TYPE.xs, color: 'rgba(255,255,255,0.7)' },
   bottomNavLabelActive: { color: COLORS.onPrimary, fontWeight: '700' },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  menuCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+    gap: 12,
+  },
+  menuTitle: {
+    color: COLORS.onPrimary,
+    fontSize: TYPE.md,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  menuItem: {
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 33,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  menuItemText: { color: COLORS.onPrimary, fontWeight: '600', fontSize: TYPE.sm },
+  menuLogoutButton: {
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 33,
+    backgroundColor: COLORS.onPrimary,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  menuLogoutText: { color: COLORS.red.text, fontWeight: '700', fontSize: TYPE.sm },
+  menuCancelButton: {
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 33,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  menuCancelText: { color: 'rgba(255,255,255,0.7)', fontWeight: '600', fontSize: TYPE.sm },
 });
