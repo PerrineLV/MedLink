@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import {
   ActivityIndicator,
   Modal,
@@ -122,6 +123,8 @@ export default function AccountScreen() {
             <DeleteAccountSection onDeleted={logout} />
           </>
         )}
+
+        <AppVersion />
       </ScrollView>
 
       <BottomNav
@@ -131,6 +134,20 @@ export default function AccountScreen() {
         onProfilePress={() => openProfileMenu(navigation, logout, roles)}
       />
     </View>
+  );
+}
+
+// Numéro de version affiché (ML-89), lu depuis app.json → expo.version via
+// expo-constants — même source que le update-checker (UpdateBanner, ML-98).
+// Jamais codé en dur : se met à jour seul à chaque bump de app.json.
+function AppVersion() {
+  const version = Constants.expoConfig?.version;
+  if (!version) return null;
+
+  return (
+    <Text style={styles.appVersion} accessibilityRole="text">
+      {`Version de l'application : v${version}`}
+    </Text>
   );
 }
 
@@ -578,6 +595,12 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: TYPE.sm, color: COLORS.mutedText, fontWeight: '600' },
   infoValue: { fontSize: TYPE.sm, color: COLORS.primary, fontWeight: '700', flexShrink: 1 },
   rgpdText: { fontSize: TYPE.sm, color: COLORS.primary, lineHeight: 20 },
+  appVersion: {
+    fontSize: TYPE.xs,
+    color: COLORS.mutedText,
+    textAlign: 'center',
+    marginTop: 4,
+  },
   rgpdLink: {
     fontSize: TYPE.sm,
     color: COLORS.primary,

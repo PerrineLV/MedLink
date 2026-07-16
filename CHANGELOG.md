@@ -7,6 +7,9 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Added
+- Affichage du numéro de version de l'application (ML-89) : web, en bas de la sidebar (`import.meta.env.VITE_APP_VERSION`, injecté par `vite.config.js` depuis `package.json` à chaque build, dev comme prod) ; mobile, dans l'écran "Mon compte" (`app.json` → `expo.version`, lu via `expo-constants`, même source que le update-checker ML-98). Aucune valeur codée en dur : le numéro affiché suit automatiquement le bump de version, sans modification de code applicatif
+
 ## [1.2.0] - 2026-07-15
 
 ### Added

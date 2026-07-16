@@ -127,6 +127,8 @@ export default function AppLayout({ children, securityBanner }) {
               );
             })}
           </ul>
+
+          <p className="app-sidebar-version">v{import.meta.env.VITE_APP_VERSION}</p>
         </nav>
 
         <main id="app-main-content" className="app-content">
