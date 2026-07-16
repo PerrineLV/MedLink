@@ -18,19 +18,40 @@
   padding: 16px;
 }
 
+/* Mobile-first : la liste de contacts et le fil de conversation n'ont pas
+   la place de tenir côte à côte sous ~700px (ML-63) — empilés par défaut,
+   remis en colonnes une fois assez de largeur disponible. */
 .messaging-layout {
   display: flex;
-  gap: 24px;
-  align-items: stretch;
-  height: 70vh;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .messaging-contacts {
-  width: 200px;
+  width: 100%;
+  max-height: 260px;
   flex-shrink: 0;
   background: var(--color-surface);
   border-radius: var(--radius-md);
   overflow-y: auto;
+}
+
+@media (min-width: 700px) {
+  .messaging-layout {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 24px;
+    height: 70vh;
+  }
+
+  .messaging-contacts {
+    width: 200px;
+    max-height: none;
+  }
+
+  .messaging-thread {
+    min-height: 0;
+  }
 }
 
 .messaging-contacts ul {
@@ -118,6 +139,7 @@
 .messaging-thread {
   flex: 1;
   min-width: 0;
+  min-height: 60vh;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);

@@ -30,7 +30,8 @@
 .patient-card {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   width: 100%;
   border: none;
   border-radius: var(--radius-md);

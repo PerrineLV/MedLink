@@ -7,6 +7,13 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Changed
+- Navigation web sous le breakpoint mobile (<900px, ML-63) : la sidebar, qui passait en ligne d'items avec retour à la ligne sous le header, est remplacée par un menu burger (`AppLayout`) — icône ☰/✕ dans l'en-tête (zone tactile 44×44, `aria-expanded`/`aria-controls`/`aria-label` dynamique), ouvrant un panneau en overlay au-dessus du contenu (au lieu de le pousser) listant les mêmes items et badges de compteur qu'avant. Fermeture au clic sur un item, au clic à l'extérieur et à la touche Échap. En resserrant ce changement, l'en-tête (déjà tout juste à la limite de largeur sur petit écran) a aussi été resserré pour ne pas déborder jusqu'à ~360px
+- Bouton "Se déconnecter" moins imposant sur mobile (<900px, ML-63) : icône seule (`lucide-react` `LogOut`, même gabarit 44×44 que le bouton cloche) au lieu de la pilule bordée avec libellé complet, qui prenait une place disproportionnée dans l'en-tête. Libellé toujours visible au clic (`aria-label`) et sur desktop, où le bouton gagne au passage la même icône
+
+### Fixed
+- Responsive web (ML-63), audité sur desktop large / tablette ~768px / mobile ~390px pour Journal, Messagerie, RDV, Export PDF et Profil (patient, aidant, soignant) : la messagerie (`MessagingPage`) passait en layout deux colonnes figé sous ~700px, rendant le fil de conversation illisible (texte compressé sur une colonne d'un mot) — repassée en mobile-first, empilée sous 700px puis remise en colonnes au-delà ; la carte patient (`PatientsPage`, écran d'accueil soignant) ne prévoyait pas de repli pour son badge de statut, qui finissait par chevaucher le texte "Dernière entrée" sous ~480px — carte passée en `flex-wrap` pour que le badge retombe proprement sur sa propre ligne ; le bouton "Se déconnecter" de l'en-tête (`AppLayout`, présent sur tout le site) ne faisait que 35px de haut, sous le minimum RGAA de 44×44 px déjà appliqué côté mobile — corrigé à 44px partout. Vérifié : aucun débordement horizontal résiduel (desktop/tablette/mobile), formulaires (nouvelle entrée journal, export personnalisé, commentaire soignant) et zones tactiles conformes sur les 9 écrans audités
+
 ### Removed
 - Page "dashboard" web vide (ML-62), reliquat de l'initialisation du projet : route `/dashboard`, composant `DashboardPage` et entrée "Tableau de bord" de la sidebar soignant supprimés. Le fallback de `getHomeRoute()` (utilisateur authentifié sans rôle reconnu — cas normalement impossible côté backend) pointe désormais vers `/login` plutôt que vers cette page morte
 
