@@ -8,7 +8,7 @@ import {
   markMessageRead,
   sendMessage,
 } from '../services/messageService';
-import { ROLE_LABELS } from '../services/roles';
+import { ROLE_LABELS, ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
 import './MessagingPage.css';
 
 // Recommandation ML-26 (solo dev, délai limité) : polling plutôt que
@@ -22,6 +22,12 @@ const GENERIC_SEND_ERROR =
 
 function initials(firstName, lastName) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
+}
+
+function contactDisplayName(contact) {
+  return contact.role === ROLE_SOIGNANT
+    ? formatSoignantName(contact.firstName, contact.lastName, contact.title)
+    : `${contact.firstName} ${contact.lastName}`;
 }
 
 // Précise, pour un contact aidant/soignant, via quel(s) patient(s) commun(s)
@@ -49,9 +55,7 @@ function ContactListItem({ contact, isSelected, onSelect }) {
           {initials(contact.firstName, contact.lastName)}
         </span>
         <span className="messaging-contact-info">
-          <span className="messaging-contact-name">
-            {contact.firstName} {contact.lastName}
-          </span>
+          <span className="messaging-contact-name">{contactDisplayName(contact)}</span>
           <span className="messaging-contact-role">{ROLE_LABELS[contact.role]}</span>
           {via && (
             <span className="messaging-contact-via" title={via}>
@@ -258,7 +262,7 @@ function ConversationThread({ contact, messages, error, onSent }) {
     }
   };
 
-  const contactName = `${contact.firstName} ${contact.lastName}`;
+  const contactName = contactDisplayName(contact);
 
   return (
     <>

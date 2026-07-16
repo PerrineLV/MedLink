@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { fetchMessages, markMessageRead, sendMessage } from '../services/messageService';
 import { COLORS, TYPE } from '../services/journalPresentation';
+import { ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
 
 // Recommandation ML-26 (solo dev, délai limité) : polling plutôt que
 // WebSocket/Mercure, largement suffisant pour l'usage visé.
@@ -24,8 +25,11 @@ const GENERIC_SEND_ERROR =
 export default function ConversationScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { contactId, firstName, lastName, role } = route.params;
-  const contactName = `${firstName} ${lastName}`;
+  const { contactId, firstName, lastName, title, role } = route.params;
+  const contactName =
+    role === ROLE_SOIGNANT
+      ? formatSoignantName(firstName, lastName, title)
+      : `${firstName} ${lastName}`;
 
   const [messages, setMessages] = useState(null);
   const [error, setError] = useState(null);

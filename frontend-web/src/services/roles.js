@@ -13,6 +13,15 @@ export const ROLE_LABELS = {
 };
 
 /**
+ * Single point of truth for how a soignant's name is displayed to a patient
+ * or aidant (ML-72) — prefixes the professional title (ex. "Dr") set at
+ * signup, without ever dropping firstName/lastName.
+ */
+export function formatSoignantName(firstName, lastName, title) {
+  return title ? `${title} ${firstName} ${lastName}` : `${firstName} ${lastName}`;
+}
+
+/**
  * A user can technically hold several roles; this picks the one that
  * should drive which dashboard content is shown.
  */

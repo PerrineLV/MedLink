@@ -24,14 +24,24 @@ import {
 import { fetchContacts } from '../services/messageService';
 import { fetchPatients } from '../services/patientService';
 import { COLORS, TYPE } from '../services/journalPresentation';
-import { ROLE_AIDANT, ROLE_LABELS, ROLE_SOIGNANT, getPrimaryRole } from '../services/roles';
+import {
+  ROLE_AIDANT,
+  ROLE_LABELS,
+  ROLE_SOIGNANT,
+  formatSoignantName,
+  getPrimaryRole,
+} from '../services/roles';
 
 const MIN_TOUCH_TARGET = 44;
 const GENERIC_LOAD_ERROR = 'Impossible de charger vos rendez-vous. Vérifiez votre connexion.';
 const GENERIC_CANCEL_ERROR = "Impossible d'annuler ce rendez-vous. Réessayez.";
 
+// Les contacts résolus ici sont déjà filtrés sur ROLE_SOIGNANT (cf. load()
+// plus bas) : pas besoin de re-vérifier le rôle avant de préfixer le titre.
 function contactDisplayName(contact) {
-  return contact ? `${contact.firstName} ${contact.lastName}` : 'Soignant';
+  return contact
+    ? formatSoignantName(contact.firstName, contact.lastName, contact.title)
+    : 'Soignant';
 }
 
 export default function AppointmentScreen() {
