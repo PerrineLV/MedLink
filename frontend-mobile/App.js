@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { InvitationsBadgeProvider } from './contexts/InvitationsBadgeContext';
 import { MessagesBadgeProvider } from './contexts/MessagesBadgeContext';
+import WelcomeScreen from './screens/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
@@ -49,10 +50,11 @@ function RootNavigator() {
     <NavigationContainer linking={linking}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
-        initialRouteName={!isAuthenticated ? 'Login' : adminOnly ? 'AdminBlocked' : 'Journal'}
+        initialRouteName={!isAuthenticated ? 'Welcome' : adminOnly ? 'AdminBlocked' : 'Journal'}
       >
         {!isAuthenticated ? (
           <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
