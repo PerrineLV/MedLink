@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
-import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { useInvitationsBadge } from '../contexts/InvitationsBadgeContext';
 import {
@@ -92,7 +91,6 @@ export default function InvitationsScreen() {
     <View style={styles.screen}>
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
-        <SecurityBanner />
       </View>
 
       {error && (

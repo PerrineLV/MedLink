@@ -15,7 +15,6 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
-import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import {
   changeEmail,
@@ -101,7 +100,6 @@ export default function AccountScreen() {
     <View style={styles.screen}>
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
-        <SecurityBanner />
       </View>
 
       <KeyboardAwareScrollView contentContainerStyle={styles.content} enableOnAndroid>
