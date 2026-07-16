@@ -17,7 +17,7 @@ import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchLiaisons, inviteLiaison, revokeLiaison } from '../services/liaisonService';
 import { COLORS, TYPE } from '../services/journalPresentation';
-import { ROLE_LABELS } from '../services/roles';
+import { ROLE_LABELS, ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
 
 const MIN_TOUCH_TARGET = 44;
 const GENERIC_LOAD_ERROR = 'Impossible de charger vos liaisons. Vérifiez votre connexion.';
@@ -28,8 +28,14 @@ function initials(firstName, lastName) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
 }
 
+function liaisonDisplayName(liaison) {
+  return liaison.inviteeRole === ROLE_SOIGNANT
+    ? formatSoignantName(liaison.inviteeFirstName, liaison.inviteeLastName, liaison.inviteeTitle)
+    : `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+}
+
 function confirmRevoke(liaison, onConfirm) {
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+  const name = liaisonDisplayName(liaison);
 
   Alert.alert(
     'Révoquer cet accès ?',
@@ -149,7 +155,7 @@ export default function LiaisonsScreen() {
 }
 
 function LiaisonCard({ liaison, onRevoke }) {
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+  const name = liaisonDisplayName(liaison);
 
   return (
     <View style={styles.card}>
