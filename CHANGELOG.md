@@ -7,8 +7,11 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+
 ### Changed
 - Modale "Profil" mobile (ML-61) : remplacement de l'`Alert.alert` natif (non stylable, incohérent avec le reste de l'appli) par une modale maison reprenant l'identité visuelle MedLink (fond navy `#2E3862`, boutons en pilules arrondies, action "Se déconnecter" mise en évidence), avec le même habillage que la modale de confirmation de suppression de compte. Accessibilité : `accessibilityRole="alert"` + `accessibilityViewIsModal` sur la carte, zones tactiles ≥ 44×44 pt, fermeture au bouton retour Android (`onRequestClose`)
+- Affichage du numéro de version de l'application (ML-89) : web, en bas de la sidebar (`import.meta.env.VITE_APP_VERSION`, injecté par `vite.config.js` depuis `package.json` à chaque build, dev comme prod) ; mobile, dans l'écran "Mon compte" (`app.json` → `expo.version`, lu via `expo-constants`, même source que le update-checker ML-98). Aucune valeur codée en dur : le numéro affiché suit automatiquement le bump de version, sans modification de code applicatif
+
 
 ## [1.2.0] - 2026-07-15
 
