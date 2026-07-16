@@ -1,14 +1,6 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { requestPasswordReset } from '../services/authService';
 
 const GENERIC_ERROR = "Impossible d'envoyer la demande, réessayez.";
@@ -38,75 +30,75 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.flexFill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>MedLink</Text>
-          <Text style={styles.subtitle}>Mot de passe oublié</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>MedLink</Text>
+        <Text style={styles.subtitle}>Mot de passe oublié</Text>
 
-          {confirmationMessage ? (
-            <Text style={styles.success} accessibilityRole="text">
-              {confirmationMessage}
-            </Text>
-          ) : (
-            <>
-              <View style={styles.field}>
-                <Text style={styles.label}>Adresse e-mail</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  accessibilityLabel="Adresse e-mail"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="email-address"
-                  textContentType="username"
-                  returnKeyType="done"
-                  onSubmitEditing={handleSubmit}
-                />
-              </View>
+        {confirmationMessage ? (
+          <Text style={styles.success} accessibilityRole="text">
+            {confirmationMessage}
+          </Text>
+        ) : (
+          <>
+            <View style={styles.field}>
+              <Text style={styles.label}>Adresse e-mail</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                accessibilityLabel="Adresse e-mail"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                textContentType="username"
+                returnKeyType="done"
+                onSubmitEditing={handleSubmit}
+              />
+            </View>
 
-              {error && (
-                <Text style={styles.error} accessibilityRole="alert">
-                  {error}
-                </Text>
-              )}
+            {error && (
+              <Text style={styles.error} accessibilityRole="alert">
+                {error}
+              </Text>
+            )}
 
-              <TouchableOpacity
-                style={[styles.submit, isSubmitting && styles.submitDisabled]}
-                onPress={handleSubmit}
-                disabled={isSubmitting}
-                accessibilityRole="button"
-                accessibilityLabel="Envoyer le lien de réinitialisation"
-              >
-                <Text style={styles.submitText}>
-                  {isSubmitting ? 'Envoi…' : 'Envoyer le lien de réinitialisation'}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
+            <TouchableOpacity
+              style={[styles.submit, isSubmitting && styles.submitDisabled]}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+              accessibilityRole="button"
+              accessibilityLabel="Envoyer le lien de réinitialisation"
+            >
+              <Text style={styles.submitText}>
+                {isSubmitting ? 'Envoi…' : 'Envoyer le lien de réinitialisation'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ResetPassword')}
-            accessibilityRole="link"
-            accessibilityLabel="J'ai déjà un code de réinitialisation"
-          >
-            <Text style={styles.secondaryLink}>J'ai déjà un code</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ResetPassword')}
+          accessibilityRole="link"
+          accessibilityLabel="J'ai déjà un code de réinitialisation"
+        >
+          <Text style={styles.secondaryLink}>J’ai déjà un code</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            accessibilityRole="link"
-            accessibilityLabel="Retour à la connexion"
-          >
-            <Text style={styles.secondaryLink}>Retour à la connexion</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Login')}
+          accessibilityRole="link"
+          accessibilityLabel="Retour à la connexion"
+        >
+          <Text style={styles.secondaryLink}>Retour à la connexion</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 

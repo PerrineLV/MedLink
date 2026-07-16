@@ -1,14 +1,6 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../contexts/AuthContext';
 
 const GENERIC_ERROR = 'Identifiants incorrects';
@@ -44,90 +36,90 @@ export default function LoginScreen({ navigation, route }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.flexFill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>MedLink</Text>
-          <Text style={styles.subtitle}>Connectez-vous à votre espace</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>MedLink</Text>
+        <Text style={styles.subtitle}>Connectez-vous à votre espace</Text>
 
-          {registered && (
-            <Text style={styles.success} accessibilityRole="text">
-              Compte créé, vous pouvez vous connecter.
-            </Text>
-          )}
+        {registered && (
+          <Text style={styles.success} accessibilityRole="text">
+            Compte créé, vous pouvez vous connecter.
+          </Text>
+        )}
 
-          {passwordReset && (
-            <Text style={styles.success} accessibilityRole="text">
-              Mot de passe réinitialisé, vous pouvez vous connecter.
-            </Text>
-          )}
+        {passwordReset && (
+          <Text style={styles.success} accessibilityRole="text">
+            Mot de passe réinitialisé, vous pouvez vous connecter.
+          </Text>
+        )}
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Adresse e-mail</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              accessibilityLabel="Adresse e-mail"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="username"
-              returnKeyType="next"
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Mot de passe</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              accessibilityLabel="Mot de passe"
-              secureTextEntry
-              textContentType="password"
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-            />
-          </View>
-
-          {error && (
-            <Text style={styles.error} accessibilityRole="alert">
-              {error}
-            </Text>
-          )}
-
-          <TouchableOpacity
-            style={[styles.submit, isSubmitting && styles.submitDisabled]}
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            accessibilityRole="button"
-            accessibilityLabel="Se connecter"
-          >
-            <Text style={styles.submitText}>{isSubmitting ? 'Connexion…' : 'Se connecter'}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ForgotPassword')}
-            accessibilityRole="link"
-            accessibilityLabel="Mot de passe oublié"
-          >
-            <Text style={styles.forgotPasswordLink}>Mot de passe oublié ?</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Register')}
-            accessibilityRole="link"
-            accessibilityLabel="Pas encore de compte : en créer un"
-          >
-            <Text style={styles.registerLink}>Pas encore de compte ? Créer un compte</Text>
-          </TouchableOpacity>
+        <View style={styles.field}>
+          <Text style={styles.label}>Adresse e-mail</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            accessibilityLabel="Adresse e-mail"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="username"
+            returnKeyType="next"
+          />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Mot de passe</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            accessibilityLabel="Mot de passe"
+            secureTextEntry
+            textContentType="password"
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
+        </View>
+
+        {error && (
+          <Text style={styles.error} accessibilityRole="alert">
+            {error}
+          </Text>
+        )}
+
+        <TouchableOpacity
+          style={[styles.submit, isSubmitting && styles.submitDisabled]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+          accessibilityRole="button"
+          accessibilityLabel="Se connecter"
+        >
+          <Text style={styles.submitText}>{isSubmitting ? 'Connexion…' : 'Se connecter'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ForgotPassword')}
+          accessibilityRole="link"
+          accessibilityLabel="Mot de passe oublié"
+        >
+          <Text style={styles.forgotPasswordLink}>Mot de passe oublié ?</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Register')}
+          accessibilityRole="link"
+          accessibilityLabel="Pas encore de compte : en créer un"
+        >
+          <Text style={styles.registerLink}>Pas encore de compte ? Créer un compte</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 

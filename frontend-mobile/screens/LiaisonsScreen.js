@@ -4,13 +4,13 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
 import SecurityBanner from '../components/SecurityBanner';
@@ -110,9 +110,10 @@ export default function LiaisonsScreen() {
         </Text>
       )}
 
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.list}
         contentContainerStyle={styles.listContent}
+        enableOnAndroid
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -140,7 +141,7 @@ export default function LiaisonsScreen() {
         ) : (
           pendingLiaisons.map((liaison) => <LiaisonCard key={liaison.id} liaison={liaison} />)
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
     </View>

@@ -1,14 +1,6 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { confirmPasswordReset } from '../services/authService';
 
 const GENERIC_ERROR = 'Impossible de réinitialiser le mot de passe, réessayez.';
@@ -55,103 +47,103 @@ export default function ResetPasswordScreen({ navigation, route }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.flexFill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>MedLink</Text>
-          <Text style={styles.subtitle}>Réinitialiser le mot de passe</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>MedLink</Text>
+        <Text style={styles.subtitle}>Réinitialiser le mot de passe</Text>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Code reçu par email</Text>
-            <TextInput
-              style={styles.input}
-              value={token}
-              onChangeText={setToken}
-              accessibilityLabel="Code reçu par email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="next"
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Nouveau mot de passe</Text>
-            <TextInput
-              style={styles.input}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              accessibilityLabel="Nouveau mot de passe"
-              secureTextEntry
-              textContentType="newPassword"
-              returnKeyType="next"
-            />
-            {fieldErrors.newPassword && (
-              <Text style={styles.fieldError} accessibilityRole="alert">
-                {fieldErrors.newPassword}
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Confirmer le nouveau mot de passe</Text>
-            <TextInput
-              style={styles.input}
-              value={confirmNewPassword}
-              onChangeText={setConfirmNewPassword}
-              accessibilityLabel="Confirmer le nouveau mot de passe"
-              secureTextEntry
-              textContentType="newPassword"
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-            />
-            {fieldErrors.confirmNewPassword && (
-              <Text style={styles.fieldError} accessibilityRole="alert">
-                {fieldErrors.confirmNewPassword}
-              </Text>
-            )}
-          </View>
-
-          {bannerError && (
-            <Text style={styles.error} accessibilityRole="alert">
-              {bannerError}
-            </Text>
-          )}
-
-          {linkExpired && (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('ForgotPassword')}
-              accessibilityRole="link"
-              accessibilityLabel="Refaire une demande de réinitialisation"
-            >
-              <Text style={styles.secondaryLink}>Refaire une demande</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={[styles.submit, isSubmitting && styles.submitDisabled]}
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            accessibilityRole="button"
-            accessibilityLabel="Réinitialiser le mot de passe"
-          >
-            <Text style={styles.submitText}>
-              {isSubmitting ? 'Réinitialisation…' : 'Réinitialiser le mot de passe'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            accessibilityRole="link"
-            accessibilityLabel="Retour à la connexion"
-          >
-            <Text style={styles.secondaryLink}>Retour à la connexion</Text>
-          </TouchableOpacity>
+        <View style={styles.field}>
+          <Text style={styles.label}>Code reçu par email</Text>
+          <TextInput
+            style={styles.input}
+            value={token}
+            onChangeText={setToken}
+            accessibilityLabel="Code reçu par email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="next"
+          />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Nouveau mot de passe</Text>
+          <TextInput
+            style={styles.input}
+            value={newPassword}
+            onChangeText={setNewPassword}
+            accessibilityLabel="Nouveau mot de passe"
+            secureTextEntry
+            textContentType="newPassword"
+            returnKeyType="next"
+          />
+          {fieldErrors.newPassword && (
+            <Text style={styles.fieldError} accessibilityRole="alert">
+              {fieldErrors.newPassword}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Confirmer le nouveau mot de passe</Text>
+          <TextInput
+            style={styles.input}
+            value={confirmNewPassword}
+            onChangeText={setConfirmNewPassword}
+            accessibilityLabel="Confirmer le nouveau mot de passe"
+            secureTextEntry
+            textContentType="newPassword"
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
+          {fieldErrors.confirmNewPassword && (
+            <Text style={styles.fieldError} accessibilityRole="alert">
+              {fieldErrors.confirmNewPassword}
+            </Text>
+          )}
+        </View>
+
+        {bannerError && (
+          <Text style={styles.error} accessibilityRole="alert">
+            {bannerError}
+          </Text>
+        )}
+
+        {linkExpired && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            accessibilityRole="link"
+            accessibilityLabel="Refaire une demande de réinitialisation"
+          >
+            <Text style={styles.secondaryLink}>Refaire une demande</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[styles.submit, isSubmitting && styles.submitDisabled]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+          accessibilityRole="button"
+          accessibilityLabel="Réinitialiser le mot de passe"
+        >
+          <Text style={styles.submitText}>
+            {isSubmitting ? 'Réinitialisation…' : 'Réinitialiser le mot de passe'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Login')}
+          accessibilityRole="link"
+          accessibilityLabel="Retour à la connexion"
+        >
+          <Text style={styles.secondaryLink}>Retour à la connexion</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 
