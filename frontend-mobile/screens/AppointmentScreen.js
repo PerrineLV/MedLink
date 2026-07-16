@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import BottomNav, { openProfileMenu } from '../components/BottomNav';
+import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
 import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
@@ -215,12 +215,7 @@ export default function AppointmentScreen() {
         )}
       </ScrollView>
 
-      <BottomNav
-        navigation={navigation}
-        activeKey="RDV"
-        roles={roles}
-        onProfilePress={() => openProfileMenu(navigation, logout, roles)}
-      />
+      <BottomNav navigation={navigation} activeKey="RDV" roles={roles} logout={logout} />
     </View>
   );
 }

@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import BottomNav, { openProfileMenu } from '../components/BottomNav';
+import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
 import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
@@ -159,8 +159,8 @@ export default function JournalScreen() {
 
       {!canCreateEntry && roles.includes(ROLE_AIDANT) && !roles.includes(ROLE_PATIENT) && (
         <Text style={styles.noPatientInfo} accessibilityRole="text">
-          Aucun patient rattaché pour le moment. C'est le patient qui doit vous inviter pour que
-          vous puissiez saisir une entrée pour lui.
+          Aucun patient rattaché pour le moment. C&apos;est le patient qui doit vous inviter pour
+          que vous puissiez saisir une entrée pour lui.
         </Text>
       )}
 
@@ -202,12 +202,7 @@ export default function JournalScreen() {
         }
       />
 
-      <BottomNav
-        navigation={navigation}
-        activeKey="Journal"
-        roles={roles}
-        onProfilePress={() => openProfileMenu(navigation, logout, roles)}
-      />
+      <BottomNav navigation={navigation} activeKey="Journal" roles={roles} logout={logout} />
     </View>
   );
 }
@@ -251,7 +246,7 @@ function JournalEntryCard({ entry, eyebrow, patientName }) {
           <Text style={styles.date}>{date}</Text>
           {entry.enteredByCaregiver && (
             <Text style={styles.caregiverTag} accessibilityLabel="Saisie par l'aidant">
-              Saisie par l'aidant
+              Saisie par l&apos;aidant
             </Text>
           )}
         </View>
