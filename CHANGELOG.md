@@ -7,6 +7,8 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Removed
+- Page "dashboard" web vide (ML-62), reliquat de l'initialisation du projet : route `/dashboard`, composant `DashboardPage` et entrée "Tableau de bord" de la sidebar soignant supprimés. Le fallback de `getHomeRoute()` (utilisateur authentifié sans rôle reconnu — cas normalement impossible côté backend) pointe désormais vers `/login` plutôt que vers cette page morte
 
 ### Changed
 - Modale "Profil" mobile (ML-61) : remplacement de l'`Alert.alert` natif (non stylable, incohérent avec le reste de l'appli) par une modale maison reprenant l'identité visuelle MedLink (fond navy `#2E3862`, boutons en pilules arrondies, action "Se déconnecter" mise en évidence), avec le même habillage que la modale de confirmation de suppression de compte. Accessibilité : `accessibilityRole="alert"` + `accessibilityViewIsModal` sur la carte, zones tactiles ≥ 44×44 pt, fermeture au bouton retour Android (`onRequestClose`)
