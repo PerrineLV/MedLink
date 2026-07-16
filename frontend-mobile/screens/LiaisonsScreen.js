@@ -3,6 +3,8 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -98,7 +100,10 @@ export default function LiaisonsScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
         <SecurityBanner />
@@ -143,7 +148,7 @@ export default function LiaisonsScreen() {
       </ScrollView>
 
       <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

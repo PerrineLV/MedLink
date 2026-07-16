@@ -3,7 +3,9 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -96,7 +98,10 @@ export default function AccountScreen() {
   );
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
         <SecurityBanner />
@@ -128,7 +133,7 @@ export default function AccountScreen() {
       </ScrollView>
 
       <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -498,7 +503,10 @@ function DeleteAccountSection({ onDeleted }) {
         animationType="fade"
         onRequestClose={closeConfirmation}
       >
-        <View style={styles.overlay}>
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.confirmCard} accessibilityRole="alert">
             <Text style={styles.confirmText}>
               Pour confirmer la suppression définitive de votre compte, saisissez votre mot de
@@ -544,7 +552,7 @@ function DeleteAccountSection({ onDeleted }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Section>
   );
