@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
-import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchJournalEntries } from '../services/journalEntryService';
 import { fetchPatients } from '../services/patientService';
@@ -143,7 +142,6 @@ export default function JournalScreen() {
     <View style={styles.screen}>
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
-        <SecurityBanner />
       </View>
 
       {canCreateEntry && (

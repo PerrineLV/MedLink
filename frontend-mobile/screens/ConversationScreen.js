@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import SecurityBanner from '../components/SecurityBanner';
 import { fetchMessages, markMessageRead, sendMessage } from '../services/messageService';
 import { COLORS, TYPE } from '../services/journalPresentation';
 import { ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
@@ -129,6 +130,8 @@ export default function ConversationScreen() {
         </View>
         <Text style={styles.title}>{contactName}</Text>
       </View>
+
+      <SecurityBanner />
 
       {error && (
         <Text style={styles.error} accessibilityRole="alert">

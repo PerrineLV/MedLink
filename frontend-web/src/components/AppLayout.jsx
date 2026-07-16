@@ -17,7 +17,14 @@ function notifyComingSoon() {
   window.alert('Cette fonctionnalité arrive dans une prochaine version de MedLink.');
 }
 
-export default function AppLayout({ children, securityBanner }) {
+// Bandeau de sécurité (ML-92) : rendu inconditionnellement par AppLayout (pas
+// une prop optionnelle par page) pour qu'il soit structurellement impossible
+// d'avoir un écran authentifié sans lui — un simple "j'ai oublié de le
+// passer" causait un décalage de layout (le contenu "remonte") à chaque
+// navigation vers/depuis un écran qui l'omettait.
+export const SECURITY_BANNER_TEXT = 'Données chiffrées - accès soignants uniquement';
+
+export default function AppLayout({ children }) {
   const { roles, firstName, logout } = useAuth();
   const navigate = useNavigate();
   const primaryRole = getPrimaryRole(roles);
@@ -133,7 +140,7 @@ export default function AppLayout({ children, securityBanner }) {
         </div>
       </header>
 
-      {securityBanner && <p className="app-security-banner">{securityBanner}</p>}
+      <p className="app-security-banner">{SECURITY_BANNER_TEXT}</p>
 
       <div className="app-body">
         <nav

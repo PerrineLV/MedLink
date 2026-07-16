@@ -5,7 +5,6 @@ import { fetchLiaisons, inviteLiaison, revokeLiaison } from '../services/liaison
 import { ROLE_LABELS, ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
 import './LiaisonsPage.css';
 
-const SECURITY_BANNER_TEXT = 'Données chiffrées - accès soignants uniquement';
 const GENERIC_INVITE_ERROR = "Impossible d'envoyer l'invitation, réessayez.";
 const GENERIC_REVOKE_ERROR = 'Impossible de révoquer ce lien, réessayez.';
 
@@ -53,7 +52,7 @@ export default function LiaisonsPage() {
   const pendingLiaisons = (liaisons ?? []).filter((liaison) => !liaison.active);
 
   return (
-    <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
+    <AppLayout>
       <h1 className="liaisons-title">Mes liaisons</h1>
 
       {error && (
