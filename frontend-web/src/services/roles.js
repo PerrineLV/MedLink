@@ -23,19 +23,19 @@ export function getPrimaryRole(roles = []) {
 /**
  * Where to land right after login. A soignant goes straight to their
  * patient list (ML-24), a patient/aidant to their own journal (ML-41), an
- * admin to the user management screen (ML-54); anyone else keeps the
- * generic dashboard.
+ * admin to the user management screen (ML-54); anyone without one of these
+ * roles (should not happen in practice) is sent back to login rather than a
+ * dead-end page (ML-62 — there is no generic dashboard anymore).
  */
 export function getHomeRoute(roles = []) {
   if (roles.includes(ROLE_SOIGNANT)) return '/patients';
   if (roles.includes(ROLE_PATIENT) || roles.includes(ROLE_AIDANT)) return '/journal';
   if (roles.includes(ROLE_ADMIN)) return '/admin/users';
 
-  return '/dashboard';
+  return '/login';
 }
 
 const SOIGNANT_SIDEBAR_ITEMS = [
-  { key: 'dashboard', label: 'Tableau de bord', to: '/dashboard' },
   { key: 'patients', label: 'Patients', to: '/patients' },
   { key: 'invitations', label: 'Invitations', to: '/invitations' },
   { key: 'messages', label: 'Messages', to: '/messages' },

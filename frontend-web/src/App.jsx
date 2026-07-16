@@ -6,7 +6,6 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import DashboardPage from './pages/DashboardPage';
 import PatientsPage from './pages/PatientsPage';
 import PatientJournalPage from './pages/PatientJournalPage';
 import JournalPage from './pages/JournalPage';
@@ -31,7 +30,6 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/messages" element={<MessagingPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/export" element={<ExportPage />} />
