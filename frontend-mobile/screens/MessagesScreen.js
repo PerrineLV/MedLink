@@ -9,20 +9,25 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import BottomNav, { openProfileMenu } from '../components/BottomNav';
+import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
-import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { useMessagesBadge } from '../contexts/MessagesBadgeContext';
 import { fetchContacts, fetchMessages } from '../services/messageService';
 import { COLORS, TYPE } from '../services/journalPresentation';
-import { ROLE_LABELS, getPrimaryRole } from '../services/roles';
+import { ROLE_LABELS, ROLE_SOIGNANT, formatSoignantName, getPrimaryRole } from '../services/roles';
 
 const MIN_TOUCH_TARGET = 44;
 const GENERIC_LOAD_ERROR = 'Impossible de charger vos contacts. Vérifiez votre connexion.';
 
 function initials(firstName, lastName) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
+}
+
+function contactDisplayName(contact) {
+  return contact.role === ROLE_SOIGNANT
+    ? formatSoignantName(contact.firstName, contact.lastName, contact.title)
+    : `${contact.firstName} ${contact.lastName}`;
 }
 
 // Précise, pour un contact aidant/soignant, via quel(s) patient(s) commun(s)
@@ -97,7 +102,6 @@ export default function MessagesScreen() {
     <View style={styles.screen}>
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
-        <SecurityBanner />
       </View>
 
       {error && (
@@ -131,6 +135,7 @@ export default function MessagesScreen() {
                   contactId: contact.id,
                   firstName: contact.firstName,
                   lastName: contact.lastName,
+                  title: contact.title,
                   role: contact.role,
                 })
               }
@@ -139,18 +144,13 @@ export default function MessagesScreen() {
         )}
       </ScrollView>
 
-      <BottomNav
-        navigation={navigation}
-        activeKey="Messages"
-        roles={roles}
-        onProfilePress={() => openProfileMenu(navigation, logout, roles)}
-      />
+      <BottomNav navigation={navigation} activeKey="Messages" roles={roles} logout={logout} />
     </View>
   );
 }
 
 function ContactCard({ contact, onPress }) {
-  const name = `${contact.firstName} ${contact.lastName}`;
+  const name = contactDisplayName(contact);
   const via = viaPatientsLabel(contact.viaPatients);
   const accessibilityLabel = [
     name,

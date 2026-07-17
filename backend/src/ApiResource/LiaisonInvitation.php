@@ -76,6 +76,7 @@ final class LiaisonInvitation
         public readonly string $inviteeRole,
         public readonly string $inviteeFirstName,
         public readonly string $inviteeLastName,
+        public readonly ?string $inviteeTitle,
         public readonly bool $active,
         public readonly \DateTimeImmutable $createdAt,
     ) {
@@ -95,6 +96,7 @@ final class LiaisonInvitation
             User::ROLE_AIDANT,
             $aidant->getFirstName(),
             $aidant->getLastName(),
+            null,
             $relation->isActive(),
             $relation->getCreatedAt(),
         );
@@ -114,6 +116,7 @@ final class LiaisonInvitation
             User::ROLE_SOIGNANT,
             $soignant->getFirstName(),
             $soignant->getLastName(),
+            $soignant->getTitle(),
             $relation->isActive(),
             $relation->getCreatedAt(),
         );

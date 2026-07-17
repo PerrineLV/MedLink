@@ -1,5 +1,11 @@
 # Build & distribution de l'APK Android (ML-97)
 
+> Les étapes "Build release" à "Déploiement sur le VPS" ci-dessous sont
+> automatisées par `deploy/build-mobile-release.sh` (voir prérequis dans ce
+> script et son `deploy/.env.deploy.example`). Ce document reste la
+> référence détaillée de chaque étape et couvre les prérequis one-shot que
+> le script ne fait pas.
+
 MedLink n'est pas publiée sur le Play Store. L'app mobile est distribuée en
 sideload : un APK release signé, téléchargeable depuis
 `https://medlink-app.fr/telecharger-app.html`.

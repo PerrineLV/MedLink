@@ -1,18 +1,20 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
-  ScrollView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import BottomNav, { openProfileMenu } from '../components/BottomNav';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
-import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import {
   changeEmail,
@@ -98,10 +100,9 @@ export default function AccountScreen() {
     <View style={styles.screen}>
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
-        <SecurityBanner />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.content} enableOnAndroid>
         <Text style={styles.title}>Mon compte</Text>
 
         {loadError && (
@@ -122,15 +123,26 @@ export default function AccountScreen() {
             <DeleteAccountSection onDeleted={logout} />
           </>
         )}
-      </ScrollView>
 
-      <BottomNav
-        navigation={navigation}
-        activeKey={null}
-        roles={roles}
-        onProfilePress={() => openProfileMenu(navigation, logout, roles)}
-      />
+        <AppVersion />
+      </KeyboardAwareScrollView>
+
+      <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
     </View>
+  );
+}
+
+// Numéro de version affiché (ML-89), lu depuis app.json → expo.version via
+// expo-constants — même source que le update-checker (UpdateBanner, ML-98).
+// Jamais codé en dur : se met à jour seul à chaque bump de app.json.
+function AppVersion() {
+  const version = Constants.expoConfig?.version;
+  if (!version) return null;
+
+  return (
+    <Text style={styles.appVersion} accessibilityRole="text">
+      {`Version de l'application : v${version}`}
+    </Text>
   );
 }
 
@@ -486,7 +498,10 @@ function DeleteAccountSection({ onDeleted }) {
         animationType="fade"
         onRequestClose={closeConfirmation}
       >
-        <View style={styles.overlay}>
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.confirmCard} accessibilityRole="alert">
             <Text style={styles.confirmText}>
               Pour confirmer la suppression définitive de votre compte, saisissez votre mot de
@@ -532,7 +547,7 @@ function DeleteAccountSection({ onDeleted }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Section>
   );
@@ -578,6 +593,12 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: TYPE.sm, color: COLORS.mutedText, fontWeight: '600' },
   infoValue: { fontSize: TYPE.sm, color: COLORS.primary, fontWeight: '700', flexShrink: 1 },
   rgpdText: { fontSize: TYPE.sm, color: COLORS.primary, lineHeight: 20 },
+  appVersion: {
+    fontSize: TYPE.xs,
+    color: COLORS.mutedText,
+    textAlign: 'center',
+    marginTop: 4,
+  },
   rgpdLink: {
     fontSize: TYPE.sm,
     color: COLORS.primary,

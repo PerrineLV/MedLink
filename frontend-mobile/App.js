@@ -1,11 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { InvitationsBadgeProvider } from './contexts/InvitationsBadgeContext';
 import { MessagesBadgeProvider } from './contexts/MessagesBadgeContext';
+import WelcomeScreen from './screens/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
@@ -26,7 +27,7 @@ import SessionExpiryWarning from './components/SessionExpiryWarning';
 import UpdateBanner from './components/UpdateBanner';
 import { isAdminOnlySession } from './services/roles';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
 // Deep link pour le mail de réinitialisation de mot de passe (ML-78) :
 // medlink://reset-password?token=... route directement sur ResetPassword
@@ -49,10 +50,11 @@ function RootNavigator() {
     <NavigationContainer linking={linking}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
-        initialRouteName={!isAuthenticated ? 'Login' : adminOnly ? 'AdminBlocked' : 'Journal'}
+        initialRouteName={!isAuthenticated ? 'Welcome' : adminOnly ? 'AdminBlocked' : 'Journal'}
       >
         {!isAuthenticated ? (
           <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />

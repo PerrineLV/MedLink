@@ -18,8 +18,6 @@ const MOOD_OPTIONS = [1, 2, 3, 4, 5];
 const PAIN_OPTIONS = Array.from({ length: 11 }, (_, painLevel) => painLevel);
 const BLOOD_PRESSURE_PATTERN = /^\d{1,3}$/;
 const GENERIC_CREATE_ERROR = "Impossible d'enregistrer cette entrée, réessayez.";
-const SECURITY_BANNER_TEXT =
-  "Données chiffrées — accessibles uniquement à l'équipe soignante désignée";
 const NO_ATTACHED_PATIENT_TEXT =
   "Aucun patient rattaché pour le moment. C'est le patient qui doit vous inviter depuis son espace pour que vous puissiez saisir des entrées pour lui.";
 
@@ -116,7 +114,7 @@ export default function JournalPage() {
   );
 
   return (
-    <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
+    <AppLayout>
       {error && (
         <p className="journal-error" role="alert">
           {error}

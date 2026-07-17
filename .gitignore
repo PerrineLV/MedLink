@@ -24,6 +24,9 @@
 /.env
 .env.production
 
+# Deploy
+/deploy/.env.deploy
+
 # OS
 .DS_Store
 Thumbs.db

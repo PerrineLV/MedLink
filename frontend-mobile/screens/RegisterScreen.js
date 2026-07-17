@@ -1,14 +1,6 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { register } from '../services/authService';
 
 const ROLE_OPTIONS = [
@@ -66,173 +58,175 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.flexFill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>MedLink</Text>
-          <Text style={styles.subtitle}>Créer votre compte</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>MedLink</Text>
+        <Text style={styles.subtitle}>Créer votre compte</Text>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Prénom</Text>
-            <TextInput
-              style={styles.input}
-              value={firstName}
-              onChangeText={setFirstName}
-              accessibilityLabel={
-                fieldErrors.firstName ? `Prénom. Erreur : ${fieldErrors.firstName}` : 'Prénom'
-              }
-              autoCapitalize="words"
-              textContentType="givenName"
-              returnKeyType="next"
-            />
-            {fieldErrors.firstName && (
-              <Text style={styles.fieldError}>{fieldErrors.firstName}</Text>
-            )}
-          </View>
+        <Text style={styles.legalWarning} accessibilityRole="alert">
+          Projet de certification à but pédagogique. Ne pas utiliser avec de vraies données de
+          santé. Hébergement non certifié HDS. L’identité professionnelle des soignants n’est pas
+          vérifiée à l’inscription.
+        </Text>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Nom</Text>
-            <TextInput
-              style={styles.input}
-              value={lastName}
-              onChangeText={setLastName}
-              accessibilityLabel={
-                fieldErrors.lastName ? `Nom. Erreur : ${fieldErrors.lastName}` : 'Nom'
-              }
-              autoCapitalize="words"
-              textContentType="familyName"
-              returnKeyType="next"
-            />
-            {fieldErrors.lastName && <Text style={styles.fieldError}>{fieldErrors.lastName}</Text>}
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Adresse e-mail</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              accessibilityLabel={
-                fieldErrors.email
-                  ? `Adresse e-mail. Erreur : ${fieldErrors.email}`
-                  : 'Adresse e-mail'
-              }
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="username"
-              returnKeyType="next"
-            />
-            {fieldErrors.email && <Text style={styles.fieldError}>{fieldErrors.email}</Text>}
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Mot de passe</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              accessibilityLabel={
-                fieldErrors.password
-                  ? `Mot de passe. Erreur : ${fieldErrors.password}`
-                  : 'Mot de passe'
-              }
-              secureTextEntry
-              textContentType="newPassword"
-              returnKeyType="next"
-            />
-            {fieldErrors.password && <Text style={styles.fieldError}>{fieldErrors.password}</Text>}
-          </View>
-
-          <Field label="Vous êtes">
-            <View style={styles.pillRow}>
-              {ROLE_OPTIONS.map((option) => (
-                <Pill
-                  key={option.value}
-                  label={option.label}
-                  selected={role === option.value}
-                  onPress={() => setRole(option.value)}
-                  accessibilityLabel={`Rôle : ${option.label}`}
-                />
-              ))}
-            </View>
-            {fieldErrors.role && <Text style={styles.fieldError}>{fieldErrors.role}</Text>}
-          </Field>
-
-          {role === 'soignant' && (
-            <View style={styles.field}>
-              <Text style={styles.label}>Titre (ex. Dr, Pr)</Text>
-              <TextInput
-                style={styles.input}
-                value={title}
-                onChangeText={setTitle}
-                accessibilityLabel="Titre (ex. Dr, Pr)"
-              />
-            </View>
-          )}
-
-          <View style={styles.field}>
-            <TouchableOpacity
-              style={styles.consentRow}
-              onPress={() => setConsent((current) => !current)}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: consent }}
-              accessibilityLabel={
-                fieldErrors.consent
-                  ? `J'accepte la politique de confidentialité et le traitement de mes données de santé. Erreur : ${fieldErrors.consent}`
-                  : "J'accepte la politique de confidentialité et le traitement de mes données de santé"
-              }
-            >
-              <View style={[styles.checkbox, consent && styles.checkboxChecked]}>
-                {consent && <Text style={styles.checkboxMark}>✓</Text>}
-              </View>
-              <Text style={styles.consentText}>
-                J’ai lu et j’accepte la{' '}
-                <Text
-                  style={styles.consentLink}
-                  onPress={() => navigation.navigate('PrivacyPolicy')}
-                  accessibilityRole="link"
-                  accessibilityLabel="Lire la politique de confidentialité"
-                >
-                  politique de confidentialité
-                </Text>{' '}
-                : mes données de santé seront traitées dans le cadre de MedLink.
-              </Text>
-            </TouchableOpacity>
-            {fieldErrors.consent && <Text style={styles.fieldError}>{fieldErrors.consent}</Text>}
-          </View>
-
-          {bannerError && (
-            <Text style={styles.error} accessibilityRole="alert">
-              {bannerError}
-            </Text>
-          )}
-
-          <TouchableOpacity
-            style={[styles.submit, (isSubmitting || !consent) && styles.submitDisabled]}
-            onPress={handleSubmit}
-            disabled={isSubmitting || !consent}
-            accessibilityRole="button"
-            accessibilityLabel="Créer mon compte"
-          >
-            <Text style={styles.submitText}>
-              {isSubmitting ? 'Création du compte…' : 'Créer mon compte'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            accessibilityRole="link"
-            accessibilityLabel="Déjà un compte : se connecter"
-          >
-            <Text style={styles.loginLink}>Déjà un compte ? Se connecter</Text>
-          </TouchableOpacity>
+        <View style={styles.field}>
+          <Text style={styles.label}>Prénom</Text>
+          <TextInput
+            style={styles.input}
+            value={firstName}
+            onChangeText={setFirstName}
+            accessibilityLabel={
+              fieldErrors.firstName ? `Prénom. Erreur : ${fieldErrors.firstName}` : 'Prénom'
+            }
+            autoCapitalize="words"
+            textContentType="givenName"
+            returnKeyType="next"
+          />
+          {fieldErrors.firstName && <Text style={styles.fieldError}>{fieldErrors.firstName}</Text>}
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Nom</Text>
+          <TextInput
+            style={styles.input}
+            value={lastName}
+            onChangeText={setLastName}
+            accessibilityLabel={
+              fieldErrors.lastName ? `Nom. Erreur : ${fieldErrors.lastName}` : 'Nom'
+            }
+            autoCapitalize="words"
+            textContentType="familyName"
+            returnKeyType="next"
+          />
+          {fieldErrors.lastName && <Text style={styles.fieldError}>{fieldErrors.lastName}</Text>}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Adresse e-mail</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            accessibilityLabel={
+              fieldErrors.email ? `Adresse e-mail. Erreur : ${fieldErrors.email}` : 'Adresse e-mail'
+            }
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="username"
+            returnKeyType="next"
+          />
+          {fieldErrors.email && <Text style={styles.fieldError}>{fieldErrors.email}</Text>}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Mot de passe</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            accessibilityLabel={
+              fieldErrors.password
+                ? `Mot de passe. Erreur : ${fieldErrors.password}`
+                : 'Mot de passe'
+            }
+            secureTextEntry
+            textContentType="newPassword"
+            returnKeyType="next"
+          />
+          {fieldErrors.password && <Text style={styles.fieldError}>{fieldErrors.password}</Text>}
+        </View>
+
+        <Field label="Vous êtes">
+          <View style={styles.pillRow}>
+            {ROLE_OPTIONS.map((option) => (
+              <Pill
+                key={option.value}
+                label={option.label}
+                selected={role === option.value}
+                onPress={() => setRole(option.value)}
+                accessibilityLabel={`Rôle : ${option.label}`}
+              />
+            ))}
+          </View>
+          {fieldErrors.role && <Text style={styles.fieldError}>{fieldErrors.role}</Text>}
+        </Field>
+
+        {role === 'soignant' && (
+          <View style={styles.field}>
+            <Text style={styles.label}>Titre (ex. Dr, Pr)</Text>
+            <TextInput
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
+              accessibilityLabel="Titre (ex. Dr, Pr)"
+            />
+          </View>
+        )}
+
+        <View style={styles.field}>
+          <TouchableOpacity
+            style={styles.consentRow}
+            onPress={() => setConsent((current) => !current)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: consent }}
+            accessibilityLabel={
+              fieldErrors.consent
+                ? `J'accepte la politique de confidentialité et le traitement de mes données de santé. Erreur : ${fieldErrors.consent}`
+                : "J'accepte la politique de confidentialité et le traitement de mes données de santé"
+            }
+          >
+            <View style={[styles.checkbox, consent && styles.checkboxChecked]}>
+              {consent && <Text style={styles.checkboxMark}>✓</Text>}
+            </View>
+            <Text style={styles.consentText}>
+              J’ai lu et j’accepte la{' '}
+              <Text
+                style={styles.consentLink}
+                onPress={() => navigation.navigate('PrivacyPolicy')}
+                accessibilityRole="link"
+                accessibilityLabel="Lire la politique de confidentialité"
+              >
+                politique de confidentialité
+              </Text>{' '}
+              : mes données de santé seront traitées dans le cadre de MedLink.
+            </Text>
+          </TouchableOpacity>
+          {fieldErrors.consent && <Text style={styles.fieldError}>{fieldErrors.consent}</Text>}
+        </View>
+
+        {bannerError && (
+          <Text style={styles.error} accessibilityRole="alert">
+            {bannerError}
+          </Text>
+        )}
+
+        <TouchableOpacity
+          style={[styles.submit, (isSubmitting || !consent) && styles.submitDisabled]}
+          onPress={handleSubmit}
+          disabled={isSubmitting || !consent}
+          accessibilityRole="button"
+          accessibilityLabel="Créer mon compte"
+        >
+          <Text style={styles.submitText}>
+            {isSubmitting ? 'Création du compte…' : 'Créer mon compte'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Login')}
+          accessibilityRole="link"
+          accessibilityLabel="Déjà un compte : se connecter"
+        >
+          <Text style={styles.loginLink}>Déjà un compte ? Se connecter</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -299,7 +293,7 @@ function mapRegistrationErrorMessageToField(message) {
 
 const COLORS = {
   primary: '#2E3862',
-  primaryLight: '#7491F7',
+  primaryLight: '#3B5BDB',
   surface: '#FFFFFF',
   text: '#1C2338',
   textMuted: '#5B6178',
@@ -320,6 +314,15 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 28, fontWeight: '700', color: COLORS.primary, marginBottom: 4 },
   subtitle: { fontSize: 16, color: COLORS.textMuted, marginBottom: 32 },
+  legalWarning: {
+    backgroundColor: COLORS.dangerBg,
+    color: COLORS.danger,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 24,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   field: { marginBottom: 20 },
   label: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 8 },
   input: {
@@ -332,17 +335,21 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   fieldError: { color: COLORS.danger, fontSize: 13, marginTop: 6 },
-  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pillRow: { flexDirection: 'row', gap: 8 },
   pill: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 33,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     backgroundColor: COLORS.surface,
   },
   pillSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  pillText: { color: COLORS.text, fontWeight: '600' },
+  pillText: { color: COLORS.text, fontWeight: '600', fontSize: 14 },
   pillTextSelected: { color: '#fff' },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   checkbox: {

@@ -4,20 +4,19 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import BottomNav, { openProfileMenu } from '../components/BottomNav';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
-import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchLiaisons, inviteLiaison, revokeLiaison } from '../services/liaisonService';
 import { COLORS, TYPE } from '../services/journalPresentation';
-import { ROLE_LABELS } from '../services/roles';
+import { ROLE_LABELS, ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
 
 const MIN_TOUCH_TARGET = 44;
 const GENERIC_LOAD_ERROR = 'Impossible de charger vos liaisons. Vérifiez votre connexion.';
@@ -28,8 +27,14 @@ function initials(firstName, lastName) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
 }
 
+function liaisonDisplayName(liaison) {
+  return liaison.inviteeRole === ROLE_SOIGNANT
+    ? formatSoignantName(liaison.inviteeFirstName, liaison.inviteeLastName, liaison.inviteeTitle)
+    : `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+}
+
 function confirmRevoke(liaison, onConfirm) {
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+  const name = liaisonDisplayName(liaison);
 
   Alert.alert(
     'Révoquer cet accès ?',
@@ -101,7 +106,6 @@ export default function LiaisonsScreen() {
     <View style={styles.screen}>
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
-        <SecurityBanner />
       </View>
 
       {error && (
@@ -110,9 +114,10 @@ export default function LiaisonsScreen() {
         </Text>
       )}
 
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.list}
         contentContainerStyle={styles.listContent}
+        enableOnAndroid
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -140,20 +145,15 @@ export default function LiaisonsScreen() {
         ) : (
           pendingLiaisons.map((liaison) => <LiaisonCard key={liaison.id} liaison={liaison} />)
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      <BottomNav
-        navigation={navigation}
-        activeKey={null}
-        roles={roles}
-        onProfilePress={() => openProfileMenu(navigation, logout, roles)}
-      />
+      <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
     </View>
   );
 }
 
 function LiaisonCard({ liaison, onRevoke }) {
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+  const name = liaisonDisplayName(liaison);
 
   return (
     <View style={styles.card}>

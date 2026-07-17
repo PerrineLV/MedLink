@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, FileText } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
+import PatientAutocomplete from '../components/PatientAutocomplete';
 import { downloadJournalPdf, extractErrorMessage } from '../services/exportService';
 import { fetchJournalEntries } from '../services/journalEntryService';
 import { fetchPatients } from '../services/patientService';
@@ -53,6 +54,7 @@ export default function ExportPage() {
 
   const [patients, setPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [patientQuery, setPatientQuery] = useState('');
   const [entries, setEntries] = useState(null);
   const [periodKey, setPeriodKey] = useState('7d');
   const [customFrom, setCustomFrom] = useState(todayISO);
@@ -66,7 +68,9 @@ export default function ExportPage() {
     try {
       const fetchedPatients = await fetchPatients();
       setPatients(fetchedPatients);
-      setSelectedPatientId((current) => current ?? fetchedPatients[0]?.id ?? null);
+      if (fetchedPatients.length === 1) {
+        setSelectedPatientId(fetchedPatients[0].id);
+      }
     } catch {
       setError('Impossible de charger vos données. Vérifiez votre connexion.');
     }
@@ -126,6 +130,21 @@ export default function ExportPage() {
 
   const handleGenerate = async () => {
     setError(null);
+
+    // Le champ patient est une autosuggestion, pas un select : le texte
+    // affiché doit correspondre exactement au patient sélectionné dans la
+    // liste (cf. NewAppointmentPanel dans AgendaPage.jsx).
+    if (patients.length > 1) {
+      const selectedPatient = patients.find((patient) => patient.id === selectedPatientId);
+      const expectedLabel = selectedPatient
+        ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
+        : null;
+      if (!selectedPatient || patientQuery.trim() !== expectedLabel) {
+        setError('Sélectionnez un patient dans la liste.');
+        return;
+      }
+    }
+
     setIsGenerating(true);
 
     try {
@@ -149,16 +168,14 @@ export default function ExportPage() {
 
       {patients.length > 1 && (
         <Field label="Patient">
-          <div className="export-pill-row" role="group" aria-label="Patient">
-            {patients.map((patient) => (
-              <Pill
-                key={patient.id}
-                label={`${patient.firstName} ${patient.lastName}`}
-                selected={selectedPatientId === patient.id}
-                onClick={() => setSelectedPatientId(patient.id)}
-              />
-            ))}
-          </div>
+          <PatientAutocomplete
+            patients={patients}
+            value={patientQuery}
+            onChange={setPatientQuery}
+            onSelectPatient={(patient) => setSelectedPatientId(patient.id)}
+            placeholder="Rechercher un patient…"
+            required
+          />
         </Field>
       )}
 
