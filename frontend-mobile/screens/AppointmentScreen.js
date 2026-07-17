@@ -10,9 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import BottomNav, { openProfileMenu } from '../components/BottomNav';
+import BottomNav from '../components/BottomNav';
 import Header from '../components/Header';
-import SecurityBanner from '../components/SecurityBanner';
 import { useAuth } from '../contexts/AuthContext';
 import {
   APPOINTMENT_STATUS,
@@ -24,14 +23,24 @@ import {
 import { fetchContacts } from '../services/messageService';
 import { fetchPatients } from '../services/patientService';
 import { COLORS, TYPE } from '../services/journalPresentation';
-import { ROLE_AIDANT, ROLE_LABELS, ROLE_SOIGNANT, getPrimaryRole } from '../services/roles';
+import {
+  ROLE_AIDANT,
+  ROLE_LABELS,
+  ROLE_SOIGNANT,
+  formatSoignantName,
+  getPrimaryRole,
+} from '../services/roles';
 
 const MIN_TOUCH_TARGET = 44;
 const GENERIC_LOAD_ERROR = 'Impossible de charger vos rendez-vous. Vérifiez votre connexion.';
 const GENERIC_CANCEL_ERROR = "Impossible d'annuler ce rendez-vous. Réessayez.";
 
+// Les contacts résolus ici sont déjà filtrés sur ROLE_SOIGNANT (cf. load()
+// plus bas) : pas besoin de re-vérifier le rôle avant de préfixer le titre.
 function contactDisplayName(contact) {
-  return contact ? `${contact.firstName} ${contact.lastName}` : 'Soignant';
+  return contact
+    ? formatSoignantName(contact.firstName, contact.lastName, contact.title)
+    : 'Soignant';
 }
 
 export default function AppointmentScreen() {
@@ -143,7 +152,6 @@ export default function AppointmentScreen() {
     <View style={styles.screen}>
       <View style={styles.topChrome}>
         <Header displayName={displayName} />
-        <SecurityBanner />
       </View>
 
       {isSoignant && (
@@ -215,12 +223,7 @@ export default function AppointmentScreen() {
         )}
       </ScrollView>
 
-      <BottomNav
-        navigation={navigation}
-        activeKey="RDV"
-        roles={roles}
-        onProfilePress={() => openProfileMenu(navigation, logout, roles)}
-      />
+      <BottomNav navigation={navigation} activeKey="RDV" roles={roles} logout={logout} />
     </View>
   );
 }

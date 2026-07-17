@@ -9,7 +9,6 @@ import {
 import { ROLE_LABELS } from '../services/roles';
 import './InvitationsPage.css';
 
-const SECURITY_BANNER_TEXT = 'Données chiffrées - accès soignants uniquement';
 const GENERIC_LOAD_ERROR = 'Impossible de charger vos invitations. Vérifiez votre connexion.';
 const GENERIC_RESPOND_ERROR = 'Impossible de traiter cette invitation, réessayez.';
 
@@ -49,7 +48,7 @@ export default function InvitationsPage() {
   );
 
   return (
-    <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
+    <AppLayout>
       <h1 className="invitations-title">Invitations en attente</h1>
 
       {error && (

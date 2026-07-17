@@ -2,8 +2,6 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,12 +9,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { createJournalEntry } from '../services/journalEntryService';
 import { fetchPatients } from '../services/patientService';
 
 const COLORS = {
   primary: '#2E3862',
-  primaryLight: '#7491F7',
+  primaryLight: '#3B5BDB',
   background: '#F4F6FB',
   surface: '#FFFFFF',
   text: '#1C2338',
@@ -107,115 +106,115 @@ export default function NewEntryScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.flexFill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <BackButton navigation={navigation} />
-          <Text style={styles.title}>Nouvelle entrée</Text>
-        </View>
+      <View style={styles.header}>
+        <BackButton navigation={navigation} />
+        <Text style={styles.title}>Nouvelle entrée</Text>
+      </View>
 
-        {patients.length > 1 && (
-          <Field label="Patient">
-            <View style={styles.pillRow}>
-              {patients.map((patient) => (
-                <Pill
-                  key={patient.id}
-                  label={`${patient.firstName} ${patient.lastName}`}
-                  selected={selectedPatientId === patient.id}
-                  onPress={() => setSelectedPatientId(patient.id)}
-                  accessibilityLabel={`Patient : ${patient.firstName} ${patient.lastName}`}
-                />
-              ))}
-            </View>
-          </Field>
-        )}
-
-        <Field label="Humeur">
+      {patients.length > 1 && (
+        <Field label="Patient">
           <View style={styles.pillRow}>
-            {MOOD_OPTIONS.map((value) => (
+            {patients.map((patient) => (
               <Pill
-                key={value}
-                label={String(value)}
-                selected={mood === value}
-                onPress={() => setMood(value)}
-                accessibilityLabel={`Humeur : ${value} sur 5`}
+                key={patient.id}
+                label={`${patient.firstName} ${patient.lastName}`}
+                selected={selectedPatientId === patient.id}
+                onPress={() => setSelectedPatientId(patient.id)}
+                accessibilityLabel={`Patient : ${patient.firstName} ${patient.lastName}`}
               />
             ))}
           </View>
         </Field>
+      )}
 
-        <Field label="Douleur">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.pillRow}>
-              {PAIN_OPTIONS.map((value) => (
-                <Pill
-                  key={value}
-                  label={String(value)}
-                  selected={painLevel === value}
-                  onPress={() => setPainLevel(value)}
-                  accessibilityLabel={`Douleur : ${value} sur 10`}
-                />
-              ))}
-            </View>
-          </ScrollView>
-        </Field>
+      <Field label="Humeur">
+        <View style={styles.pillRow}>
+          {MOOD_OPTIONS.map((value) => (
+            <Pill
+              key={value}
+              label={String(value)}
+              selected={mood === value}
+              onPress={() => setMood(value)}
+              accessibilityLabel={`Humeur : ${value} sur 5`}
+            />
+          ))}
+        </View>
+      </Field>
 
-        <Field label="Tension artérielle">
-          <View style={styles.bloodPressureRow}>
-            <TextInput
-              style={[styles.input, styles.bloodPressureInput]}
-              value={systolic}
-              onChangeText={setSystolic}
-              keyboardType="number-pad"
-              maxLength={3}
-              placeholder="120"
-              accessibilityLabel="Tension systolique"
-            />
-            <Text style={styles.bloodPressureSeparator}>/</Text>
-            <TextInput
-              style={[styles.input, styles.bloodPressureInput]}
-              value={diastolic}
-              onChangeText={setDiastolic}
-              keyboardType="number-pad"
-              maxLength={3}
-              placeholder="80"
-              accessibilityLabel="Tension diastolique"
-            />
+      <Field label="Douleur">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.pillRow}>
+            {PAIN_OPTIONS.map((value) => (
+              <Pill
+                key={value}
+                label={String(value)}
+                selected={painLevel === value}
+                onPress={() => setPainLevel(value)}
+                accessibilityLabel={`Douleur : ${value} sur 10`}
+              />
+            ))}
           </View>
-        </Field>
+        </ScrollView>
+      </Field>
 
-        <Field label="Note (optionnelle)">
+      <Field label="Tension artérielle">
+        <View style={styles.bloodPressureRow}>
           <TextInput
-            style={[styles.input, styles.noteInput]}
-            value={note}
-            onChangeText={setNote}
-            multiline
-            maxLength={1000}
-            placeholder="Précisions sur la journée…"
-            accessibilityLabel="Note"
+            style={[styles.input, styles.bloodPressureInput]}
+            value={systolic}
+            onChangeText={setSystolic}
+            keyboardType="number-pad"
+            maxLength={3}
+            placeholder="120"
+            accessibilityLabel="Tension systolique"
           />
-        </Field>
+          <Text style={styles.bloodPressureSeparator}>/</Text>
+          <TextInput
+            style={[styles.input, styles.bloodPressureInput]}
+            value={diastolic}
+            onChangeText={setDiastolic}
+            keyboardType="number-pad"
+            maxLength={3}
+            placeholder="80"
+            accessibilityLabel="Tension diastolique"
+          />
+        </View>
+      </Field>
 
-        {error && (
-          <Text style={styles.error} accessibilityRole="alert">
-            {error}
-          </Text>
-        )}
+      <Field label="Note (optionnelle)">
+        <TextInput
+          style={[styles.input, styles.noteInput]}
+          value={note}
+          onChangeText={setNote}
+          multiline
+          maxLength={1000}
+          placeholder="Précisions sur la journée…"
+          accessibilityLabel="Note"
+        />
+      </Field>
 
-        <TouchableOpacity
-          style={[styles.submit, isSubmitting && styles.submitDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-          accessibilityRole="button"
-          accessibilityLabel="Enregistrer l'entrée"
-        >
-          <Text style={styles.submitText}>{isSubmitting ? 'Enregistrement…' : 'Enregistrer'}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {error && (
+        <Text style={styles.error} accessibilityRole="alert">
+          {error}
+        </Text>
+      )}
+
+      <TouchableOpacity
+        style={[styles.submit, isSubmitting && styles.submitDisabled]}
+        onPress={handleSubmit}
+        disabled={isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel="Enregistrer l'entrée"
+      >
+        <Text style={styles.submitText}>{isSubmitting ? 'Enregistrement…' : 'Enregistrer'}</Text>
+      </TouchableOpacity>
+    </KeyboardAwareScrollView>
   );
 }
 

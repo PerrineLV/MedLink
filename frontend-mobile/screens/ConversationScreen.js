@@ -11,8 +11,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import SecurityBanner from '../components/SecurityBanner';
 import { fetchMessages, markMessageRead, sendMessage } from '../services/messageService';
 import { COLORS, TYPE } from '../services/journalPresentation';
+import { ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
 
 // Recommandation ML-26 (solo dev, délai limité) : polling plutôt que
 // WebSocket/Mercure, largement suffisant pour l'usage visé.
@@ -24,8 +26,11 @@ const GENERIC_SEND_ERROR =
 export default function ConversationScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { contactId, firstName, lastName, role } = route.params;
-  const contactName = `${firstName} ${lastName}`;
+  const { contactId, firstName, lastName, title, role } = route.params;
+  const contactName =
+    role === ROLE_SOIGNANT
+      ? formatSoignantName(firstName, lastName, title)
+      : `${firstName} ${lastName}`;
 
   const [messages, setMessages] = useState(null);
   const [error, setError] = useState(null);
@@ -103,7 +108,7 @@ export default function ConversationScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flexFill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.header}>
         <TouchableOpacity
@@ -125,6 +130,8 @@ export default function ConversationScreen() {
         </View>
         <Text style={styles.title}>{contactName}</Text>
       </View>
+
+      <SecurityBanner />
 
       {error && (
         <Text style={styles.error} accessibilityRole="alert">

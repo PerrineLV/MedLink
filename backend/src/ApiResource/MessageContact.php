@@ -26,6 +26,7 @@ final class MessageContact
         public readonly int $id,
         public readonly string $firstName,
         public readonly string $lastName,
+        public readonly ?string $title,
         public readonly string $role,
         public readonly array $viaPatients,
     ) {
@@ -37,6 +38,7 @@ final class MessageContact
             (int) $contact->user->getId(),
             $contact->user->getFirstName(),
             $contact->user->getLastName(),
+            $contact->user->getTitle(),
             $contact->role,
             array_map(MessageContactPatient::fromUser(...), $contact->viaPatients),
         );

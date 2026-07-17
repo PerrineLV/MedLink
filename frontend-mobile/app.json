@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "frontend-mobile",
+    "name": "MedLink",
     "slug": "frontend-mobile",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "scheme": "medlink",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     "android": {
       "package": "fr.medlinkapp.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#2E3862",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

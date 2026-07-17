@@ -4,7 +4,7 @@ import { COLORS, TYPE } from '../services/journalPresentation';
 export default function SecurityBanner() {
   return (
     <View style={styles.securityBanner}>
-      <Text style={styles.securityBannerText}>Données chiffrées · accès soignants uniquement</Text>
+      <Text style={styles.securityBannerText}>Données chiffrées - accès soignants uniquement</Text>
     </View>
   );
 }

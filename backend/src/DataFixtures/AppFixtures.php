@@ -39,6 +39,7 @@ class AppFixtures extends Fixture
     public function load(ObjectManager $manager): void
     {
         $soignant = $this->createUser($manager, 'soignant@medlink.test', 'Camille', 'Dubois', User::ROLE_SOIGNANT);
+        $soignant->setTitle('Dr');
         $patient1 = $this->createUser($manager, 'patient1@medlink.test', 'Alice', 'Martin', User::ROLE_PATIENT);
         $patient2 = $this->createUser($manager, 'patient2@medlink.test', 'Chloe', 'Bernard', User::ROLE_PATIENT);
         $patient3 = $this->createUser($manager, 'patient3@medlink.test', 'David', 'Lefevre', User::ROLE_PATIENT);

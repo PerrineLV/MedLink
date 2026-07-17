@@ -2,15 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import Badge from '../components/Badge';
 import { fetchLiaisons, inviteLiaison, revokeLiaison } from '../services/liaisonService';
-import { ROLE_LABELS } from '../services/roles';
+import { ROLE_LABELS, ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
 import './LiaisonsPage.css';
 
-const SECURITY_BANNER_TEXT = 'Données chiffrées - accès soignants uniquement';
 const GENERIC_INVITE_ERROR = "Impossible d'envoyer l'invitation, réessayez.";
 const GENERIC_REVOKE_ERROR = 'Impossible de révoquer ce lien, réessayez.';
 
 function initials(firstName, lastName) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
+}
+
+function liaisonDisplayName(liaison) {
+  return liaison.inviteeRole === ROLE_SOIGNANT
+    ? formatSoignantName(liaison.inviteeFirstName, liaison.inviteeLastName, liaison.inviteeTitle)
+    : `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
 }
 
 export default function LiaisonsPage() {
@@ -47,7 +52,7 @@ export default function LiaisonsPage() {
   const pendingLiaisons = (liaisons ?? []).filter((liaison) => !liaison.active);
 
   return (
-    <AppLayout securityBanner={SECURITY_BANNER_TEXT}>
+    <AppLayout>
       <h1 className="liaisons-title">Mes liaisons</h1>
 
       {error && (
@@ -117,7 +122,7 @@ export default function LiaisonsPage() {
 }
 
 function ActiveLiaisonCard({ liaison, onRevokeRequested }) {
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+  const name = liaisonDisplayName(liaison);
   const date = new Date(liaison.createdAt).toLocaleDateString('fr-FR');
 
   return (
@@ -144,7 +149,7 @@ function ActiveLiaisonCard({ liaison, onRevokeRequested }) {
 }
 
 function PendingLiaisonCard({ liaison }) {
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+  const name = liaisonDisplayName(liaison);
 
   return (
     <li className="liaison-card">
@@ -163,7 +168,7 @@ function PendingLiaisonCard({ liaison }) {
 function RevokeConfirmation({ liaison, onCancel, onRevoked }) {
   const [isRevoking, setIsRevoking] = useState(false);
   const [error, setError] = useState(null);
-  const name = `${liaison.inviteeFirstName} ${liaison.inviteeLastName}`;
+  const name = liaisonDisplayName(liaison);
 
   const handleConfirm = async () => {
     setError(null);

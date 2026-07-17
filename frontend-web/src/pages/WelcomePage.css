@@ -1,0 +1,147 @@
+.welcome-page {
+  position: relative;
+  min-height: 100svh;
+  background: var(--color-primary);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.welcome-logo {
+  position: absolute;
+  top: 4%;
+  right: 3.5%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 150px;
+}
+
+.welcome-logo-image {
+  width: 82px;
+  height: auto;
+}
+
+.welcome-logo-wordmark {
+  margin: 4px 0 0;
+  color: white;
+  font-weight: 800;
+  font-size: 1.5rem;
+}
+
+.welcome-logo-tagline {
+  margin: 0;
+  color: #a9b8de;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+.welcome-illustration {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: clamp(180px, 24vw, 460px);
+  height: auto;
+  display: block;
+}
+
+.welcome-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+}
+
+.welcome-title {
+  margin: 0 0 40px;
+  color: white;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.welcome-highlights {
+  list-style: none;
+  margin: 0 0 56px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.welcome-highlight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: white;
+  font-weight: 500;
+  font-size: 1.125rem;
+}
+
+.welcome-highlight-icon {
+  flex-shrink: 0;
+  color: #f2994a;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 380px;
+}
+
+.welcome-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--radius-pill);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.welcome-button-primary {
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.welcome-button-secondary {
+  background: var(--color-primary-light);
+  color: white;
+}
+
+@media (max-width: 720px) {
+  .welcome-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    padding-top: 32px;
+    gap: 24px;
+  }
+
+  .welcome-logo {
+    position: static;
+    order: 1;
+  }
+
+  .welcome-content {
+    position: static;
+    order: 2;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .welcome-illustration {
+    position: static;
+    order: 3;
+    width: min(70%, 260px);
+    margin-top: 12px;
+  }
+}

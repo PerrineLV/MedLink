@@ -2,21 +2,19 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { createAppointment } from '../services/appointmentService';
 import { fetchPatients } from '../services/patientService';
 
 const COLORS = {
   primary: '#2E3862',
-  primaryLight: '#7491F7',
+  primaryLight: '#3B5BDB',
   background: '#F4F6FB',
   surface: '#FFFFFF',
   text: '#1C2338',
@@ -108,84 +106,84 @@ export default function NewAppointmentScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.flexFill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <BackButton navigation={navigation} />
-          <Text style={styles.title}>Nouveau RDV</Text>
-        </View>
+      <View style={styles.header}>
+        <BackButton navigation={navigation} />
+        <Text style={styles.title}>Nouveau RDV</Text>
+      </View>
 
-        {patients.length > 1 && (
-          <Field label="Patient">
-            <View style={styles.pillRow}>
-              {patients.map((patient) => (
-                <Pill
-                  key={patient.id}
-                  label={`${patient.firstName} ${patient.lastName}`}
-                  selected={selectedPatientId === patient.id}
-                  onPress={() => setSelectedPatientId(patient.id)}
-                  accessibilityLabel={`Patient : ${patient.firstName} ${patient.lastName}`}
-                />
-              ))}
-            </View>
-          </Field>
-        )}
-
-        <Field label="Date">
-          <TextInput
-            style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="AAAA-MM-JJ"
-            maxLength={10}
-            keyboardType="numbers-and-punctuation"
-            accessibilityLabel="Date du rendez-vous, format AAAA-MM-JJ"
-          />
+      {patients.length > 1 && (
+        <Field label="Patient">
+          <View style={styles.pillRow}>
+            {patients.map((patient) => (
+              <Pill
+                key={patient.id}
+                label={`${patient.firstName} ${patient.lastName}`}
+                selected={selectedPatientId === patient.id}
+                onPress={() => setSelectedPatientId(patient.id)}
+                accessibilityLabel={`Patient : ${patient.firstName} ${patient.lastName}`}
+              />
+            ))}
+          </View>
         </Field>
+      )}
 
-        <Field label="Heure">
-          <TextInput
-            style={styles.input}
-            value={time}
-            onChangeText={setTime}
-            placeholder="HH:MM"
-            maxLength={5}
-            keyboardType="numbers-and-punctuation"
-            accessibilityLabel="Heure du rendez-vous, format HH:MM"
-          />
-        </Field>
+      <Field label="Date">
+        <TextInput
+          style={styles.input}
+          value={date}
+          onChangeText={setDate}
+          placeholder="AAAA-MM-JJ"
+          maxLength={10}
+          keyboardType="numbers-and-punctuation"
+          accessibilityLabel="Date du rendez-vous, format AAAA-MM-JJ"
+        />
+      </Field>
 
-        <Field label="Type de consultation (optionnel)">
-          <TextInput
-            style={styles.input}
-            value={consultationType}
-            onChangeText={setConsultationType}
-            maxLength={255}
-            placeholder="Ex. Contrôle de routine"
-            accessibilityLabel="Type de consultation"
-          />
-        </Field>
+      <Field label="Heure">
+        <TextInput
+          style={styles.input}
+          value={time}
+          onChangeText={setTime}
+          placeholder="HH:MM"
+          maxLength={5}
+          keyboardType="numbers-and-punctuation"
+          accessibilityLabel="Heure du rendez-vous, format HH:MM"
+        />
+      </Field>
 
-        {error && (
-          <Text style={styles.error} accessibilityRole="alert">
-            {error}
-          </Text>
-        )}
+      <Field label="Type de consultation (optionnel)">
+        <TextInput
+          style={styles.input}
+          value={consultationType}
+          onChangeText={setConsultationType}
+          maxLength={255}
+          placeholder="Ex. Contrôle de routine"
+          accessibilityLabel="Type de consultation"
+        />
+      </Field>
 
-        <TouchableOpacity
-          style={[styles.submit, isSubmitting && styles.submitDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-          accessibilityRole="button"
-          accessibilityLabel="Enregistrer le rendez-vous"
-        >
-          <Text style={styles.submitText}>{isSubmitting ? 'Enregistrement…' : 'Enregistrer'}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {error && (
+        <Text style={styles.error} accessibilityRole="alert">
+          {error}
+        </Text>
+      )}
+
+      <TouchableOpacity
+        style={[styles.submit, isSubmitting && styles.submitDisabled]}
+        onPress={handleSubmit}
+        disabled={isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel="Enregistrer le rendez-vous"
+      >
+        <Text style={styles.submitText}>{isSubmitting ? 'Enregistrement…' : 'Enregistrer'}</Text>
+      </TouchableOpacity>
+    </KeyboardAwareScrollView>
   );
 }
 
