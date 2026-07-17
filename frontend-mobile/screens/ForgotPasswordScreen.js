@@ -104,7 +104,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
 const COLORS = {
   primary: '#2E3862',
-  primaryLight: '#7491F7',
+  primaryLight: '#3B5BDB',
   surface: '#FFFFFF',
   text: '#1C2338',
   textMuted: '#5B6178',
