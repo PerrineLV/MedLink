@@ -175,6 +175,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: COLORS.text,
+    backgroundColor: COLORS.surface,
+    overflow: 'hidden',
   },
   error: {
     backgroundColor: COLORS.dangerBg,
