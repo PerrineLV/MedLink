@@ -15,7 +15,7 @@ import { fetchPatients } from '../services/patientService';
 
 const COLORS = {
   primary: '#2E3862',
-  primaryLight: '#7491F7',
+  primaryLight: '#3B5BDB',
   background: '#F4F6FB',
   surface: '#FFFFFF',
   text: '#1C2338',

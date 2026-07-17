@@ -8,7 +8,7 @@ const HIGHLIGHTS = [
 
 const COLORS = {
   primary: '#2E3862',
-  primaryLight: '#7491F7',
+  primaryLight: '#3B5BDB',
   surface: '#FFFFFF',
   tagline: '#A9B8DE',
 };
