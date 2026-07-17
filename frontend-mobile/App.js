@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -27,7 +27,7 @@ import SessionExpiryWarning from './components/SessionExpiryWarning';
 import UpdateBanner from './components/UpdateBanner';
 import { isAdminOnlySession } from './services/roles';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
 // Deep link pour le mail de réinitialisation de mot de passe (ML-78) :
 // medlink://reset-password?token=... route directement sur ResetPassword
