@@ -68,6 +68,12 @@ export default function RegisterScreen({ navigation }) {
         <Text style={styles.title}>MedLink</Text>
         <Text style={styles.subtitle}>Créer votre compte</Text>
 
+        <Text style={styles.legalWarning} accessibilityRole="alert">
+          Projet de certification à but pédagogique. Ne pas utiliser avec de vraies données de
+          santé. Hébergement non certifié HDS. L’identité professionnelle des soignants n’est pas
+          vérifiée à l’inscription.
+        </Text>
+
         <View style={styles.field}>
           <Text style={styles.label}>Prénom</Text>
           <TextInput
@@ -308,6 +314,15 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 28, fontWeight: '700', color: COLORS.primary, marginBottom: 4 },
   subtitle: { fontSize: 16, color: COLORS.textMuted, marginBottom: 32 },
+  legalWarning: {
+    backgroundColor: COLORS.dangerBg,
+    color: COLORS.danger,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 24,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   field: { marginBottom: 20 },
   label: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 8 },
   input: {

@@ -73,6 +73,12 @@ export default function RegisterPage() {
         <h1>MedLink</h1>
         <p className="register-subtitle">Créer votre compte</p>
 
+        <p className="register-legal-warning" role="alert">
+          Projet de certification à but pédagogique. Ne pas utiliser avec de vraies données de
+          santé. Hébergement non certifié HDS. L’identité professionnelle des soignants n’est pas
+          vérifiée à l’inscription.
+        </p>
+
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-field">
             <label htmlFor="firstName">Prénom</label>
