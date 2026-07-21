@@ -28,19 +28,19 @@
   color: var(--color-text-muted);
 }
 
-.form-field {
-  margin-bottom: 20px;
+.login-card .form-field {
+  margin-bottom: 24px;
   text-align: left;
 }
 
-.form-field label {
+.login-card .form-field label {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
   font-size: 14px;
 }
 
-.form-field input {
+.login-card .form-field input {
   width: 100%;
   padding: 12px 16px;
   border-radius: var(--radius-pill);
