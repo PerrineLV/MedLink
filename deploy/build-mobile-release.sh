@@ -39,24 +39,28 @@ BUILD_JSON=$(npx eas-cli build --platform android --profile production --non-int
 BUILD_ID=$(echo "$BUILD_JSON" | jq -r '.[0].id')
 BUILD_STATUS=$(echo "$BUILD_JSON" | jq -r '.[0].status')
 
-if [ "$BUILD_STATUS" != "finished" ]; then
+if [ "${BUILD_STATUS^^}" != "FINISHED" ]; then
   echo "Le build EAS a échoué (status: $BUILD_STATUS). Voir https://expo.dev pour les logs." >&2
   exit 1
 fi
 
 echo "==> Build terminé (id: $BUILD_ID). Téléchargement…"
-DOWNLOAD_DIR=$(mktemp -d)
-(cd "$DOWNLOAD_DIR" && npx eas-cli build:download --build-id "$BUILD_ID" --non-interactive)
+# eas-cli a besoin du contexte du projet (app.json/eas.json) pour résoudre
+# le build : on télécharge depuis $MOBILE_DIR, pas depuis un dossier vide.
+MARKER=$(mktemp)
+npx eas-cli build:download --build-id "$BUILD_ID" --non-interactive
 
-DOWNLOADED_APK=$(find "$DOWNLOAD_DIR" -maxdepth 1 -name '*.apk' | head -n1)
+DOWNLOADED_APK=$(find "$MOBILE_DIR" -maxdepth 1 -name '*.apk' -newer "$MARKER" | head -n1)
+rm -f "$MARKER"
 if [ -z "$DOWNLOADED_APK" ]; then
   echo "Aucun .apk trouvé après le téléchargement." >&2
   exit 1
 fi
 
 APK_PATH="$MOBILE_DIR/medlink-latest.apk"
-mv "$DOWNLOADED_APK" "$APK_PATH"
-rm -rf "$DOWNLOAD_DIR"
+if [ "$DOWNLOADED_APK" != "$APK_PATH" ]; then
+  mv "$DOWNLOADED_APK" "$APK_PATH"
+fi
 
 echo "==> APK prêt : $APK_PATH"
 echo
