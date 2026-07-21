@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-alpine
+FROM php:8.3-fpm-alpine AS base
 
 RUN apk add --no-cache \
         nginx \
@@ -30,3 +30,14 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=5 \
     CMD curl -f http://localhost/health || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
+
+# Stage dev : ajoute PCOV pour mesurer la couverture de tests PHPUnit (ML-123).
+# Jamais présent dans l'image de prod (stage par défaut ci-dessous) pour ne
+# pas l'alourdir ni y exposer un outil de profiling inutile.
+FROM base AS dev
+RUN apk add --no-cache --virtual .build-deps ${PHPIZE_DEPS} \
+    && pecl install pcov \
+    && docker-php-ext-enable pcov \
+    && apk del .build-deps
+
+FROM base AS prod
