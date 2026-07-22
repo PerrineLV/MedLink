@@ -466,6 +466,7 @@ function NewEntryPanel({ patients, onEntryCreated }) {
               maxLength={1000}
               rows={3}
               placeholder="Précisions sur la journée…"
+              aria-label="Note (optionnelle)"
             />
           </Field>
 

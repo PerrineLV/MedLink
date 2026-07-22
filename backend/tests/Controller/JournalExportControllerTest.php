@@ -141,6 +141,18 @@ final class JournalExportControllerTest extends TestCase
         ($this->controller)(new Request(['to' => '2025-01-31']));
     }
 
+    public function testThrowsBadRequestWhenFromHasAnInvalidFormat(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+
+        $this->security->method('getUser')->willReturn($patient);
+        $this->security->method('isGranted')->willReturn(true);
+
+        $this->expectException(BadRequestHttpException::class);
+
+        ($this->controller)(new Request(['from' => '01-01-2025', 'to' => '2025-01-31']));
+    }
+
     public function testThrowsBadRequestWhenTheExportPeriodIsInvalid(): void
     {
         $patient = $this->makeUser(1, User::ROLE_PATIENT);

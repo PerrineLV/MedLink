@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import Badge from '../components/Badge';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { fetchUsers, updateUserStatus } from '../services/adminService';
 import { ROLE_LABELS } from '../services/roles';
 import './AdminUsersPage.css';
@@ -218,6 +219,9 @@ function UserRow({ user, onRequestDeactivate, onActivated }) {
 function DeactivateConfirmation({ user, onCancel, onDeactivated }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const dialogRef = useRef(null);
+
+  useFocusTrap(dialogRef);
 
   const handleConfirm = async () => {
     setError(null);
@@ -234,8 +238,10 @@ function DeactivateConfirmation({ user, onCancel, onDeactivated }) {
 
   return (
     <div
+      ref={dialogRef}
       className="admin-users-confirm"
       role="alertdialog"
+      aria-modal="true"
       aria-live="assertive"
       aria-label="Confirmer la désactivation"
     >

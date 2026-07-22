@@ -98,10 +98,6 @@
   overflow-x: auto;
 }
 
-.admin-users-table-wrapper:focus {
-  outline: none;
-}
-
 .admin-users-table {
   width: 100%;
   border-collapse: collapse;

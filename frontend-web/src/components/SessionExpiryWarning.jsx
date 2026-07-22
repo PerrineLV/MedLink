@@ -1,8 +1,13 @@
+import { useRef } from 'react';
 import { useAuth } from '../contexts/useAuth';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import './SessionExpiryWarning.css';
 
 export default function SessionExpiryWarning() {
   const { sessionExpiryWarning, dismissSessionExpiryWarning, logout } = useAuth();
+  const dialogRef = useRef(null);
+
+  useFocusTrap(dialogRef, sessionExpiryWarning);
 
   if (!sessionExpiryWarning) {
     return null;
@@ -10,8 +15,10 @@ export default function SessionExpiryWarning() {
 
   return (
     <div
+      ref={dialogRef}
       className="session-warning"
       role="alertdialog"
+      aria-modal="true"
       aria-live="assertive"
       aria-label="Expiration de session"
     >

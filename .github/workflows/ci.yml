@@ -47,7 +47,7 @@ jobs:
         with:
           php-version: "8.3"
           extensions: ctype, iconv, intl, pdo_pgsql, opcache, zip
-          coverage: none
+          coverage: pcov
           tools: composer:v2
 
       - name: Get Composer cache directory
@@ -74,13 +74,14 @@ jobs:
       - name: PHPStan (level 6)
         run: vendor/bin/phpstan analyse --configuration=phpstan.dist.neon --no-progress
 
-      - name: PHPUnit
-        run: vendor/bin/phpunit --configuration=phpunit.dist.xml
+      - name: PHPUnit (avec couverture)
+        run: vendor/bin/phpunit --configuration=phpunit.dist.xml --coverage-text --colors=never
 
       - name: Build Docker image
         uses: docker/build-push-action@v7
         with:
           context: backend
+          target: prod
           push: false
           tags: medlink-backend:ci
 

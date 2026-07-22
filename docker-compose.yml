@@ -2,6 +2,7 @@ services:
   app:
     build:
       context: ./backend
+      target: dev
     container_name: medlink_app
     restart: unless-stopped
     ports:
@@ -9,8 +10,7 @@ services:
     volumes:
       - ./backend:/var/www/html
     env_file:
-      - path: ./backend/.env
-        required: false
+      - ./backend/.env
     depends_on:
       db:
         condition: service_healthy

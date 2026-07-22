@@ -1,6 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import SecurityBanner from './SecurityBanner';
 import { COLORS, TYPE } from '../services/journalPresentation';
+
+const logo = require('../assets/medlink-logo.png');
 
 // Le bandeau de sécurité (ML-92) fait partie intégrante de l'en-tête, pas une
 // option que chaque écran doit penser à ajouter : un écran qui l'omettait
@@ -11,13 +13,12 @@ export default function Header({ displayName }) {
     <>
       <View style={styles.header}>
         <View style={styles.headerBrand}>
-          <Text
+          <Image
+            source={logo}
             style={styles.headerLogo}
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
-          >
-            🛡️
-          </Text>
+          />
           <View>
             <Text style={styles.headerTitle}>MedLink</Text>
             <Text style={styles.headerPatientName}>{displayName}</Text>
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headerLogo: { fontSize: TYPE.lg },
+  headerLogo: { width: 28, height: 28, resizeMode: 'contain' },
   headerTitle: { color: COLORS.onPrimary, fontSize: TYPE.md, fontWeight: '700' },
   headerPatientName: { color: COLORS.onPrimary, fontSize: TYPE.sm, opacity: 0.85 },
   headerLock: { fontSize: TYPE.lg },

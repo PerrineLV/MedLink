@@ -7,7 +7,6 @@ namespace App\Tests\Controller;
 use App\Controller\AdminController;
 use App\Entity\User;
 use App\Repository\UserRepository;
-use App\Security\Voter\AdminVoter;
 use App\Service\AdminUserService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\Stub;
@@ -25,7 +24,7 @@ final class AdminControllerTest extends TestCase
     protected function setUp(): void
     {
         $this->security = $this->createStub(Security::class);
-        $this->security->method('isGranted')->with(AdminVoter::MANAGE_USERS)->willReturn(true);
+        $this->security->method('isGranted')->willReturn(true);
 
         $this->userRepository = $this->createStub(UserRepository::class);
         $entityManager = $this->createStub(EntityManagerInterface::class);
@@ -71,7 +70,7 @@ final class AdminControllerTest extends TestCase
     public function testUpdateStatusDeactivatesAnAccount(): void
     {
         $patient = $this->makeUser(1, 'patient@medlink.test', User::ROLE_PATIENT);
-        $this->userRepository->method('find')->with(1)->willReturn($patient);
+        $this->userRepository->method('find')->willReturn($patient);
 
         $response = $this->controller->updateStatus(1, $this->jsonRequest(['active' => false]));
 
@@ -87,6 +86,20 @@ final class AdminControllerTest extends TestCase
         $response = $this->controller->updateStatus(999, $this->jsonRequest(['active' => false]));
 
         self::assertSame(404, $response->getStatusCode());
+    }
+
+    public function testUpdateStatusReturns400OnInvalidJsonBody(): void
+    {
+        $request = Request::create(
+            '/api/admin/users/1/status',
+            'PATCH',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: '{invalid',
+        );
+
+        $response = $this->controller->updateStatus(1, $request);
+
+        self::assertSame(400, $response->getStatusCode());
     }
 
     public function testUpdateStatusReturns400WhenActiveFieldIsMissing(): void

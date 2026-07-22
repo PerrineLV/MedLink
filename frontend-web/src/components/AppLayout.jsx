@@ -4,6 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
 import { useInvitationsBadge } from '../contexts/useInvitationsBadge';
 import { useMessagesBadge } from '../contexts/useMessagesBadge';
+import logo from '../assets/medlink-logo.png';
 import {
   ROLE_AIDANT,
   ROLE_LABELS,
@@ -92,9 +93,7 @@ export default function AppLayout({ children }) {
           >
             <span aria-hidden="true">{isNavOpen ? '✕' : '☰'}</span>
           </button>
-          <span className="app-header-logo" aria-hidden="true">
-            🛡️
-          </span>
+          <img src={logo} alt="" className="app-header-logo" />
           <div>
             <p className="app-header-title">MedLink</p>
             <p className="app-header-name">{displayName}</p>

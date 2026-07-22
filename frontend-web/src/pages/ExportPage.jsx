@@ -175,6 +175,7 @@ export default function ExportPage() {
             onSelectPatient={(patient) => setSelectedPatientId(patient.id)}
             placeholder="Rechercher un patient…"
             required
+            ariaLabel="Patient"
           />
         </Field>
       )}
