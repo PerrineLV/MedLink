@@ -20,6 +20,9 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 ### Added
 - Création de script pour déploiement mobile
 
+### Changed
+- Version affichée du frontend web resynchronisée avec le tag de release (1.3.0 → 1.3.1)
+
 ### Fixed
 - Espacements insuffisants sur le formulaire de connexion web (ML-118) : l'écart entre le champ "Adresse e-mail" et le label "Mot de passe" en dessous, ainsi qu'entre le champ "Mot de passe" et le bouton "Se connecter", était de 20px — visuellement trop serré comparé à l'espacement label/champ (8px, jugé correct et pris comme référence). Cause réelle plus profonde qu'un simple ajustement de valeur : `.form-field` est une classe non scopée réutilisée à l'identique (même sélecteur, même spécificité) dans `LoginPage.css`, `RegisterPage.css`, `ResetPasswordPage.css` et `AccountPage.css`, toutes bundlées ensemble sans code-splitting par route — la cascade CSS ne retient que la dernière règle chargée dans le graphe de modules (`AccountPage.css`, importée en dernier dans `App.jsx`, `margin-bottom: 0`), qui écrasait silencieusement la valeur de `LoginPage.css` sur l'écran de connexion quel que soit son contenu. Un premier ajustement de la valeur dans `LoginPage.css` seule n'avait donc visuellement aucun effet (confirmé en inspectant `dist/assets/*.css` après build : une seule règle `.form-field{margin-bottom:0}` survivait à la minification). Corrigé en scopant les sélecteurs de l'écran de connexion sous `.login-card` (`.login-card .form-field`, etc.), ce qui augmente leur spécificité et garantit qu'ils gagnent la cascade indépendamment de l'ordre de chargement, sans toucher aux autres pages ni à leur collision préexistante (hors périmètre de ce ticket, limité à l'écran de connexion). Valeur retenue : 24px, cohérente avec les autres marges déjà utilisées sur cet écran (`login-subtitle`). Mobile non concerné (confirmé hors périmètre)
 
