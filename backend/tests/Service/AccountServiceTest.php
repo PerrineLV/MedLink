@@ -203,7 +203,7 @@ final class AccountServiceTest extends TestCase
         $refreshToken = new RefreshToken();
         $refreshToken->setUsername($originalEmail);
 
-        $refreshTokenRepository = $this->createStub(EntityRepository::class);
+        $refreshTokenRepository = $this->createMock(EntityRepository::class);
         $refreshTokenRepository->method('findBy')->with(['username' => $originalEmail])->willReturn([$refreshToken]);
 
         $this->entityManager->method('getRepository')->willReturn($refreshTokenRepository);
@@ -252,7 +252,7 @@ final class AccountServiceTest extends TestCase
         $refreshToken = new RefreshToken();
         $refreshToken->setUsername($originalEmail);
 
-        $refreshTokenRepository = $this->createStub(EntityRepository::class);
+        $refreshTokenRepository = $this->createMock(EntityRepository::class);
         $refreshTokenRepository->method('findBy')->with(['username' => $originalEmail])->willReturn([$refreshToken]);
 
         $this->entityManager->method('getRepository')->willReturn($refreshTokenRepository);

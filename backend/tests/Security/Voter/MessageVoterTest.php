@@ -133,6 +133,18 @@ final class MessageVoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_ABSTAIN, $this->voter->vote($token, $user, [MessageVoter::MARK_READ]));
     }
 
+    public function testAnUnauthenticatedTokenIsDenied(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $message = new Message($patient, $soignant, 'Bonjour docteur.');
+
+        $token = $this->createStub(TokenInterface::class);
+        $token->method('getUser')->willReturn(null);
+
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->voter->vote($token, $message, [MessageVoter::MARK_READ]));
+    }
+
     private function makeUser(int $id, string $role): User
     {
         $user = new User(sprintf('user-%d@medlink.test', $id), 'Prenom', 'Nom');

@@ -159,6 +159,39 @@ final class AppointmentServiceTest extends TestCase
         self::assertSame(Appointment::STATUS_CANCELLED, $updated->getStatus());
     }
 
+    public function testUpdateReschedulesToANewFutureDate(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $appointment = new Appointment($patient, $soignant, new \DateTimeImmutable('+3 days'));
+
+        $this->security->method('getUser')->willReturn($soignant);
+        $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(true);
+
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $newDate = new \DateTimeImmutable('+10 days');
+        $updated = $this->service->update($appointment, $newDate, null, null);
+
+        self::assertSame($newDate, $updated->getScheduledAt());
+    }
+
+    public function testUpdateReplacesTheNotes(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $appointment = new Appointment($patient, $soignant, new \DateTimeImmutable('+3 days'), 'Ancienne note.');
+
+        $this->security->method('getUser')->willReturn($soignant);
+        $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(true);
+
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $updated = $this->service->update($appointment, null, null, 'Nouvelle note.');
+
+        self::assertSame('Nouvelle note.', $updated->getNotes());
+    }
+
     public function testUpdateAllowsCancellingAnAppointmentWhoseDateHasAlreadyPassed(): void
     {
         $patient = $this->makeUser(1, User::ROLE_PATIENT);

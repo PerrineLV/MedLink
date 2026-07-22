@@ -197,6 +197,8 @@ final class TreatmentServiceTest extends TestCase
         yield 'custom moment without a label' => ['Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_CUSTOM]]];
         yield 'custom moment with a blank label' => ['Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_CUSTOM, 'label' => '   ']]];
         yield 'custom moment with a too long label' => ['Bisoprolol', '5 mg', [['moment' => TreatmentSchedule::MOMENT_CUSTOM, 'label' => str_repeat('a', 101)]]];
+        yield 'name too long' => [str_repeat('a', 256), '5 mg', [['moment' => TreatmentSchedule::MOMENT_MORNING]]];
+        yield 'dosage too long' => ['Bisoprolol', str_repeat('a', 101), [['moment' => TreatmentSchedule::MOMENT_MORNING]]];
     }
 
     public function testUpdatePersistsPartialChangesForAnActivelyAttachedSoignant(): void
@@ -231,6 +233,40 @@ final class TreatmentServiceTest extends TestCase
         $this->expectException(AccessDeniedException::class);
 
         $this->service->update($treatment, null, null, null, false);
+    }
+
+    public function testUpdateReplacesNameAndDosage(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $treatment = new Treatment($patient, 'Bisoprolol', '5 mg', $soignant);
+
+        $this->security->method('getUser')->willReturn($soignant);
+        $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(true);
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $updated = $this->service->update($treatment, 'Ramipril', '10 mg', null, null);
+
+        self::assertSame('Ramipril', $updated->getName());
+        self::assertSame('10 mg', $updated->getDosage());
+    }
+
+    public function testUpdateReplacesTheScheduleList(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $soignant = $this->makeUser(2, User::ROLE_SOIGNANT);
+        $treatment = new Treatment($patient, 'Bisoprolol', '5 mg', $soignant);
+        $treatment->addSchedule(new TreatmentSchedule($treatment, TreatmentSchedule::MOMENT_MORNING));
+
+        $this->security->method('getUser')->willReturn($soignant);
+        $this->patientSoignantRepository->method('hasActiveRelation')->willReturn(true);
+
+        $this->entityManager->expects(self::once())->method('remove');
+
+        $updated = $this->service->update($treatment, null, null, [['moment' => TreatmentSchedule::MOMENT_EVENING]], null);
+
+        self::assertCount(1, $updated->getSchedules());
+        self::assertSame(TreatmentSchedule::MOMENT_EVENING, $updated->getSchedules()[0]->getMoment());
     }
 
     private function makeUser(int $id, string $role): User

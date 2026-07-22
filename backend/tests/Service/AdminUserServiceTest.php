@@ -28,24 +28,28 @@ final class AdminUserServiceTest extends TestCase
 
     public function testListUsersPassesResolvedFiltersToTheRepository(): void
     {
-        $this->userRepository
+        $userRepository = $this->createMock(UserRepository::class);
+        $userRepository->expects(self::once())
             ->method('search')
             ->with(User::ROLE_SOIGNANT, true, 2, 10)
             ->willReturn(['items' => [], 'total' => 0]);
+        $service = new AdminUserService($userRepository, $this->entityManager);
 
-        $result = $this->service->listUsers('soignant', 'actif', 2, 10);
+        $result = $service->listUsers('soignant', 'actif', 2, 10);
 
         self::assertSame(['items' => [], 'total' => 0], $result);
     }
 
     public function testListUsersWithoutFiltersPassesNullToTheRepository(): void
     {
-        $this->userRepository
+        $userRepository = $this->createMock(UserRepository::class);
+        $userRepository->expects(self::once())
             ->method('search')
             ->with(null, null, 1, 20)
             ->willReturn(['items' => [], 'total' => 0]);
+        $service = new AdminUserService($userRepository, $this->entityManager);
 
-        $result = $this->service->listUsers(null, null, 1, 20);
+        $result = $service->listUsers(null, null, 1, 20);
 
         self::assertSame(['items' => [], 'total' => 0], $result);
     }
@@ -69,9 +73,11 @@ final class AdminUserServiceTest extends TestCase
         $user = new User('patient@medlink.test', 'Jeanne', 'Dupont');
         (new \ReflectionProperty(User::class, 'id'))->setValue($user, 1);
 
-        $this->userRepository->method('find')->with(1)->willReturn($user);
+        $userRepository = $this->createMock(UserRepository::class);
+        $userRepository->expects(self::once())->method('find')->with(1)->willReturn($user);
+        $service = new AdminUserService($userRepository, $this->entityManager);
 
-        $result = $this->service->setUserActive(1, false);
+        $result = $service->setUserActive(1, false);
 
         self::assertFalse($result->isActive());
     }

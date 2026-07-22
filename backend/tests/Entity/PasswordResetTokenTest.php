@@ -22,6 +22,23 @@ final class PasswordResetTokenTest extends TestCase
         self::assertSame($expiresAt, $token->getExpiresAt());
         self::assertNull($token->getUsedAt());
         self::assertFalse($token->isUsed());
+        self::assertNull($token->getId());
+    }
+
+    public function testGetCreatedAtIsSetAtConstruction(): void
+    {
+        $before = new \DateTimeImmutable();
+
+        $token = new PasswordResetToken(
+            new User('patient@medlink.test', 'Jeanne', 'Dupont'),
+            'hashed-token',
+            new \DateTimeImmutable('+1 hour'),
+        );
+
+        $after = new \DateTimeImmutable();
+
+        self::assertGreaterThanOrEqual($before, $token->getCreatedAt());
+        self::assertLessThanOrEqual($after, $token->getCreatedAt());
     }
 
     public function testIsExpiredIsFalseBeforeExpiry(): void
