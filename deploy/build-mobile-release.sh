@@ -45,22 +45,17 @@ if [ "${BUILD_STATUS^^}" != "FINISHED" ]; then
 fi
 
 echo "==> Build terminé (id: $BUILD_ID). Téléchargement…"
-# eas-cli a besoin du contexte du projet (app.json/eas.json) pour résoudre
-# le build : on télécharge depuis $MOBILE_DIR, pas depuis un dossier vide.
-MARKER=$(mktemp)
-npx eas-cli build:download --build-id "$BUILD_ID" --non-interactive
-
-DOWNLOADED_APK=$(find "$MOBILE_DIR" -maxdepth 1 -name '*.apk' -newer "$MARKER" | head -n1)
-rm -f "$MARKER"
-if [ -z "$DOWNLOADED_APK" ]; then
-  echo "Aucun .apk trouvé après le téléchargement." >&2
+# `eas-cli build:download` télécharge désormais dans son propre cache
+# (eas-build-run-cache), plus dans le dossier courant : on récupère donc
+# l'URL de l'artefact via build:view et on la télécharge nous-mêmes.
+ARCHIVE_URL=$(npx eas-cli build:view --json "$BUILD_ID" | jq -r '.artifacts.applicationArchiveUrl // empty')
+if [ -z "$ARCHIVE_URL" ]; then
+  echo "Impossible de récupérer l'URL de l'APK (artifacts.applicationArchiveUrl) pour le build $BUILD_ID." >&2
   exit 1
 fi
 
 APK_PATH="$MOBILE_DIR/medlink-latest.apk"
-if [ "$DOWNLOADED_APK" != "$APK_PATH" ]; then
-  mv "$DOWNLOADED_APK" "$APK_PATH"
-fi
+curl -fsSL -o "$APK_PATH" "$ARCHIVE_URL"
 
 echo "==> APK prêt : $APK_PATH"
 echo
