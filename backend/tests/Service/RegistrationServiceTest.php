@@ -166,6 +166,16 @@ final class RegistrationServiceTest extends TestCase
         $this->service->register($this->makeInput(email: 'not-an-email'));
     }
 
+    public function testRegisterThrowsBadRequestWhenFirstNameIsTooLong(): void
+    {
+        $this->userRepository->method('findOneBy')->willReturn(null);
+        $this->entityManager->expects(self::never())->method('persist');
+
+        $this->expectException(BadRequestHttpException::class);
+
+        $this->service->register($this->makeInput(firstName: str_repeat('a', 101)));
+    }
+
     public function testRegisterThrowsBadRequestWhenConsentIsMissing(): void
     {
         $this->entityManager->expects(self::never())->method('persist');

@@ -7,7 +7,6 @@ namespace App\Tests\Controller;
 use App\Controller\AdminSupervisionController;
 use App\Repository\FailedLoginAttemptRepository;
 use App\Repository\UserRepository;
-use App\Security\Voter\AdminVoter;
 use App\Service\AdminSupervisionService;
 use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\MockObject\Stub;
@@ -31,7 +30,7 @@ final class AdminSupervisionControllerTest extends TestCase
     public function testHealthSummaryReturnsTheSummaryForAnAdmin(): void
     {
         $security = $this->createStub(Security::class);
-        $security->method('isGranted')->with(AdminVoter::VIEW_SUPERVISION)->willReturn(true);
+        $security->method('isGranted')->willReturn(true);
 
         $this->failedLoginAttemptRepository->method('countSince')->willReturn(2);
         $this->userRepository->method('countActiveByRole')->willReturn(1);

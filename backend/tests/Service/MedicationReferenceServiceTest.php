@@ -89,6 +89,37 @@ final class MedicationReferenceServiceTest extends TestCase
         self::assertSame([], $service->search('doli'));
     }
 
+    public function testSearchFallsBackToAContainsMatchWhenNoPrefixMatches(): void
+    {
+        $service = new MedicationReferenceService($this->fixturePath);
+
+        self::assertContains('DOLIPRANE 1000 mg, comprimé', $service->search('rane'));
+    }
+
+    public function testSearchOnlyLoadsTheFileOnce(): void
+    {
+        $service = new MedicationReferenceService($this->fixturePath);
+
+        $first = $service->search('doli');
+        $second = $service->search('doli');
+
+        self::assertSame($first, $second);
+    }
+
+    public function testSearchReturnsEmptyArrayWhenFileContentIsNotValidJson(): void
+    {
+        $invalidPath = tempnam(sys_get_temp_dir(), 'medications').'.json';
+        file_put_contents($invalidPath, 'not valid json');
+
+        $service = new MedicationReferenceService($invalidPath);
+
+        try {
+            self::assertSame([], $service->search('doli'));
+        } finally {
+            unlink($invalidPath);
+        }
+    }
+
     public function testExtractedAtReturnsDateFromFile(): void
     {
         $service = new MedicationReferenceService($this->fixturePath);
