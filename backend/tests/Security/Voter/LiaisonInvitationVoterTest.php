@@ -74,6 +74,18 @@ final class LiaisonInvitationVoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_ABSTAIN, $this->voter->vote($token, $user, [LiaisonInvitationVoter::RESPOND]));
     }
 
+    public function testAnUnauthenticatedTokenIsDenied(): void
+    {
+        $patient = $this->makeUser(1, User::ROLE_PATIENT);
+        $aidant = $this->makeUser(2, User::ROLE_AIDANT);
+        $relation = new PatientAidant($patient, $aidant);
+
+        $token = $this->createStub(TokenInterface::class);
+        $token->method('getUser')->willReturn(null);
+
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->voter->vote($token, $relation, [LiaisonInvitationVoter::RESPOND]));
+    }
+
     public function testThePatientCanRevokeTheirOwnAidantLink(): void
     {
         $patient = $this->makeUser(1, User::ROLE_PATIENT);

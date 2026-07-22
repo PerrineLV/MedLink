@@ -36,4 +36,13 @@ final class AppUserCheckerTest extends TestCase
 
         $this->checker->checkPreAuth($user);
     }
+
+    public function testCheckPostAuthIsANoOp(): void
+    {
+        $user = new User('patient@medlink.test', 'Jeanne', 'Dupont');
+
+        $this->checker->checkPostAuth($user);
+
+        $this->addToAssertionCount(1);
+    }
 }

@@ -6,7 +6,7 @@ const DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;
 
 const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
-  { value, onChange, onSelectMedication, required = false },
+  { value, onChange, onSelectMedication, required = false, ariaLabel },
   forwardedRef,
 ) {
   const [suggestions, setSuggestions] = useState([]);
@@ -98,6 +98,7 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
         aria-autocomplete="list"
         aria-controls={listboxId}
         aria-activedescendant={activeOptionId}
+        aria-label={ariaLabel}
         autoComplete="off"
         value={value}
         onChange={(event) => onChange(event.target.value)}

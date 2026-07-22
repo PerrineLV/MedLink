@@ -42,6 +42,16 @@ final class RegistrationControllerTest extends TestCase
         self::assertArrayNotHasKey('password', $body);
     }
 
+    public function testReturns201WithTitleWhenProvidedForASoignant(): void
+    {
+        $payload = array_merge($this->validPayload(), ['role' => 'soignant', 'title' => 'Dr']);
+
+        $response = ($this->controller)($this->jsonRequest($payload));
+
+        $body = json_decode((string) $response->getContent(), true);
+        self::assertSame('Dr', $body['title']);
+    }
+
     public function testReturns400OnInvalidJsonBody(): void
     {
         $request = Request::create('/api/auth/register', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: '{invalid');

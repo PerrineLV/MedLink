@@ -63,6 +63,24 @@ Mot de passe commun à tous les comptes : `MedLink2026!` (identifiants : `patien
 **⚠️ Ne jamais charger ces fixtures en production** : ce sont des données de santé fictives,
 réservées au développement local et aux démonstrations.
 
+## Couverture de tests (backend)
+
+Le service `app` du `docker-compose.yml` embarque l'extension **PCOV** (uniquement en
+dev — jamais dans l'image de prod, voir le stage `dev` de `backend/Dockerfile`) pour
+mesurer la couverture des tests PHPUnit :
+
+```bash
+# Résumé en console
+docker compose exec app vendor/bin/phpunit --coverage-text
+
+# Rapport HTML détaillé (généré dans backend/coverage/, ignoré par git)
+docker compose exec app vendor/bin/phpunit --coverage-html coverage
+```
+
+La CI (`.github/workflows/ci.yml`) exécute la même vérification à chaque
+push/pull request et affiche le résumé de couverture dans les logs du job
+*Backend checks*.
+
 ## Certification
 
 Projet réalisé dans le cadre de la certification RNCP 39583 — Expert en développement logiciel (YNOV Connect).
