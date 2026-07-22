@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import Badge from '../components/Badge';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { fetchLiaisons, inviteLiaison, revokeLiaison } from '../services/liaisonService';
 import { ROLE_LABELS, ROLE_SOIGNANT, formatSoignantName } from '../services/roles';
 import './LiaisonsPage.css';
@@ -169,6 +170,9 @@ function RevokeConfirmation({ liaison, onCancel, onRevoked }) {
   const [isRevoking, setIsRevoking] = useState(false);
   const [error, setError] = useState(null);
   const name = liaisonDisplayName(liaison);
+  const dialogRef = useRef(null);
+
+  useFocusTrap(dialogRef);
 
   const handleConfirm = async () => {
     setError(null);
@@ -185,8 +189,10 @@ function RevokeConfirmation({ liaison, onCancel, onRevoked }) {
 
   return (
     <div
+      ref={dialogRef}
       className="liaisons-confirm"
       role="alertdialog"
+      aria-modal="true"
       aria-live="assertive"
       aria-label="Confirmer la révocation"
     >

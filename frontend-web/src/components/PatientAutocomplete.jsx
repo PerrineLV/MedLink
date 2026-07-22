@@ -10,7 +10,7 @@ function patientLabel(patient) {
 // clavier que MedicationAutocomplete, mais filtrage local (la liste des
 // patients rattachés est déjà chargée en mémoire, pas de recherche serveur).
 const PatientAutocomplete = forwardRef(function PatientAutocomplete(
-  { patients, value, onChange, onSelectPatient, placeholder, required = false },
+  { patients, value, onChange, onSelectPatient, placeholder, required = false, ariaLabel },
   forwardedRef,
 ) {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,6 +75,7 @@ const PatientAutocomplete = forwardRef(function PatientAutocomplete(
         aria-autocomplete="list"
         aria-controls={listboxId}
         aria-activedescendant={activeOptionId}
+        aria-label={ariaLabel}
         autoComplete="off"
         placeholder={placeholder}
         value={value}

@@ -62,9 +62,9 @@
   padding: 16px;
 }
 
-.agenda-card-past {
-  opacity: 0.7;
-}
+/* Pas de opacity ici : elle délavait le texte des rendez-vous passés
+   sous le seuil de contraste RGAA (ex. .agenda-card-meta ~3:1 au lieu de
+   4,5:1). L'info "passé" est déjà portée par le titre de section. */
 
 .agenda-card-date {
   flex-shrink: 0;

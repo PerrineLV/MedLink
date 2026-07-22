@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
@@ -38,6 +39,7 @@ export default function ConversationScreen() {
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState(null);
   const listRef = useRef(null);
+  const knownMessageIdsRef = useRef(null);
 
   const markConversationRead = useCallback(
     async (conversationMessages) => {
@@ -84,6 +86,29 @@ export default function ConversationScreen() {
       requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
     }
   }, [messages]);
+
+  // Annonce les nouveaux messages reçus arrivant via le polling pendant que
+  // l'écran est déjà ouvert (ex. VoiceOver/TalkBack) : le premier chargement
+  // ne doit pas relire tout l'historique, seuls les messages apparus après
+  // coup sont concernés.
+  useEffect(() => {
+    if (!messages) return;
+
+    const currentIds = new Set(messages.map((message) => message.id));
+
+    if (knownMessageIdsRef.current) {
+      const newlyReceived = messages.filter(
+        (message) => message.senderId === contactId && !knownMessageIdsRef.current.has(message.id),
+      );
+      newlyReceived.forEach((message) => {
+        AccessibilityInfo.announceForAccessibility(
+          `Message reçu de ${contactName} : ${message.content}`,
+        );
+      });
+    }
+
+    knownMessageIdsRef.current = currentIds;
+  }, [messages, contactId, contactName]);
 
   const handleSend = async () => {
     const content = draft.trim();

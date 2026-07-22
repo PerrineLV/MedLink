@@ -8,7 +8,7 @@ export const COLORS = {
   background: '#f4f6fb',
   surface: '#ffffff',
   border: '#e1e4ef',
-  mutedText: '#888888',
+  mutedText: '#666666',
   mutedBackground: '#f4f6fb',
   red: { bg: '#fde8ec', text: '#c0143c' },
   orange: { bg: '#fdf1dc', text: '#92400e' },

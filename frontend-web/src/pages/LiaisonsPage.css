@@ -112,10 +112,6 @@
   gap: 32px;
 }
 
-.liaisons-list:focus {
-  outline: none;
-}
-
 .liaisons-section-heading {
   margin: 0 0 12px;
   color: var(--color-primary);

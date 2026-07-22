@@ -489,6 +489,7 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
                 }
               }}
               required
+              ariaLabel="Nom du médicament"
             />
             <span className="journal-field-hint">
               Source : Base de données publique des médicaments (ANSM)
@@ -505,6 +506,7 @@ function PrescribeTreatmentPanel({ patientId, onTreatmentCreated }) {
               onChange={(event) => setDosage(event.target.value)}
               placeholder="5 mg"
               required
+              aria-label="Dosage"
             />
           </div>
 
