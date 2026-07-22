@@ -279,7 +279,12 @@ function ConversationThread({ contact, messages, error, onSent }) {
         </p>
       )}
 
-      <div className="messaging-bubbles-container" ref={scrollRef}>
+      <div
+        className="messaging-bubbles-container"
+        ref={scrollRef}
+        aria-live="polite"
+        aria-relevant="additions"
+      >
         {messages === null ? (
           <p className="messaging-loading">Chargement…</p>
         ) : messages.length === 0 ? (

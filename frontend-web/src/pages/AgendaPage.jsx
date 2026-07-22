@@ -351,6 +351,7 @@ function NewAppointmentPanel({ patients, onCreated }) {
                 onSelectPatient={(patient) => setSelectedPatientId(patient.id)}
                 placeholder="Rechercher un patient…"
                 required
+                ariaLabel="Patient"
               />
             </Field>
           )}
@@ -361,6 +362,7 @@ function NewAppointmentPanel({ patients, onCreated }) {
               value={date}
               onChange={(event) => setDate(event.target.value)}
               required
+              aria-label="Date"
             />
           </Field>
 
@@ -370,6 +372,7 @@ function NewAppointmentPanel({ patients, onCreated }) {
               value={time}
               onChange={(event) => setTime(event.target.value)}
               required
+              aria-label="Heure"
             />
           </Field>
 
@@ -380,6 +383,7 @@ function NewAppointmentPanel({ patients, onCreated }) {
               onChange={(event) => setConsultationType(event.target.value)}
               maxLength={255}
               placeholder="Ex. Contrôle de routine"
+              aria-label="Type de consultation (optionnel)"
             />
           </Field>
 
