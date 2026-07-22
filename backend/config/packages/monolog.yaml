@@ -56,9 +56,15 @@ when@prod:
                 path: php://stderr
                 level: debug
                 formatter: monolog.formatter.json
+            # ML-93 : écrit sur stderr, pas sur un fichier — le conteneur de
+            # prod tourne en www-data sans droit d'écriture sur
+            # /var/www/html (image buildée en root, var/ absent de l'image
+            # car gitignoré), donc un chemin fichier sous var/log échoue en
+            # "Permission denied" au premier log. Même pattern que
+            # main/deprecation ci-dessus.
             security_audit:
                 type: stream
-                path: "%kernel.logs_dir%/security.log"
+                path: "php://stderr"
                 level: info
                 channels: ["security_audit"]
                 formatter: monolog.formatter.json

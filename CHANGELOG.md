@@ -5,6 +5,11 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [Unreleased]
+
+### Fixed
+- Logs de sécurité non écrits en prod (ML-93) : `SecurityAuditLogListener` échouait sur toute exception serveur (≥ 500) avec `Permission denied` sur `/var/www/html/var/log`. Cause : le handler Monolog `security_audit` était le seul, en prod, à encore écrire sur un fichier (`var/log/security.log`) — `main`/`deprecation` écrivent déjà sur `php://stderr` précisément parce que `var/` (gitignoré) est absent de l'image et que le process PHP-FPM tourne en `www-data`, sans droit d'écriture sur `/var/www/html` (image buildée en root, pas de `chown`). `security_audit` aligné sur ce même pattern déjà en place plutôt qu'ajouter un volume/des droits Docker pour un fichier qui serait de toute façon perdu à chaque redéploiement d'un conteneur stateless
+
 ## [1.3.2] - 2026-07-22
 
 ### Added
