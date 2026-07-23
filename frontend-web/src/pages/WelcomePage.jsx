@@ -1,4 +1,4 @@
-import { Stethoscope } from 'lucide-react';
+import { Smartphone, Stethoscope } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
 import { getHomeRoute } from '../services/roles';
@@ -53,6 +53,11 @@ export default function WelcomePage() {
             Connexion
           </Link>
         </div>
+
+        <a href="/telecharger-app.html" className="welcome-download-link">
+          <Smartphone size={18} aria-hidden="true" />
+          Télécharger l&rsquo;application mobile
+        </a>
       </div>
     </main>
   );
