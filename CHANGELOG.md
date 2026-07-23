@@ -5,7 +5,7 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [Unreleased]
+## [1.3.4] - 2026-07-23
 
 ### Added
 - Écosystème `github-actions` dans Dependabot (ML-131, étend ML-40 sans le rouvrir) : `ci.yml`, `cd.yml` et `update-medications.yml` épinglent une vingtaine d'actions tierces (`actions/checkout`, `shivammathur/setup-php`, `docker/build-push-action`, `appleboy/ssh-action`, etc.) jusqu'ici hors surveillance — leurs dépréciations devaient être détectées manuellement (cf. ML-80). Ajouté en cadence hebdomadaire avec `directory: "/"` (Dependabot scanne alors `.github/workflows/`). Vérification de la branche cible des PR à cette occasion : la branche par défaut du dépôt est `main`, alors que le flux du projet est `feature → develop → main` — `target-branch: "develop"` ajouté sur les 4 écosystèmes (composer, les 2 npm, github-actions) pour que les PR Dependabot n'atterrissent plus directement sur `main`
