@@ -5,7 +5,7 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [Unreleased]
+## [1.3.3] - 2026-07-23
 
 ### Added
 - Lien "Télécharger l'application mobile" sur la page d'accueil publique web (`WelcomePage`, ML-128) : ML-97/ML-98 avaient produit l'APK signée et la page statique `telecharger-app.html` (servie via Nginx), mais aucun lien n'y menait depuis le front — un visiteur devait connaître l'URL exacte. Ajouté sous les boutons Inscription/Connexion, lien texte simple (`<a href="/telecharger-app.html">`, pas de route React puisque la cible est un fichier statique hors SPA), accessible au clavier (atteint au 3ᵉ Tab, après les boutons Inscription/Connexion) et visible sans connexion
