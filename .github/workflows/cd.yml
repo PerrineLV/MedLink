@@ -24,7 +24,13 @@ jobs:
 
       - name: CHANGELOG.md doit être mis à jour (ML-32)
         run: |
-          if ! git diff --name-only HEAD^ HEAD | grep -qx 'CHANGELOG.md'; then
+          changed_files=$(git diff --name-only HEAD^ HEAD)
+          non_dep_files=$(echo "$changed_files" | grep -vE '(^|/)(package(-lock)?\.json|composer\.(json|lock))$' || true)
+          if [ -z "$non_dep_files" ]; then
+            echo "Seuls des fichiers de dépendances ont changé, CHANGELOG.md non requis."
+            exit 0
+          fi
+          if ! echo "$changed_files" | grep -qx 'CHANGELOG.md'; then
             echo "::error::CHANGELOG.md n'a pas été mis à jour par ce merge sur main. Ajoute une entrée avant de déployer."
             exit 1
           fi
