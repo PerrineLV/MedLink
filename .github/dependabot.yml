@@ -5,21 +5,45 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "develop"
+    groups:
+      backend-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/frontend-web"
     schedule:
       interval: "weekly"
     target-branch: "develop"
+    groups:
+      frontend-web-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/frontend-mobile"
     schedule:
       interval: "weekly"
     target-branch: "develop"
+    groups:
+      frontend-mobile-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     target-branch: "develop"
+    groups:
+      github-actions-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
