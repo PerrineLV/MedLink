@@ -58,8 +58,8 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2>Hébergement</h2>
           <p>
-            Vos données sont hébergées par Infomaniak, hébergeur certifié ISO 14001, dont les
-            centres de données sont situés en Suisse.
+            Vos données sont hébergées par OVHcloud (offre VPS-1), sur des serveurs situés en
+            France, avec un SLA de disponibilité contractuel de 99,9 %.
           </p>
         </section>
 
