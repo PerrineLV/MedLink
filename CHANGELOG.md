@@ -8,6 +8,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 ## [Unreleased]
 
 ### Fixed
+- Mention d'hébergeur obsolète dans les CGU/politique de confidentialité (ML-127, étend ML-82) : le texte affichait toujours "Infomaniak, hébergeur certifié ISO 14001, Suisse" alors que la décision d'hébergement a changé depuis (ML-34, 11/07/2026) au profit d'OVHcloud VPS-1 (France). Corrigé dans `PrivacyPolicyPage.jsx` (web) et `PrivacyPolicyScreen.js` (mobile), texte identique en substance sur les deux plateformes et cohérent avec la section 1.6 du dossier Bloc 2. Mention également corrigée dans `CLAUDE.md` (contrainte éco-conception, hébergeur cité au même titre). Plus aucune occurrence d'"Infomaniak" dans le repo (vérifié par recherche globale)
 - Logs de sécurité non écrits en prod (ML-93) : `SecurityAuditLogListener` échouait sur toute exception serveur (≥ 500) avec `Permission denied` sur `/var/www/html/var/log`. Cause : le handler Monolog `security_audit` était le seul, en prod, à encore écrire sur un fichier (`var/log/security.log`) — `main`/`deprecation` écrivent déjà sur `php://stderr` précisément parce que `var/` (gitignoré) est absent de l'image et que le process PHP-FPM tourne en `www-data`, sans droit d'écriture sur `/var/www/html` (image buildée en root, pas de `chown`). `security_audit` aligné sur ce même pattern déjà en place plutôt qu'ajouter un volume/des droits Docker pour un fichier qui serait de toute façon perdu à chaque redéploiement d'un conteneur stateless
 
 ## [1.3.2] - 2026-07-22
