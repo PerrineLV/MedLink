@@ -40,7 +40,12 @@ export default function JournalScreen() {
   const [entries, setEntries] = useState([]);
   const [treatments, setTreatments] = useState([]);
   const [patientNamesById, setPatientNamesById] = useState({});
-  const [hasAttachedPatients, setHasAttachedPatients] = useState(true);
+  // ML-136 : faux par défaut — le bouton ne doit s'afficher qu'après
+  // confirmation positive qu'un patient est rattaché, jamais par défaut
+  // avant résolution (chargement initial masqué par l'écran plein écran
+  // ci-dessous, mais un échec de fetchPatients laisserait ce défaut
+  // exposé sans ce changement).
+  const [hasAttachedPatients, setHasAttachedPatients] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);

@@ -4,13 +4,22 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
+    target-branch: "develop"
 
   - package-ecosystem: "npm"
     directory: "/frontend-web"
     schedule:
       interval: "weekly"
+    target-branch: "develop"
 
   - package-ecosystem: "npm"
     directory: "/frontend-mobile"
     schedule:
       interval: "weekly"
+    target-branch: "develop"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"

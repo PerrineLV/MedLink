@@ -66,11 +66,12 @@ export default function JournalPage() {
   );
 
   const isDataLoaded = entries !== null;
-  const hasNoAttachedPatient =
-    isDataLoaded &&
-    roles.includes(ROLE_AIDANT) &&
-    !roles.includes(ROLE_PATIENT) &&
-    patients.length === 0;
+  const isAidantOnly = roles.includes(ROLE_AIDANT) && !roles.includes(ROLE_PATIENT);
+  const hasNoAttachedPatient = isDataLoaded && isAidantOnly && patients.length === 0;
+  // ML-136 : ne pas se contenter de "on ne sait pas encore qu'il n'a aucun
+  // patient" (faux par défaut pendant le chargement, ce qui affichait le
+  // bouton brièvement) — il faut savoir positivement qu'il en a un.
+  const canCreateEntry = !isAidantOnly || (isDataLoaded && patients.length > 0);
 
   const entriesByPatientId = useMemo(() => groupByPatientId(entries ?? []), [entries]);
   const treatmentsByPatientId = useMemo(() => groupByPatientId(treatments ?? []), [treatments]);
@@ -123,11 +124,13 @@ export default function JournalPage() {
 
       {!error && (
         <>
-          {hasNoAttachedPatient ? (
+          {hasNoAttachedPatient && (
             <p className="journal-empty" role="status">
               {NO_ATTACHED_PATIENT_TEXT}
             </p>
-          ) : (
+          )}
+
+          {canCreateEntry && (
             <NewEntryPanel patients={patients} onEntryCreated={handleEntryCreated} />
           )}
 
