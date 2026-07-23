@@ -5,9 +5,13 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [Unreleased]
+## [1.3.3] - 2026-07-23
+
+### Added
+- Lien "Télécharger l'application mobile" sur la page d'accueil publique web (`WelcomePage`, ML-128) : ML-97/ML-98 avaient produit l'APK signée et la page statique `telecharger-app.html` (servie via Nginx), mais aucun lien n'y menait depuis le front — un visiteur devait connaître l'URL exacte. Ajouté sous les boutons Inscription/Connexion, lien texte simple (`<a href="/telecharger-app.html">`, pas de route React puisque la cible est un fichier statique hors SPA), accessible au clavier (atteint au 3ᵉ Tab, après les boutons Inscription/Connexion) et visible sans connexion
 
 ### Fixed
+- Mention d'hébergeur obsolète dans les CGU/politique de confidentialité (ML-127, étend ML-82) : le texte affichait toujours "Infomaniak, hébergeur certifié ISO 14001, Suisse" alors que la décision d'hébergement a changé depuis (ML-34, 11/07/2026) au profit d'OVHcloud VPS-1 (France). Corrigé dans `PrivacyPolicyPage.jsx` (web) et `PrivacyPolicyScreen.js` (mobile), texte identique en substance sur les deux plateformes et cohérent avec la section 1.6 du dossier Bloc 2.
 - Logs de sécurité non écrits en prod (ML-93) : `SecurityAuditLogListener` échouait sur toute exception serveur (≥ 500) avec `Permission denied` sur `/var/www/html/var/log`. Cause : le handler Monolog `security_audit` était le seul, en prod, à encore écrire sur un fichier (`var/log/security.log`) — `main`/`deprecation` écrivent déjà sur `php://stderr` précisément parce que `var/` (gitignoré) est absent de l'image et que le process PHP-FPM tourne en `www-data`, sans droit d'écriture sur `/var/www/html` (image buildée en root, pas de `chown`). `security_audit` aligné sur ce même pattern déjà en place plutôt qu'ajouter un volume/des droits Docker pour un fichier qui serait de toute façon perdu à chaque redéploiement d'un conteneur stateless
 
 ## [1.3.2] - 2026-07-22
