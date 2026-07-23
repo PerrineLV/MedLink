@@ -5,6 +5,11 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.6] - 2026-07-23
+
+### Fixed
+- Check CHANGELOG du pipeline CD bloquait tout merge sur `main` ne modifiant que des fichiers de dépendances (`cd.yml`) : un merge de PR Dependabot (composer/npm) via `develop` ne touche jamais `CHANGELOG.md`, faisant échouer `check-changelog` même en l'absence de changement fonctionnel. Le check ignore désormais les merges où seuls `package.json`, `package-lock.json`, `composer.json` ou `composer.lock` ont changé ; il reste bloquant pour tout autre fichier, y compris ce commit lui-même (`.github/workflows/cd.yml`), qui a donc nécessité cette entrée pour passer
+
 ## [1.3.5] - 2026-07-23
 
 ### Changed
