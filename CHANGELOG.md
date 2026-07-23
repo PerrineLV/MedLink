@@ -5,6 +5,11 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.5] - 2026-07-23
+
+### Changed
+- Dependabot (`.github/dependabot.yml`), sur les 4 écosystèmes (composer, les 2 npm, github-actions) : n'ouvre plus de PR sur les montées de version majeures (`ignore` avec `update-types: ["version-update:semver-major"]`, potentiellement breaking, revue manuelle plutôt qu'automatique) ; les mises à jour mineures et correctives d'un même écosystème sont désormais regroupées en une seule PR (`groups`, `update-types: ["minor", "patch"]`) au lieu d'une PR par dépendance
+
 ## [1.3.4] - 2026-07-23
 
 ### Added

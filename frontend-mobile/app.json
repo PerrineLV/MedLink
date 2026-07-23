@@ -2,7 +2,7 @@
   "expo": {
     "name": "MedLink",
     "slug": "frontend-mobile",
-    "version": "1.3.4",
+    "version": "1.3.5",
     "scheme": "medlink",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
