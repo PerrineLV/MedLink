@@ -49,7 +49,7 @@ installé les dépendances de ces trois sous-projets au préalable.
 ## Jeu de données de développement
 
 Un jeu de fixtures Doctrine (`backend/src/DataFixtures/AppFixtures.php`) fournit des comptes
-et données réalistes pour les tests manuels : 1 soignant, 4 patients, 2 aidants, avec des
+et données réalistes pour les tests manuels : 2 soignants, 4 patients, 2 aidants, avec des
 relations Patient↔Aidant et Patient↔Soignant actives/inactives et des entrées de journal de
 suivi réparties sur plusieurs dates.
 
