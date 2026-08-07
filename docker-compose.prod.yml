@@ -17,6 +17,20 @@ services:
       # on an uncommitted .env.local, which env_file above would never load.
       APP_ENV: prod
       APP_DEBUG: 0
+      # ML-150 : backend/.env committe une valeur par défaut de dev pour
+      # MAILER_DSN (smtp://mailer:1025) — sans override explicite ici, la
+      # prod utiliserait silencieusement cette valeur de dev. ${MAILER_DSN}
+      # est substitué par docker compose depuis les variables d'environnement
+      # du shell — cd.yml (job deploy) l'exporte à partir du secret GitHub
+      # MAILER_DSN avant chaque `docker compose up -d`, même mécanisme que
+      # BACKEND_IMAGE ci-dessus.
+      # JWT_PASSPHRASE et DATABASE_URL committent aussi des valeurs de dev
+      # dans backend/.env, mais sont déjà correctement surchargées en prod
+      # via env_file (./backend/.env sur le serveur, distinct du fichier du
+      # repo, jamais committé) — vérifié le 07/08/2026, ne pas dupliquer ici :
+      # environment: a priorité sur env_file, donc les ajouter ici sans les
+      # sourcer correctement écraserait des valeurs actuellement correctes.
+      MAILER_DSN: ${MAILER_DSN}
     depends_on:
       db:
         condition: service_healthy
