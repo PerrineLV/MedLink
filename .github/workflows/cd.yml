@@ -142,7 +142,7 @@ jobs:
             export BACKEND_IMAGE="${{ needs.build-and-push.outputs.image }}"
             export MAILER_DSN="${{ secrets.MAILER_DSN }}"
             docker compose -f docker-compose.prod.yml pull app
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --wait
 
       - name: Run pending Doctrine migrations
         uses: appleboy/ssh-action@v1
@@ -178,7 +178,7 @@ jobs:
             if [ -n "$previous" ]; then
               export BACKEND_IMAGE="${previous}"
               export MAILER_DSN="${{ secrets.MAILER_DSN }}"
-              docker compose -f docker-compose.prod.yml up -d
+              docker compose -f docker-compose.prod.yml up -d --wait
               echo "Rolled back to ${previous}"
               # ML-150 : la migration DB, elle, n'est jamais annulée automatiquement
               # (un downgrade de schéma est trop risqué pour être automatisé) — on
