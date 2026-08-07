@@ -5,6 +5,11 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.8] - 2026-08-07
+
+### Fixed
+- `docker-compose.prod.yml` jamais synchronisé avec le serveur par le pipeline de déploiement continu (ML-150) : le job `deploy` de `cd.yml` n'a jamais comporté d'étape `checkout`, donc n'a jamais eu accès aux fichiers du dépôt — le fichier `docker-compose.prod.yml` utilisé sur le VPS était une copie statique posée manuellement lors du setup initial (ML-34/ML-37), jamais resynchronisée depuis. Conséquence concrète : le correctif `MAILER_DSN` de la version 1.3.7 s'est déployé « avec succès » (image applicative bien mise à jour, healthcheck au vert) sans avoir le moindre effet en prod, puisque le `docker-compose.prod.yml` réellement utilisé par `docker compose up -d` sur le serveur ne contenait toujours pas la surcharge ajoutée dans le dépôt. Étape `Checkout` (`actions/checkout@v7`) ajoutée en tête du job `deploy`, suivie d'une étape `Upload docker-compose.prod.yml to server` (`appleboy/scp-action@v1.0.0`, même mécanisme que l'upload du build frontend dans `deploy-frontend`) qui copie le fichier vers `${{ secrets.DEPLOY_PATH }}` avant l'étape `Deploy new image over SSH`, pour que le `docker compose up -d` qui suit utilise systématiquement la version du dépôt
+
 ## [1.3.7] - 2026-08-07
 
 ### Fixed
