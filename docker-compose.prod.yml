@@ -31,6 +31,7 @@ services:
       # environment: a priorité sur env_file, donc les ajouter ici sans les
       # sourcer correctement écraserait des valeurs actuellement correctes.
       MAILER_DSN: ${MAILER_DSN}
+      MAILER_FROM_ADDRESS: plaunay.dev@gmail.com
     depends_on:
       db:
         condition: service_healthy
