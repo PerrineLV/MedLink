@@ -140,8 +140,24 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
             docker inspect --format='{{.Config.Image}}' medlink_app > .previous_image 2>/dev/null || echo "" > .previous_image
             export BACKEND_IMAGE="${{ needs.build-and-push.outputs.image }}"
+            export MAILER_DSN="${{ secrets.MAILER_DSN }}"
             docker compose -f docker-compose.prod.yml pull app
             docker compose -f docker-compose.prod.yml up -d
+
+      - name: Run pending Doctrine migrations
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            export BACKEND_IMAGE="${{ needs.build-and-push.outputs.image }}"
+            export MAILER_DSN="${{ secrets.MAILER_DSN }}"
+            docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:current --no-interaction > .previous_migration_version 2>/dev/null || echo "none" > .previous_migration_version
+            docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 
       - name: Healthcheck
         run: |
@@ -161,8 +177,18 @@ jobs:
             previous=$(cat .previous_image)
             if [ -n "$previous" ]; then
               export BACKEND_IMAGE="${previous}"
+              export MAILER_DSN="${{ secrets.MAILER_DSN }}"
               docker compose -f docker-compose.prod.yml up -d
               echo "Rolled back to ${previous}"
+              # ML-150 : la migration DB, elle, n'est jamais annulée automatiquement
+              # (un downgrade de schéma est trop risqué pour être automatisé) — on
+              # se contente de signaler si le schéma est resté en avance sur
+              # l'image redéployée, pour qu'une vérification manuelle soit faite.
+              previous_migration=$(cat .previous_migration_version 2>/dev/null || echo "unknown")
+              current_migration=$(docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:current --no-interaction 2>/dev/null || echo "unknown")
+              if [ "$current_migration" != "$previous_migration" ]; then
+                echo "::warning::Une migration a été appliquée avant l'échec du déploiement (avant: ${previous_migration}, actuel: ${current_migration}). Le schéma de base de données est en avance sur l'image redéployée — vérifier manuellement la compatibilité avant de considérer le rollback comme sûr."
+              fi
             else
               echo "No previous image recorded, manual intervention required" >&2
               exit 1
