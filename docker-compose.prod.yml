@@ -31,6 +31,14 @@ services:
       # environment: a priorité sur env_file, donc les ajouter ici sans les
       # sourcer correctement écraserait des valeurs actuellement correctes.
       MAILER_DSN: ${MAILER_DSN}
+      MAILER_FROM_ADDRESS: plaunay.dev@gmail.com
+      # ML-150 : même défaut de dev jamais surchargé — FRONTEND_URL sert à
+      # construire les liens envoyés par email (ML-78, reset de mot de
+      # passe) ; sans override, backend/.env retombe sur son défaut
+      # http://localhost:5173, jamais joignable depuis le navigateur d'un
+      # utilisateur réel. Domaine de prod déjà utilisé ailleurs dans le repo
+      # (APK_DOWNLOAD_URL, build mobile EXPO_PUBLIC_API_URL).
+      FRONTEND_URL: https://medlink-app.fr
     depends_on:
       db:
         condition: service_healthy

@@ -5,6 +5,16 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.10] - 2026-08-07
+
+### Fixed
+- `FRONTEND_URL` gardait sa valeur par défaut de dev en prod (ML-150) : constaté en recevant un email de réinitialisation de mot de passe réel dont le lien pointait vers `http://localhost:5173`, jamais joignable depuis le navigateur d'un utilisateur. Même défaut que `MAILER_DSN`/`MAILER_FROM_ADDRESS` (1.3.7/1.3.9) mais passé inaperçu au premier passage : `backend/.env` commite `FRONTEND_URL=http://localhost:5173` (utilisée pour construire les liens envoyés par email, flux ML-78), jamais surchargée ni dans `docker-compose.prod.yml` ni dans le `.env` du serveur. Ajoutée au bloc `environment` du service `app`, à la suite de `MAILER_FROM_ADDRESS`, avec le domaine de prod déjà utilisé ailleurs dans le repo (`https://medlink-app.fr`, cf. `APK_DOWNLOAD_URL` et `EXPO_PUBLIC_API_URL` du build mobile)
+
+## [1.3.9] - 2026-08-07
+
+### Fixed
+- `MAILER_FROM_ADDRESS` gardait sa valeur par défaut de dev en prod (ML-150) : `no-reply@medlink.app`, un domaine qui n'existe pas, provoquait un rejet Brevo (« sender not valid ») sur chaque tentative d'envoi malgré `MAILER_DSN` désormais correctement configuré (1.3.7/1.3.8). `docker-compose.prod.yml` ne surchargeait cette variable ni via `environment` ni via le `.env` du serveur. Ajoutée au bloc `environment` du service `app`, juste après `MAILER_DSN`, pointant vers un expéditeur vérifié (`plaunay.dev@gmail.com`) en attendant l'authentification du domaine `medlink-app.fr` chez Brevo (SPF/DKIM), qui permettra de revenir à une adresse `@medlink-app.fr`
+
 ## [1.3.8] - 2026-08-07
 
 ### Fixed
