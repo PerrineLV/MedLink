@@ -5,6 +5,11 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.11] - 2026-08-13
+
+### Fixed
+- Build Android release échouait systématiquement sur `:expo-constants:compileReleaseKotlin` (ML-153), reproduit sur les versions 1.3.6 et 1.3.10 : `frontend-mobile/package.json` déclarait `expo-constants: ~57.0.7` (SDK 57) alors que le projet est sur Expo SDK 54 (`expo: ^54.0.0`), qui attend `~18.0.13`. Le lockfile résolvait deux versions en parallèle — `57.0.7` à la racine (utilisée par le build natif Android) et `18.0.13` imbriquée sous `expo/node_modules` — la 57.x s'appuyant sur une API native (`ServiceInterface`) absente de la version d'`expo-modules-core` réellement installée. `expo-constants` réaligné sur `~18.0.13`, `node_modules`/`package-lock.json` régénérés pour éliminer la double résolution. `npx expo-doctor` a signalé d'autres écarts de version par rapport au SDK 54 (`expo-sharing`, `@react-native-community/datetimepicker`, `react`, `react-native-safe-area-context`), non corrigés dans ce correctif, en attente de validation
+
 ## [1.3.10] - 2026-08-07
 
 ### Fixed
