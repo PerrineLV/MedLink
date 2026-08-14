@@ -2,7 +2,7 @@
   "expo": {
     "name": "MedLink",
     "slug": "frontend-mobile",
-    "version": "1.3.10",
+    "version": "1.3.12",
     "scheme": "medlink",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -26,7 +26,17 @@
     "updates": {
       "enabled": false
     },
-    "plugins": ["@react-native-community/datetimepicker"],
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "medlink-ie"
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "ecc82037-8598-4128-a1ad-21deed74ae09"
