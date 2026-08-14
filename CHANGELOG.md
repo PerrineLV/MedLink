@@ -5,6 +5,11 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.12] - 2026-08-13
+
+### Added
+- Connexion de l'app mobile à Sentry pour les crashs natifs et les erreurs JS non interceptées (ML-155), qui étend l'Epic 13 (ML-9, monitoring backend uniquement jusqu'ici) — déclenché par le crash immédiat de la version 1.3.11 (expo-sharing, ML-154), resté invisible en télémétrie faute d'instrumentation mobile. Projet Sentry dédié `react-native`, org `medlink-ie`, région EU (`https://de.sentry.io`), distinct de `php-symfony` pour ne pas mélanger la télémétrie backend/mobile. `@sentry/react-native` configuré via `Sentry.init` + `Sentry.wrap(App)` dans `App.js`, plugin Expo `@sentry/react-native/expo` dans `app.json` (crash reporting natif Android/iOS inclus par défaut). Le DSN n'est jamais commis en clair : lu depuis `EXPO_PUBLIC_SENTRY_DSN` (`.env.local` non commité en dev, variable d'environnement EAS en cloud build) ; `sendDefaultPii` reste à `false` et ni Session Replay ni le widget de feedback ne sont activés (hors périmètre du ticket, et une app de données de santé ne doit pas risquer de capturer des écrans patients en télémétrie). `SENTRY_AUTH_TOKEN` (upload des sourcemaps) ajouté comme variable EAS de type secret, jamais dans `eas.json`. Nouveau profil `preview` dans `eas.json` (distribution interne) pour générer un build de test sans toucher au compteur de version de `production`. `@sentry/react-native` figé sur `~7.2.0` (version installée par défaut par le wizard, `8.23.0`, ne correspondait pas à celle attendue par Expo SDK 54 d'après `expo-doctor` — même symptôme qu'ML-153) ; `expo-doctor` ne signale plus que les écarts déjà connus et non liés à ce ticket. Vérifié : lint, `expo-doctor`, bundling Android (`expo export`, 1351 modules) sans erreur. Non vérifié : remontée effective d'un crash provoqué depuis un build EAS réel dans le dashboard Sentry (nécessite un build cloud + un appareil/émulateur, laissé à Perrine)
+
 ## [1.3.11] - 2026-08-13
 
 ### Fixed

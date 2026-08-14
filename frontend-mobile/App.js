@@ -26,6 +26,19 @@ import AdminBlockedScreen from './screens/AdminBlockedScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
 import UpdateBanner from './components/UpdateBanner';
 import { isAdminOnlySession } from './services/roles';
+import * as Sentry from '@sentry/react-native';
+
+// DSN fourni par EXPO_PUBLIC_SENTRY_DSN (voir .env.local / secrets EAS), jamais
+// commité en clair (ML-155). sendDefaultPii reste à false : app de données de
+// santé, pas de PII (IP, cookies, utilisateur) dans la télémétrie. Pas de
+// Session Replay ni de widget de feedback : hors périmètre ML-155, et le
+// Replay capturerait potentiellement des écrans contenant des données de
+// santé de patients.
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enabled: !!process.env.EXPO_PUBLIC_SENTRY_DSN,
+  sendDefaultPii: false,
+});
 
 const Stack = createNativeStackNavigator();
 
@@ -104,7 +117,7 @@ function ActivityCapture({ children }) {
   );
 }
 
-export default function App() {
+export default Sentry.wrap(function App() {
   return (
     <GestureHandlerRootView style={styles.flexFill}>
       <AuthProvider>
@@ -121,7 +134,7 @@ export default function App() {
       </AuthProvider>
     </GestureHandlerRootView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   flexFill: { flex: 1 },
