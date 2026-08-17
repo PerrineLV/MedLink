@@ -35,6 +35,21 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # ML-149 : react-native est en versioning 0.x, donc un bump 0.81 -> 0.86
+      # est classé "semver-minor" par Dependabot (pas "semver-major"), et
+      # échappe donc à la règle générique ci-dessus. Dans les faits ce type de
+      # saut équivaut à un bump majeur pour cet écosystème (breaking changes
+      # fréquents, dépendance stricte à la version Expo SDK — SDK 54 attend
+      # react-native ~0.81.x). Plage à relever manuellement quand on bump
+      # Expo SDK et qu'on veut rouvrir la fenêtre react-native.
+      - dependency-name: "react-native"
+        versions: [">=0.82.0"]
+      # ML-149 : autre dépendance 0.x du monorepo identifiée à cette
+      # vérification, react-native-keyboard-aware-scroll-view (0.9.x) n'a
+      # pas de plage d'ignore dédiée : contrairement à react-native, elle
+      # n'est pas couplée à une contrainte externe stricte type Expo SDK et
+      # n'a pas eu de bump depuis longtemps. Backend (composer) et
+      # frontend-web n'ont aucune dépendance en versioning 0.x.
 
   - package-ecosystem: "github-actions"
     directory: "/"
