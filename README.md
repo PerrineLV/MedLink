@@ -1,86 +1,121 @@
-# MedLink — Lien Médical Simplifié
+# MedLink
 
 Application web et mobile de coordination du suivi médical entre patients, aidants et professionnels de santé.
 
+MedLink a été conçu dans le cadre de la certification **RNCP 39583, Expert en développement logiciel, niveau 7**. Le projet met l'accent sur la sécurité, la gestion fine des accès et la qualité logicielle dans un contexte de données sensibles.
+
+## Objectif
+
+Centraliser les informations utiles au suivi médical et faciliter leur partage entre les personnes autorisées, sans remplacer les outils de diagnostic ni les professionnels de santé.
+
+## Périmètre fonctionnel
+
+- Gestion de comptes selon plusieurs profils : patient, aidant et professionnel de santé
+- Gestion des relations entre patients, aidants et soignants
+- Journal de suivi partagé avec contrôle des accès
+- Authentification sécurisée par JWT et renouvellement des jetons
+- Interfaces web et mobile consommant la même API
+- Jeu de données fictives pour les démonstrations et les tests manuels
+
 ## Stack technique
 
-- **Backend** : Symfony 7 + API Platform
-- **Front web** : React 18
-- **Front mobile** : React Native
-- **Base de données** : PostgreSQL 16
-- **CI/CD** : GitHub Actions + Docker
+| Composant | Technologies |
+| --- | --- |
+| API | PHP 8.3, Symfony 7.4, API Platform 4, Doctrine |
+| Web | React 18, JavaScript, Vite |
+| Mobile | React Native, TypeScript |
+| Données | PostgreSQL 16 |
+| Qualité | PHPUnit, PHPStan niveau 6, PHP CS Fixer, ESLint, Prettier |
+| Exploitation | Docker, GitHub Actions, Sentry |
 
-## Structure du monorepo
+## Architecture
+
+Le projet est organisé en monorepo :
+
+```text
 medlink/
-├── backend/         ← API Symfony 7
-├── frontend-web/    ← React 18
-├── frontend-mobile/ ← React Native
+├── backend/          API Symfony et API Platform
+├── frontend-web/     application React
+├── frontend-mobile/  application React Native
 └── docker-compose.yml
+```
+
+Les clients web et mobile s'appuient sur la même API. Les responsabilités sont séparées entre le domaine métier, la persistance, l'authentification et les interfaces clientes.
+
+## Sécurité et fiabilité
+
+- Authentification JWT avec jetons de renouvellement
+- Autorisations adaptées aux différents profils utilisateurs
+- Validation des données côté API
+- Limitation du débit sur les parcours sensibles
+- Analyse statique PHPStan
+- Tests automatisés avec mesure de couverture
+- Images Docker distinctes pour le développement et la production
+- Suivi des erreurs avec Sentry
+
+## Intégration continue
+
+La CI GitHub Actions vérifie séparément les trois applications.
+
+### Backend
+
+- Installation reproductible des dépendances Composer
+- Vérification du style avec PHP CS Fixer
+- Analyse statique avec PHPStan niveau 6
+- Tests PHPUnit avec couverture
+- Construction de l'image Docker de production
+
+### Applications web et mobile
+
+- Installation depuis les fichiers de verrouillage
+- Lint et vérification du formatage
+- Audit des dépendances critiques
+- Construction des applications
 
 ## Lancer le projet
 
+Créer le fichier d'environnement local :
+
 ```bash
 cp .env.example .env
+```
+
+Lancer les services Docker :
+
+```bash
 docker compose up -d
 ```
 
-## Hook pre-commit (formatage et lint automatiques)
-
-Un hook Git pre-commit (Husky + lint-staged) formate et lint automatiquement les
-fichiers stagés avant chaque commit : `prettier --write` + `oxlint --fix`
-(frontend-web) ou `eslint --fix` (frontend-mobile) sur les fichiers JS/JSX/TS/TSX/
-CSS/JSON, et `php-cs-fixer fix` sur les fichiers PHP stagés (backend). Le commit est
-auto-corrigé quand c'est possible, ou bloqué avec un message d'erreur clair si une
-erreur ESLint/oxlint ne peut pas être corrigée automatiquement (le check PHPStan
-complet reste réservé à la CI, trop lent en pre-commit).
-
-Installation (une fois le dépôt cloné) :
+Installer les dépendances nécessaires aux hooks de qualité :
 
 ```bash
 npm install
 ```
 
-`npm install` déclenche automatiquement `husky` via le script `prepare` du
-`package.json` racine et active le hook — aucune étape manuelle supplémentaire.
-Le hook s'appuie sur les outils déjà installés dans `backend/vendor`,
-`frontend-web/node_modules` et `frontend-mobile/node_modules` : pense à avoir
-installé les dépendances de ces trois sous-projets au préalable.
+## Données de démonstration
 
-## Jeu de données de développement
-
-Un jeu de fixtures Doctrine (`backend/src/DataFixtures/AppFixtures.php`) fournit des comptes
-et données réalistes pour les tests manuels : 2 soignants, 4 patients, 2 aidants, avec des
-relations Patient↔Aidant et Patient↔Soignant actives/inactives et des entrées de journal de
-suivi réparties sur plusieurs dates.
+Des fixtures Doctrine fournissent des comptes et données fictives pour les tests manuels : patients, aidants, professionnels de santé, relations entre utilisateurs et entrées de journal.
 
 ```bash
 docker compose exec app php bin/console doctrine:fixtures:load
 ```
 
-Mot de passe commun à tous les comptes : `MedLink2026!` (identifiants : `patient1@medlink.test`,
-`aidant1@medlink.test`, `soignant@medlink.test`, `admin@medlink.test`, etc.).
+Ces données sont strictement réservées au développement et ne doivent jamais être chargées en production.
 
-**⚠️ Ne jamais charger ces fixtures en production** : ce sont des données de santé fictives,
-réservées au développement local et aux démonstrations.
+## Tests du backend
 
-## Couverture de tests (backend)
-
-Le service `app` du `docker-compose.yml` embarque l'extension **PCOV** (uniquement en
-dev — jamais dans l'image de prod, voir le stage `dev` de `backend/Dockerfile`) pour
-mesurer la couverture des tests PHPUnit :
+Afficher la couverture dans le terminal :
 
 ```bash
-# Résumé en console
 docker compose exec app vendor/bin/phpunit --coverage-text
+```
 
-# Rapport HTML détaillé (généré dans backend/coverage/, ignoré par git)
+Générer un rapport HTML :
+
+```bash
 docker compose exec app vendor/bin/phpunit --coverage-html coverage
 ```
 
-La CI (`.github/workflows/ci.yml`) exécute la même vérification à chaque
-push/pull request et affiche le résumé de couverture dans les logs du job
-*Backend checks*.
+## Contexte du projet
 
-## Certification
-
-Projet réalisé dans le cadre de la certification RNCP 39583 — Expert en développement logiciel (YNOV Connect).
+MedLink illustre la conception d'un produit complet, depuis l'analyse du besoin et la modélisation des données jusqu'à l'API, aux interfaces clientes, aux tests et à l'intégration continue.
