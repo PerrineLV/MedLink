@@ -24,7 +24,7 @@ import {
   fetchMe,
 } from '../services/accountService';
 import { COLORS, TYPE } from '../services/journalPresentation';
-import { ROLE_LABELS, getPrimaryRole } from '../services/roles';
+import { ROLE_ADMIN, ROLE_LABELS, getPrimaryRole } from '../services/roles';
 
 const GENERIC_LOAD_ERROR = 'Impossible de charger vos informations. Vérifiez votre connexion.';
 const GENERIC_EMAIL_ERROR = "Impossible de changer l'adresse e-mail, réessayez.";
@@ -125,9 +125,6 @@ export default function AccountScreen() {
         )}
 
         <AppVersion />
-
-        {/* Test manuel ML-155, à retirer une fois la remontée Sentry validée. */}
-        <DebugCrashSection />
       </KeyboardAwareScrollView>
 
       <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
@@ -146,35 +143,6 @@ function AppVersion() {
     <Text style={styles.appVersion} accessibilityRole="text">
       {`Version de l'application : v${version}`}
     </Text>
-  );
-}
-
-function DebugCrashSection() {
-  return (
-    <Section title="Debug — à retirer avant mise en prod">
-      <Text style={styles.sectionDescription}>
-        Test manuel ML-155 : déclenche un crash JS volontaire pour vérifier sa remontée dans Sentry.
-      </Text>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => {
-          // setTimeout, pas un throw direct dans onPress : avec la New
-          // Architecture RN (Bridgeless), une exception levée directement
-          // dans un gestionnaire d'événement est traitée comme une "host
-          // exception" native qui court-circuite ErrorUtils — le
-          // gestionnaire global JS sur lequel s'accroche Sentry — et ne
-          // remonte donc jamais. Le setTimeout reproduit fidèlement un vrai
-          // crash JS non intercepté (le cas que Sentry doit capturer).
-          setTimeout(() => {
-            throw new Error('Crash test volontaire — ML-155');
-          }, 0);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Déclencher un crash de test pour Sentry"
-      >
-        <Text style={styles.deleteButtonText}>Déclencher un crash de test (Sentry)</Text>
-      </TouchableOpacity>
-    </Section>
   );
 }
 
