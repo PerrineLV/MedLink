@@ -24,7 +24,7 @@ import {
   fetchMe,
 } from '../services/accountService';
 import { COLORS, TYPE } from '../services/journalPresentation';
-import { ROLE_LABELS, getPrimaryRole } from '../services/roles';
+import { ROLE_ADMIN, ROLE_LABELS, getPrimaryRole } from '../services/roles';
 
 const GENERIC_LOAD_ERROR = 'Impossible de charger vos informations. Vérifiez votre connexion.';
 const GENERIC_EMAIL_ERROR = "Impossible de changer l'adresse e-mail, réessayez.";
@@ -125,6 +125,7 @@ export default function AccountScreen() {
         )}
 
         <AppVersion />
+          
       </KeyboardAwareScrollView>
 
       <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
