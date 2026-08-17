@@ -45,6 +45,33 @@ export default function AdminBlockedScreen() {
         >
           <Text style={styles.buttonText}>Se déconnecter</Text>
         </TouchableOpacity>
+
+        <View style={styles.debugSection}>
+          <Text style={styles.debugTitle}>Debug — à retirer avant mise en prod</Text>
+          <Text style={styles.debugDescription}>
+            Test manuel ML-155 : déclenche un crash JS volontaire pour vérifier sa remontée dans
+            Sentry.
+          </Text>
+          <TouchableOpacity
+            style={styles.debugButton}
+            onPress={() => {
+              // setTimeout, pas un throw direct dans onPress : avec la New
+              // Architecture RN (Bridgeless), une exception levée directement
+              // dans un gestionnaire d'événement est traitée comme une "host
+              // exception" native qui court-circuite ErrorUtils — le
+              // gestionnaire global JS sur lequel s'accroche Sentry — et ne
+              // remonte donc jamais. Le setTimeout reproduit fidèlement un vrai
+              // crash JS non intercepté (le cas que Sentry doit capturer).
+              setTimeout(() => {
+                throw new Error('Crash test volontaire — ML-155');
+              }, 0);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Déclencher un crash de test pour Sentry"
+          >
+            <Text style={styles.debugButtonText}>Déclencher un crash de test (Sentry)</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -72,4 +99,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   buttonText: { color: COLORS.onPrimary, fontWeight: '700', fontSize: TYPE.sm },
+  debugSection: {
+    marginTop: 24,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e5f0',
+    alignItems: 'center',
+    gap: 12,
+  },
+  debugTitle: { fontSize: TYPE.sm, fontWeight: '700', color: COLORS.mutedText },
+  debugDescription: {
+    fontSize: TYPE.sm,
+    color: COLORS.mutedText,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  debugButton: {
+    minHeight: 48,
+    minWidth: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 33,
+    backgroundColor: COLORS.red.text,
+    paddingHorizontal: 24,
+  },
+  debugButtonText: { color: COLORS.onPrimary, fontWeight: '700', fontSize: TYPE.sm },
 });
