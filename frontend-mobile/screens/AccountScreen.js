@@ -125,7 +125,6 @@ export default function AccountScreen() {
         )}
 
         <AppVersion />
-          
       </KeyboardAwareScrollView>
 
       <BottomNav navigation={navigation} activeKey={null} roles={roles} logout={logout} />
