@@ -5,6 +5,12 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.13] - 2026-08-17
+
+### Changed
+- Dependabot (`.github/dependabot.yml`, ML-149) : `react-native` suit un versioning `0.x`, donc un bump `0.81` → `0.86` (PR #167, fermée sans merge — incompatible avec Expo SDK 54, qui attend react-native `~0.81.x`) est classé `version-update:semver-minor` par Dependabot, pas `semver-major`, et échappait donc à la règle d'ignore générique existante (`update-types: ["version-update:semver-major"]`). Règle d'ignore dédiée ajoutée sur `react-native`, basée sur une plage de versions explicite (`versions: [">=0.82.0"]`) plutôt que sur le type de bump, en plus de la règle générique. Vérification demandée par le ticket sur les autres dépendances en versioning `0.x` du monorepo : seule `react-native-keyboard-aware-scroll-view` (0.9.x) est dans ce cas côté `frontend-mobile`, sans règle dédiée car non couplée à une contrainte externe stricte comme Expo SDK ; backend (composer) et frontend-web n'ont aucune dépendance en `0.x`
+- Bouton de crash de test Sentry (`DebugCrashSection`, introduit par ML-155) réservé à l'admin sur mobile (ML-156, étend ML-155 sans le rouvrir) : jusqu'ici rendu inconditionnellement dans l'écran "Mon compte" (`AccountScreen.js`), visible par tout utilisateur connecté quel que soit son rôle. Déplacé vers `AdminBlockedScreen.js` plutôt que simplement conditionné par un test de rôle sur place : un compte admin pur n'atteint jamais `AccountScreen`, `App.js` n'enregistrant aucune route Journal/Messages/RDV/Export/Profil pour une session admin-only (ML-73) — seul `AdminBlockedScreen` y est monté. Le bouton y est donc affiché sans condition de rôle supplémentaire, la garde étant déjà faite au niveau du routeur ; reste marqué "à retirer avant mise en prod" (toujours un test manuel temporaire, pas une fonctionnalité admin définitive)
+
 ## [1.3.12] - 2026-08-13
 
 ### Added
