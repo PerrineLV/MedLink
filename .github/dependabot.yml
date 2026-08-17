@@ -50,6 +50,21 @@ updates:
       # n'est pas couplée à une contrainte externe stricte type Expo SDK et
       # n'a pas eu de bump depuis longtemps. Backend (composer) et
       # frontend-web n'ont aucune dépendance en versioning 0.x.
+      # PR #194 (groupe frontend-mobile-minor-patch) : react-native-screens
+      # 4.16.0 -> 4.27.0 casse "expo export" (Metro), reproduit en isolant ce
+      # seul paquet du groupe : SyntaxError sur
+      # node_modules/react-native-screens/src/fabric/SearchBarNativeComponent.ts
+      # ("React.ElementRef<> doit avoir un argument de type" — syntaxe Flow
+      # valide côté react-native-screens, invalide pour le parseur TS de
+      # Metro tel que figé sur Expo SDK 54). Contrairement à react-native
+      # (ML-149), ce n'est pas un artefact de versioning 0.x : un bump
+      # mineur légitime de react-native-screens s'est simplement avéré
+      # incompatible avec la chaîne d'outils figée sur SDK 54. Versions à
+      # partir de 4.17.0 ignorées par précaution (seule 4.27.0 testée et
+      # confirmée cassée) ; plage à relever manuellement quand on bump Expo
+      # SDK, comme pour react-native.
+      - dependency-name: "react-native-screens"
+        versions: [">=4.17.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
