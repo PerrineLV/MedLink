@@ -5,6 +5,12 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.14] - 2026-09-08
+
+### Added
+- Commande `app:demo:seed` (`backend/src/Command/SeedDemoDataCommand.php`) créant trois comptes de démonstration (`patient-test@`, `aidant-test@`, `soignant-test@medlink-app.fr`, mot de passe commun `Test2026!` surchargeable via `--password`) et le jeu de données fictives permettant de dérouler le MVP sans saisie manuelle : 5 entrées de journal réparties sur 45 jours (dont 2 saisies par l'aidant, couvrant les trois plages de badges et les trois filtres du journal soignant), 1 commentaire soignant, 6 messages patient↔soignant et aidant↔soignant (mélange lus/non lus), 4 traitements avec prises du jour prises et à prendre, 3 rendez-vous (passé, +3 jours, +18 h pour le rappel d'ML-28), et les liaisons patient↔aidant / patient↔soignant. Une commande console et non une fixture, car `DoctrineFixturesBundle` n'est activé qu'en `dev`/`test` (`config/bundles.php`) et `doctrine:fixtures:load` purge la base : inutilisable en production. La commande n'efface jamais rien et s'arrête sans écrire si l'un des trois comptes existe déjà (code retour `1`), ce qui la rend rejouable sans risque ; le consentement RGPD est horodaté comme à l'inscription et le mot de passe passe la même validation que `RegistrationService`. Vérifié en base réelle : exécution nominale, idempotence au second appel, comptages des entités par fonctionnalité, connexion HTTP 200 des trois comptes, et affichage du patient et de son journal côté soignant via l'API
+- Contient également updates Dependabot + BDPM
+
 ## [1.3.13] - 2026-08-17
 
 ### Changed
