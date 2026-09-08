@@ -9,7 +9,6 @@ use App\Entity\JournalEntry;
 use App\Entity\JournalEntryComment;
 use App\Entity\Message;
 use App\Entity\PatientAidant;
-use App\Entity\PatientSoignant;
 use App\Entity\Treatment;
 use App\Entity\TreatmentIntake;
 use App\Entity\TreatmentSchedule;
@@ -112,7 +111,16 @@ final class SeedDemoDataCommand extends Command
         $soignant->setTitle('Dr');
 
         $this->entityManager->persist(new PatientAidant($patient, $aidant));
-        $this->entityManager->persist(new PatientSoignant($patient, $soignant));
+
+        // Pas de liaison patient↔soignant : la démonstration doit pouvoir
+        // dérouler le flux d'invitation réel (le patient invite le soignant,
+        // qui accepte), ce qui rend d'un coup visibles côté soignant toutes
+        // les données créées plus bas. Une ligne simplement inactive ne
+        // conviendrait pas : la vérification de doublon de
+        // LiaisonInvitationService::createSoignantInvitation() ignore le champ
+        // "active", donc toute ligne existante ferait échouer l'invitation en
+        // 409. La liaison patient↔aidant, elle, reste active : le journal côté
+        // patient et aidant doit fonctionner sans étape préalable.
 
         $this->seedJournal($patient, $aidant, $soignant);
         $this->seedMessages($patient, $aidant, $soignant);

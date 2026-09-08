@@ -129,7 +129,6 @@ final class SeedDemoDataCommandTest extends TestCase
     public static function expectedEntityCountProvider(): iterable
     {
         yield 'liaison patient-aidant' => [PatientAidant::class, 1];
-        yield 'liaison patient-soignant' => [PatientSoignant::class, 1];
         yield 'entrées de journal' => [JournalEntry::class, 5];
         yield 'commentaire soignant' => [JournalEntryComment::class, 1];
         yield 'rendez-vous' => [Appointment::class, 3];
@@ -141,6 +140,38 @@ final class SeedDemoDataCommandTest extends TestCase
         $this->execute();
 
         self::assertCount($expectedCount, $this->persistedOfType($class));
+    }
+
+    /**
+     * La liaison patient↔soignant est volontairement absente : la démo doit
+     * pouvoir dérouler le flux d'invitation réel (le patient invite, le
+     * soignant accepte), qui est ce qui rend les données ci-dessous visibles
+     * côté soignant.
+     *
+     * Une ligne simplement inactive ne conviendrait pas : la vérification de
+     * doublon de LiaisonInvitationService::createSoignantInvitation() ignore
+     * le champ "active", donc toute ligne existante ferait échouer
+     * l'invitation en 409 pendant la démo.
+     */
+    public function testLeavesThePatientAndSoignantUnlinkedSoTheInvitationCanBeDemonstrated(): void
+    {
+        $this->execute();
+
+        self::assertSame([], $this->persistedOfType(PatientSoignant::class));
+    }
+
+    /**
+     * Les données rattachées au soignant sont bien créées malgré l'absence de
+     * liaison : elles restent invisibles pour lui jusqu'à ce que l'invitation
+     * soit acceptée, et apparaissent d'un coup à ce moment-là.
+     */
+    public function testStillSeedsTheSoignantSideDataDespiteTheMissingLink(): void
+    {
+        $this->execute();
+
+        self::assertNotEmpty($this->persistedOfType(JournalEntryComment::class));
+        self::assertNotEmpty($this->persistedOfType(Appointment::class));
+        self::assertNotEmpty($this->persistedOfType(Treatment::class));
     }
 
     public function testSeedsConversationsInBothDirections(): void
