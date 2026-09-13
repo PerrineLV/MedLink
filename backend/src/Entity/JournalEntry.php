@@ -60,7 +60,7 @@ class JournalEntry
     #[Groups(['journal_entry:read'])]
     private ?string $note;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     #[Groups(['journal_entry:read'])]
     private \DateTimeImmutable $createdAt;
 

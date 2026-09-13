@@ -51,7 +51,7 @@ class Appointment
     #[ORM\JoinColumn(nullable: false)]
     private User $soignant;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     #[Groups(['appointment:read'])]
     private \DateTimeImmutable $scheduledAt;
 
@@ -63,7 +63,7 @@ class Appointment
     #[Groups(['appointment:read'])]
     private ?string $notes;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     #[Groups(['appointment:read'])]
     private \DateTimeImmutable $createdAt;
 
