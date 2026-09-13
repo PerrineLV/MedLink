@@ -122,7 +122,7 @@ jobs:
         run: npm run format:check
 
       - name: npm audit
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
 
       - name: Build
         run: npm run build
@@ -155,7 +155,7 @@ jobs:
         run: npm run format:check
 
       - name: npm audit
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
 
       - name: Tests unitaires (Jest)
         run: npm run test:ci
