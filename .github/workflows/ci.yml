@@ -148,5 +148,8 @@ jobs:
       - name: npm audit
         run: npm audit --audit-level=critical
 
+      - name: Tests unitaires (Jest)
+        run: npm run test:ci
+
       - name: Build (export)
         run: npm run build

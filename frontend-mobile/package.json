@@ -26,6 +26,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "expo export"
@@ -34,6 +37,8 @@
   "devDependencies": {
     "eslint": "^9.39.5",
     "eslint-config-expo": "~10.0.0",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.18",
     "prettier": "^3.9.5"
   },
   "overrides": {
