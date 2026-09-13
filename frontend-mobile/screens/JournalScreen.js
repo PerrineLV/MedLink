@@ -59,7 +59,11 @@ export default function JournalScreen() {
     !(roles.includes(ROLE_AIDANT) && !roles.includes(ROLE_PATIENT) && !hasAttachedPatients);
 
   const load = useCallback(async (isRefresh) => {
-    isRefresh ? setIsRefreshing(true) : setIsLoading(true);
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -79,7 +83,11 @@ export default function JournalScreen() {
     } catch {
       setError('Impossible de charger le journal de suivi. Vérifiez votre connexion.');
     } finally {
-      isRefresh ? setIsRefreshing(false) : setIsLoading(false);
+      if (isRefresh) {
+        setIsRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
     }
   }, []);
 
