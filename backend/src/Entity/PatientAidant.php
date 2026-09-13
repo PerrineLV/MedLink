@@ -29,10 +29,10 @@ class PatientAidant
     #[ORM\Column]
     private bool $active = true;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $revokedAt = null;
 
     public function __construct(User $patient, User $aidant)

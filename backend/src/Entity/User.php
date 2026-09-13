@@ -58,16 +58,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['patient_summary:read'])]
     private string $lastName;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $title = null;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $consentAt = null;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
 
     #[ORM\Column]

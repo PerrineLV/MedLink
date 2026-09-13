@@ -55,7 +55,7 @@ class Message
     #[Groups(['message:read'])]
     private bool $read = false;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     #[Groups(['message:read'])]
     private \DateTimeImmutable $createdAt;
 
