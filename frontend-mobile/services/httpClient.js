@@ -1,6 +1,12 @@
 import axios from 'axios';
 import API_BASE_URL from '../config';
 
+// La règle signale que `create` existe aussi en export nommé et suspecte une
+// confusion. Ici c'en est pas une : `axios.create()` est l'usage canonique et
+// documenté, et c'est ce que tout lecteur attend dans un client HTTP. On garde
+// donc la forme habituelle plutôt que d'adopter `import { create }`, moins
+// lisible, pour faire taire un avertissement de style (ML-166).
+// eslint-disable-next-line import/no-named-as-default-member
 const httpClient = axios.create({
   baseURL: API_BASE_URL,
   // Plain JSON instead of API Platform's default JSON-LD: no @context/@id
