@@ -147,13 +147,24 @@ size=$(stat -c %s "$newest")
 echo "  Taille : ${size} octets"
 
 if gzip -t "$newest" 2>/dev/null; then
-  ok "gzip -t : archive non corrompue"
+  ok "gzip -t : fichier gzip non corrompu"
 
-  # Le comptage n'est fait que si l'archive est saine. Sur un fichier tronqué,
-  # zcat restitue quand même le préfixe déjà décodé : le comptage y trouverait
-  # assez de CREATE TABLE pour conclure « schéma présent » juste après un échec
-  # d'intégrité. Deux verdicts contradictoires dans le même rapport valent moins
-  # qu'un seul.
+  # ATTENTION : gzip -t ci-dessus ne prouve presque rien sur le dump lui-même.
+  # backup.sh fait `pg_dump | gzip > archive` : si pg_dump meurt en cours de
+  # route, gzip reçoit simplement EOF et referme proprement son flux. Le
+  # résultat est une archive gzip parfaitement valide contenant un dump amputé.
+  # Vérifié : un pg_dump simulé qui émet 30 tables puis sort en erreur produit
+  # un fichier que `gzip -t` accepte et où le comptage ci-dessous trouve bien
+  # 30 tables. Aucun des deux contrôles ne le distingue d'une sauvegarde saine.
+  #
+  # Le seul discriminant fiable est le marqueur de fin que pg_dump n'écrit
+  # qu'après avoir tout produit. C'est donc lui qui porte le verdict.
+  if zcat "$newest" 2>/dev/null | tail -5 | grep -q 'PostgreSQL database dump complete'; then
+    ok "marqueur de fin de pg_dump présent — le dump est allé à son terme"
+  else
+    ko "marqueur de fin de pg_dump absent — dump interrompu, l'archive est incomplète malgré un gzip valide"
+  fi
+
   tables=$(zcat "$newest" 2>/dev/null | grep -c '^CREATE TABLE' || true)
   echo "  Instructions CREATE TABLE : ${tables}"
   if [ "$tables" -eq 0 ]; then
@@ -161,17 +172,20 @@ if gzip -t "$newest" 2>/dev/null; then
   elif [ "$tables" -lt 5 ]; then
     warn "seulement ${tables} table(s), le schéma MedLink en compte davantage : dump probablement partiel"
   else
-    ok "le dump contient bien le schéma"
+    ok "le dump contient bien des tables"
   fi
 
   # Repère mesuré : la sauvegarde manuelle du 13/09/2026 pesait 20 091 octets
-  # sur la base de production. Un plancher à 1 ko ne prétend pas détecter un
-  # dump partiel — c'est le rôle du comptage ci-dessus — mais attrape le cas où
-  # pg_dump n'a rien écrit du tout.
+  # sur la base de production. Un pg_dump qui échoue d'emblée produit, lui, un
+  # gzip vide de 20 octets — valide, et que seul ce plancher attrape.
   [ "$size" -gt 1024 ] || ko "archive suspecte (moins de 1 ko, alors qu'un dump réel de cette base en pèse une vingtaine de fois plus)"
 else
-  ko "gzip -t : archive corrompue ou tronquée"
-  echo "  (contrôle du contenu ignoré : il n'a pas de sens sur une archive corrompue)"
+  ko "gzip -t : fichier gzip corrompu ou tronqué"
+  # Sur un .gz réellement tronqué, zcat restitue quand même le préfixe déjà
+  # décodé : le comptage y trouverait assez de CREATE TABLE pour conclure
+  # « schéma présent » juste après un échec d'intégrité. Deux verdicts
+  # contradictoires dans le même rapport valent moins qu'un seul.
+  echo "  (contrôle du contenu ignoré : il n'a pas de sens sur un fichier corrompu)"
 fi
 
 # --- 6. La rétention fait-elle son travail ? -------------------------------

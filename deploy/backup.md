@@ -125,8 +125,12 @@ sudo /opt/medlink/deploy/check-backup.sh
 
 Contrôle, en lecture seule : timer activé et actif, prochaine échéance, résultat
 de la dernière exécution, journal, présence et fraîcheur des archives, intégrité
-gzip, présence du schéma dans le dump, et application de la rétention. Code de
-retour 0 si tout passe, 1 sinon.
+gzip, **présence du marqueur de fin de `pg_dump`**, présence de tables, et
+application de la rétention. Code de retour 0 si tout passe, 1 sinon.
+
+Le marqueur de fin est le contrôle qui compte, et il n'est pas redondant avec
+`gzip -t`. Voir « Limite connue » plus bas : une archive peut être un gzip
+parfaitement valide *et* un dump amputé.
 
 **Ce script n'alerte personne.** Il faut le lancer pour savoir. La notification
 automatique en cas d'échec est le périmètre de ML-143 — dont la prémisse
@@ -201,12 +205,26 @@ propre, supprimer et recréer la base avant de restaurer.
 ## Limite connue
 
 `backup.sh` redirige sa sortie vers le fichier d'archive **avant** de savoir si
-`pg_dump` a réussi. Un échec laisse donc derrière lui une archive tronquée, qui
-a l'air d'une sauvegarde et que la rétention conservera sept jours.
-`check-backup.sh` le détecte après coup (`gzip -t`, comptage des `CREATE
-TABLE`), mais le contrôle au sein même du script, et l'alerte qui va avec,
-relèvent de ML-143. Le périmètre de ML-169 était le déclenchement, pas la
-robustesse du script — volontairement, pour ne pas mélanger les deux.
+`pg_dump` a réussi. Un échec laisse donc derrière lui une archive incomplète,
+qui a l'air d'une sauvegarde et que la rétention conservera sept jours.
+
+Et cette archive est plus trompeuse qu'il n'y paraît. Le script fait
+`pg_dump | gzip > archive` : si `pg_dump` meurt en cours de route, `gzip` reçoit
+simplement EOF et referme proprement son flux. **Le fichier obtenu est un gzip
+parfaitement valide contenant un dump amputé.** Vérifié : un `pg_dump` simulé
+qui émet 30 tables puis sort en erreur produit un fichier que `gzip -t` accepte
+et où le comptage des `CREATE TABLE` en trouve bien 30. Ni l'un ni l'autre ne le
+distingue d'une sauvegarde saine.
+
+Le seul discriminant fiable est le marqueur `-- PostgreSQL database dump
+complete`, que `pg_dump` n'écrit qu'après avoir tout produit. `check-backup.sh`
+le contrôle, et c'est lui qui porte le verdict — les contrôles `gzip -t` et
+comptage de tables ne sont là que pour les cas grossiers (fichier corrompu,
+dump vide de 20 octets quand `pg_dump` échoue d'emblée).
+
+Le contrôle au sein même du script, et l'alerte qui va avec, relèvent de ML-143.
+Le périmètre de ML-169 était le déclenchement, pas la robustesse du script —
+volontairement, pour ne pas mélanger les deux.
 
 ## Ce qui doit figurer en section 5.1 du dossier (ML-84)
 
