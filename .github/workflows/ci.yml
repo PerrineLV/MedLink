@@ -124,6 +124,12 @@ jobs:
       - name: npm audit
         run: npm audit --audit-level=high
 
+      # ML-163 : placé après le lint et avant le build. Un test qui échoue doit
+      # arrêter le job avant qu'on ne dépense le temps de construction, et rien
+      # ne rend cette étape non bloquante — c'est tout l'intérêt.
+      - name: Tests unitaires (Vitest)
+        run: npm test
+
       - name: Build
         run: npm run build
 
