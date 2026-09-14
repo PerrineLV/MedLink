@@ -26,7 +26,7 @@ D'où deux principes qui gouvernent tout ce qui suit :
 | | |
 |---|---|
 | **Quoi** | `pg_dump` de la base de production, compressé en gzip |
-| **Quand** | tous les jours à **04h17**, heure locale du serveur |
+| **Quand** | tous les jours à **04h17 UTC**, soit 06h17 à Paris en été et 05h17 en hiver — le VPS est réglé sur UTC (constaté le 14/09/2026) |
 | **Où** | `/var/backups/medlink/medlink_AAAA-MM-JJ_HHhMM.sql.gz` |
 | **Sous quelle identité** | `root` (écrit dans `/var/backups`, pilote Docker) |
 | **Rétention** | 7 jours, par `find -mtime +7 -delete` à la fin du script |
@@ -91,6 +91,17 @@ root) :
 > après chaque réinstallation du serveur. On échange une élévation de privilège
 > automatique contre une étape manuelle à ne pas oublier — c'est exactement
 > l'oubli qui a créé ML-169.
+
+La règle n'autorise qu'une seule commande, ce qui a une conséquence
+contre-intuitive : **`sudo -n true` échoue quand même**, puisque `true` n'est
+couvert par aucune règle NOPASSWD. Ce n'est donc pas un test valide de la
+présence de la règle — la première version du job `schedule-backup` s'en
+servait et échouait systématiquement, y compris avec une règle correcte. Pour
+vérifier la règle, exécuter la commande réellement autorisée :
+
+```bash
+sudo -n /bin/bash /opt/medlink/deploy/install-backup.sh
+```
 
 ### Installation manuelle
 
