@@ -254,15 +254,25 @@ jobs:
             # mais check-backup.sh, lui, sera lancé à la main plus tard.
             chmod +x deploy/*.sh
 
-            # `sudo -n` (non interactif) plutôt que `sudo` : sans la règle
-            # sudoers, on veut un échec immédiat et lisible, pas une session SSH
-            # qui attend un mot de passe jusqu'au timeout du job.
-            if ! sudo -n true 2>/dev/null; then
-              echo "::error::L'utilisateur de déploiement n'a pas de sudo non interactif. Ajouter /etc/sudoers.d/medlink-backup (voir deploy/backup.md), sinon la planification de sauvegarde ne peut pas être réappliquée."
-              exit 1
-            fi
-
+            # ML-169, correctif : cette étape testait d'abord `sudo -n true`
+            # pour produire un message clair en l'absence de règle sudoers.
+            # C'était faux. La règle recommandée n'autorise QUE le script
+            # d'installation ; `true` n'est couvert par aucune règle NOPASSWD,
+            # donc sudo réclamait un mot de passe et `-n` échouait — même avec
+            # une règle parfaitement correcte. La sonde rendait le job
+            # systématiquement rouge, c'est-à-dire qu'elle cassait exactement ce
+            # qu'elle prétendait rendre lisible.
+            #
+            # On exécute donc directement la vraie commande. `sudo -n` (non
+            # interactif) reste indispensable : sans lui, une session SSH sans
+            # règle sudoers attendrait un mot de passe jusqu'au timeout du job.
+            # Le message de sudo lui-même (« a password is required ») s'affiche
+            # juste au-dessus du nôtre et distingue les deux causes possibles.
+            #
             # Chemin absolu : c'est la forme exacte que la règle sudoers
             # autorise. Un chemin relatif ne correspondrait à aucune règle et
             # serait refusé.
-            sudo -n /bin/bash ${{ secrets.DEPLOY_PATH }}/deploy/install-backup.sh
+            if ! sudo -n /bin/bash ${{ secrets.DEPLOY_PATH }}/deploy/install-backup.sh; then
+              echo "::error::Réinstallation de la planification de sauvegarde en échec. Si le message ci-dessus mentionne un mot de passe sudo, la règle /etc/sudoers.d/medlink-backup est absente ou ne vise pas l'utilisateur de déploiement (voir deploy/backup.md). Sinon, c'est install-backup.sh qui a refusé d'installer : son motif est dans sa propre sortie."
+              exit 1
+            fi
