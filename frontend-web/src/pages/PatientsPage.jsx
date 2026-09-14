@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import Badge from '../components/Badge';
@@ -16,26 +16,37 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState(null);
   const [error, setError] = useState(null);
 
-  const load = useCallback(async () => {
-    setError(null);
-
-    try {
-      const fetchedPatients = await fetchPatients();
-      const withEntries = await Promise.all(
-        fetchedPatients.map(async (patient) => ({
-          ...patient,
-          entries: await fetchJournalEntries(patient.id),
-        })),
-      );
-      setPatients(withEntries);
-    } catch {
-      setError('Impossible de charger la liste des patients. Vérifiez votre connexion.');
-    }
-  }, []);
-
+  // ML-168 : forme commune de chargement au montage. La garde `cancelled`
+  // évite de poser l'état si l'utilisateur a quitté la page avant la fin de
+  // la requête.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      setError(null);
+
+      try {
+        const fetchedPatients = await fetchPatients();
+        const withEntries = await Promise.all(
+          fetchedPatients.map(async (patient) => ({
+            ...patient,
+            entries: await fetchJournalEntries(patient.id),
+          })),
+        );
+        if (!cancelled) {
+          setPatients(withEntries);
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Impossible de charger la liste des patients. Vérifiez votre connexion.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <AppLayout>
