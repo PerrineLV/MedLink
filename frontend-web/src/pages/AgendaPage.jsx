@@ -20,8 +20,9 @@ const GENERIC_LOAD_ERROR = 'Impossible de charger vos rendez-vous. Vérifiez vot
 const GENERIC_CANCEL_ERROR = "Impossible d'annuler ce rendez-vous. Réessayez.";
 const GENERIC_CREATE_ERROR = "Impossible d'enregistrer ce rendez-vous, réessayez.";
 
-// Les contacts résolus ici sont déjà filtrés sur ROLE_SOIGNANT (cf. load()
-// plus bas) : pas besoin de re-vérifier le rôle avant de préfixer le titre.
+// Les contacts résolus ici sont déjà filtrés sur ROLE_SOIGNANT (cf. l'effet de
+// chargement plus bas) : pas besoin de re-vérifier le rôle avant de préfixer
+// le titre.
 function contactDisplayName(contact) {
   return contact
     ? formatSoignantName(contact.firstName, contact.lastName, contact.title)
@@ -54,40 +55,52 @@ export default function AgendaPage() {
   // plusieurs patients a besoin de savoir chez quel soignant *lequel* de ses
   // patients a rendez-vous (cf. showPatientName plus bas), pas seulement le
   // nom du soignant.
-  const load = useCallback(async () => {
-    setError(null);
-
-    try {
-      const [fetchedAppointments, fetchedPatients, contacts] = await Promise.all([
-        fetchAppointments(),
-        fetchPatients(),
-        isSoignant ? Promise.resolve([]) : fetchContacts(),
-      ]);
-      setAppointments(fetchedAppointments);
-      setPatients(fetchedPatients);
-      setPatientNamesById(
-        Object.fromEntries(
-          fetchedPatients.map((patient) => [
-            patient.id,
-            `${patient.firstName} ${patient.lastName}`,
-          ]),
-        ),
-      );
-      setSoignantNamesById(
-        Object.fromEntries(
-          contacts
-            .filter((contact) => contact.role === ROLE_SOIGNANT)
-            .map((contact) => [contact.id, contactDisplayName(contact)]),
-        ),
-      );
-    } catch {
-      setError(GENERIC_LOAD_ERROR);
-    }
-  }, [isSoignant]);
-
+  // ML-168 : l'effet se rejoue si le rôle se résout tardivement, donc deux
+  // chargements peuvent se chevaucher. La garde ci-dessous écarte la réponse
+  // de la passe obsolète.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      setError(null);
+
+      try {
+        const [fetchedAppointments, fetchedPatients, contacts] = await Promise.all([
+          fetchAppointments(),
+          fetchPatients(),
+          isSoignant ? Promise.resolve([]) : fetchContacts(),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        setAppointments(fetchedAppointments);
+        setPatients(fetchedPatients);
+        setPatientNamesById(
+          Object.fromEntries(
+            fetchedPatients.map((patient) => [
+              patient.id,
+              `${patient.firstName} ${patient.lastName}`,
+            ]),
+          ),
+        );
+        setSoignantNamesById(
+          Object.fromEntries(
+            contacts
+              .filter((contact) => contact.role === ROLE_SOIGNANT)
+              .map((contact) => [contact.id, contactDisplayName(contact)]),
+          ),
+        );
+      } catch {
+        if (!cancelled) {
+          setError(GENERIC_LOAD_ERROR);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSoignant]);
 
   const handleCreated = useCallback((appointment) => {
     setAppointments((current) => [...(current ?? []), appointment]);

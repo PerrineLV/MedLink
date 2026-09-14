@@ -121,30 +121,41 @@ export default function MessagingPage() {
     [markConversationRead],
   );
 
-  const loadContacts = useCallback(async () => {
-    setContactsError(null);
-
-    try {
-      const fetchedContacts = await fetchContacts();
-      const withUnreadFlag = await Promise.all(
-        fetchedContacts.map(async (contact) => {
-          const conversation = await fetchMessages(contact.id).catch(() => []);
-          const hasUnread = conversation.some(
-            (message) => message.senderId === contact.id && !message.read,
-          );
-
-          return { ...contact, hasUnread };
-        }),
-      );
-      setContacts(withUnreadFlag);
-    } catch {
-      setContactsError(GENERIC_CONTACTS_ERROR);
-    }
-  }, []);
-
+  // ML-168 : forme commune de chargement au montage. La garde `cancelled`
+  // évite de poser l'état si l'utilisateur a quitté la page avant la fin de
+  // la requête — ce chargement en enchaîne plusieurs, il peut durer.
   useEffect(() => {
-    loadContacts();
-  }, [loadContacts]);
+    let cancelled = false;
+
+    (async () => {
+      setContactsError(null);
+
+      try {
+        const fetchedContacts = await fetchContacts();
+        const withUnreadFlag = await Promise.all(
+          fetchedContacts.map(async (contact) => {
+            const conversation = await fetchMessages(contact.id).catch(() => []);
+            const hasUnread = conversation.some(
+              (message) => message.senderId === contact.id && !message.read,
+            );
+
+            return { ...contact, hasUnread };
+          }),
+        );
+        if (!cancelled) {
+          setContacts(withUnreadFlag);
+        }
+      } catch {
+        if (!cancelled) {
+          setContactsError(GENERIC_CONTACTS_ERROR);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Cette page a déjà calculé le statut non lu de chaque contact pour son
   // propre affichage : on le pousse au badge partagé plutôt que de
@@ -159,8 +170,15 @@ export default function MessagingPage() {
   useEffect(() => {
     if (!selectedContactId) return undefined;
 
-    setMessages(null);
-    loadConversation(selectedContactId);
+    // ML-168 : `loadConversation` pose son état lui-même et est partagé avec le
+    // sondage périodique ci-dessous, donc aucune garde d'annulation ne peut
+    // être posée depuis ici sans changer sa signature. Contrairement aux autres
+    // écrans, cette reprise ne fait donc qu'uniformiser la forme ; la course
+    // entre deux conversations ouvertes rapidement reste à traiter.
+    (async () => {
+      setMessages(null);
+      await loadConversation(selectedContactId);
+    })();
 
     const interval = setInterval(() => loadConversation(selectedContactId), POLL_INTERVAL_MS);
 

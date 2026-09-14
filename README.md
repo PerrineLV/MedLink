@@ -52,6 +52,7 @@ Les clients web et mobile s'appuient sur la même API. Les responsabilités sont
 - Tests automatisés avec mesure de couverture
 - Images Docker distinctes pour le développement et la production
 - Suivi des erreurs avec Sentry
+- Sauvegarde quotidienne de la base de production, planifiée par timer systemd et réinstallée à chaque déploiement (`deploy/backup.md`)
 
 ## Intégration continue
 

@@ -26,6 +26,7 @@ import AdminBlockedScreen from './screens/AdminBlockedScreen';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
 import UpdateBanner from './components/UpdateBanner';
 import { isAdminOnlySession } from './services/roles';
+import { safeGetStateFromPath } from './services/deepLinking';
 import * as Sentry from '@sentry/react-native';
 
 // DSN fourni par EXPO_PUBLIC_SENTRY_DSN (voir .env.local / secrets EAS), jamais
@@ -53,6 +54,9 @@ const linking = {
       ResetPassword: 'reset-password',
     },
   },
+  // Borne la taille des liens entrants avant parsing (ML-160) — voir
+  // services/deepLinking.js pour la raison, ce n'est pas une optimisation.
+  getStateFromPath: safeGetStateFromPath,
 };
 
 function RootNavigator() {

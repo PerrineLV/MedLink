@@ -66,7 +66,7 @@ class Treatment
     #[Groups(['treatment:read'])]
     private bool $active = true;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     #[Groups(['treatment:read'])]
     private \DateTimeImmutable $createdAt;
 

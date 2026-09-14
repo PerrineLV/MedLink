@@ -208,3 +208,61 @@ jobs:
               echo "No previous image recorded, manual intervention required" >&2
               exit 1
             fi
+
+  # ML-169 : la planification de la sauvegarde quotidienne était posée à la main
+  # sur le serveur — et n'y était plus. Elle est désormais réappliquée à chaque
+  # déploiement, ce qui la rend indéracinable : une réinstallation du serveur,
+  # un `systemctl disable` malencontreux ou une modification locale des unités
+  # sont rattrapés au merge suivant sur main.
+  #
+  # Job séparé et non étape du job `deploy` : une planification qui échoue à
+  # s'installer ne doit pas déclencher le rollback d'un déploiement applicatif
+  # par ailleurs sain. Elle doit se voir (job rouge), pas casser la prod.
+  schedule-backup:
+    name: Réapplique la planification de sauvegarde
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Upload backup scheduling assets to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "deploy/backup.sh,deploy/install-backup.sh,deploy/check-backup.sh,deploy/systemd/medlink-backup.service,deploy/systemd/medlink-backup.timer"
+          target: "${{ secrets.DEPLOY_PATH }}"
+
+      - name: Reinstall systemd timer
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # scp ne garantit pas le report du bit exécutable : on le repose.
+            # install-backup.sh est de toute façon invoqué via bash ci-dessous,
+            # mais check-backup.sh, lui, sera lancé à la main plus tard.
+            chmod +x deploy/*.sh
+
+            # `sudo -n` (non interactif) plutôt que `sudo` : sans la règle
+            # sudoers, on veut un échec immédiat et lisible, pas une session SSH
+            # qui attend un mot de passe jusqu'au timeout du job.
+            if ! sudo -n true 2>/dev/null; then
+              echo "::error::L'utilisateur de déploiement n'a pas de sudo non interactif. Ajouter /etc/sudoers.d/medlink-backup (voir deploy/backup.md), sinon la planification de sauvegarde ne peut pas être réappliquée."
+              exit 1
+            fi
+
+            # Chemin absolu : c'est la forme exacte que la règle sudoers
+            # autorise. Un chemin relatif ne correspondrait à aucune règle et
+            # serait refusé.
+            sudo -n /bin/bash ${{ secrets.DEPLOY_PATH }}/deploy/install-backup.sh

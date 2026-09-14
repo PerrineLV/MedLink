@@ -1,0 +1,39 @@
+# ML-169 — Unité de sauvegarde de la base de production.
+#
+# Elle n'a volontairement pas de section [Install] : elle ne doit être démarrée
+# que par medlink-backup.timer, jamais activée au boot. `systemctl enable` sur
+# ce service échouera donc, et c'est voulu.
+#
+# Installée par deploy/install-backup.sh — ne pas éditer la copie présente dans
+# /etc/systemd/system, elle est écrasée à chaque déploiement.
+
+[Unit]
+Description=Sauvegarde quotidienne de la base PostgreSQL MedLink
+Documentation=https://plaunaydev.atlassian.net/browse/ML-169
+
+# La sauvegarde passe par `docker compose exec db pg_dump`. Sans le démon
+# Docker, le script échouerait à chaque déclenchement — et silencieusement,
+# puisque rien ne surveille encore son code de retour (ML-143).
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+
+# backup.sh écrit dans /var/backups/medlink et pilote Docker. Il tourne en root,
+# comme l'exécution manuelle qui a produit la seule archive existante au moment
+# du constat (fichiers root:root). Un utilisateur dédié supposerait de le faire
+# entrer dans le groupe docker, ce qui équivaut à lui donner root sans le dire.
+User=root
+Group=root
+
+ExecStart=/opt/medlink/backup.sh
+
+# Le dump est une lecture complète de la base : sans borne, un pg_dump bloqué
+# (verrou, conteneur figé) retiendrait l'unité indéfiniment et le déclenchement
+# du lendemain serait sauté sans que rien ne le signale.
+TimeoutStartSec=30min
+
+# La sauvegarde ne doit pas concurrencer l'application sur les I/O disque.
+Nice=10
+IOSchedulingClass=idle
