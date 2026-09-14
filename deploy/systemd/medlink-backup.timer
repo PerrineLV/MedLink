@@ -8,9 +8,9 @@ Description=Déclenche la sauvegarde quotidienne de la base MedLink
 Documentation=https://plaunaydev.atlassian.net/browse/ML-169
 
 [Timer]
-# 04h17, heure locale du serveur (`systemctl list-timers` affiche l'heure
-# retenue, à vérifier après installation si le serveur n'est pas en
-# Europe/Paris).
+# 04h17, heure locale du serveur. Constaté à l'installation du 14/09/2026 : le
+# VPS est réglé sur **UTC**, donc 04h17 UTC, soit 06h17 à Paris en été et 05h17
+# en hiver. `systemctl list-timers` affiche l'heure retenue et confirme.
 #
 # Choix de l'heure : le seul travail planifié concurrent du projet est
 # update-medications.yml, qui s'exécute intégralement sur un runner GitHub et
