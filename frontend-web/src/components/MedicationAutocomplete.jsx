@@ -9,17 +9,26 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
   { value, onChange, onSelectMedication, required = false, ariaLabel },
   forwardedRef,
 ) {
-  const [suggestions, setSuggestions] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
+  // ML-168 : la liste affichée et son ouverture se déduisent de la saisie
+  // courante, elles ne sont donc pas stockées telles quelles. L'état ne retient
+  // que le résultat réseau *et la requête à laquelle il répond* : dès que la
+  // saisie change, ce résultat cesse mécaniquement de correspondre, sans qu'un
+  // effet ait à venir le remettre à zéro.
+  const [results, setResults] = useState({ query: '', items: [] });
+  const [isDismissed, setIsDismissed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef(null);
   const listboxId = useId();
 
+  const query = value.trim();
+  const suggestions = results.query === query ? results.items : [];
+  const isOpen = !isDismissed && suggestions.length > 0;
+
   useEffect(() => {
-    const query = value.trim();
+    // Saisie trop courte : on ne déclenche pas de recherche. Rien à réinitialiser
+    // ici — `suggestions` ci-dessus est déjà vide puisque `results.query` ne
+    // correspond plus.
     if (query.length < MIN_QUERY_LENGTH) {
-      setSuggestions([]);
-      setIsOpen(false);
       return undefined;
     }
 
@@ -27,16 +36,16 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
 
     const timeoutId = setTimeout(async () => {
       try {
-        const results = await searchMedications(query);
+        const items = await searchMedications(query);
         if (!cancelled) {
-          setSuggestions(results);
-          setIsOpen(results.length > 0);
-          setActiveIndex(-1);
+          setResults({ query, items });
         }
       } catch {
+        // La requête est mémorisée même en échec : sans ça, `results.query` ne
+        // correspondrait jamais et une saisie identique relancerait la recherche
+        // en boucle.
         if (!cancelled) {
-          setSuggestions([]);
-          setIsOpen(false);
+          setResults({ query, items: [] });
         }
       }
     }, DEBOUNCE_MS);
@@ -45,12 +54,12 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [value]);
+  }, [query]);
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
+        setIsDismissed(true);
       }
     }
 
@@ -58,15 +67,22 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleInputChange = (event) => {
+    onChange(event.target.value);
+    // Toute frappe rouvre la liste et annule la sélection clavier en cours.
+    setIsDismissed(false);
+    setActiveIndex(-1);
+  };
+
   const selectSuggestion = (suggestion) => {
     onChange(suggestion.name);
     onSelectMedication?.(suggestion);
-    setIsOpen(false);
-    setSuggestions([]);
+    setIsDismissed(true);
+    setActiveIndex(-1);
   };
 
   const handleKeyDown = (event) => {
-    if (!isOpen || suggestions.length === 0) {
+    if (!isOpen) {
       return;
     }
 
@@ -82,7 +98,7 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
         selectSuggestion(suggestions[activeIndex]);
       }
     } else if (event.key === 'Escape') {
-      setIsOpen(false);
+      setIsDismissed(true);
     }
   };
 
@@ -101,9 +117,9 @@ const MedicationAutocomplete = forwardRef(function MedicationAutocomplete(
         aria-label={ariaLabel}
         autoComplete="off"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        onFocus={() => suggestions.length > 0 && setIsOpen(true)}
+        onFocus={() => setIsDismissed(false)}
         required={required}
       />
 

@@ -22,19 +22,31 @@ export default function InvitationsPage() {
   const listRef = useRef(null);
   const { decrement: decrementPendingInvitationsCount } = useInvitationsBadge();
 
-  const load = useCallback(async () => {
-    setError(null);
-
-    try {
-      setInvitations(await fetchReceivedInvitations());
-    } catch {
-      setError(GENERIC_LOAD_ERROR);
-    }
-  }, []);
-
+  // ML-168 : forme commune de chargement au montage. La garde `cancelled`
+  // évite de poser l'état si l'utilisateur a quitté la page avant la fin de
+  // la requête.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      setError(null);
+
+      try {
+        const fetched = await fetchReceivedInvitations();
+        if (!cancelled) {
+          setInvitations(fetched);
+        }
+      } catch {
+        if (!cancelled) {
+          setError(GENERIC_LOAD_ERROR);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleResolved = useCallback(
     (invitationId) => {
