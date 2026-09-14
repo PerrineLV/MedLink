@@ -1,0 +1,41 @@
+# ML-169 — Déclenchement quotidien de la sauvegarde.
+#
+# Installé par deploy/install-backup.sh — ne pas éditer la copie présente dans
+# /etc/systemd/system, elle est écrasée à chaque déploiement.
+
+[Unit]
+Description=Déclenche la sauvegarde quotidienne de la base MedLink
+Documentation=https://plaunaydev.atlassian.net/browse/ML-169
+
+[Timer]
+# 04h17, heure locale du serveur (`systemctl list-timers` affiche l'heure
+# retenue, à vérifier après installation si le serveur n'est pas en
+# Europe/Paris).
+#
+# Choix de l'heure : le seul travail planifié concurrent du projet est
+# update-medications.yml, qui s'exécute intégralement sur un runner GitHub et
+# ne touche jamais ce serveur — il n'entre donc pas en compte. Le vrai
+# concurrent est le déploiement CD, déclenché par un merge sur main, donc en
+# journée. D'où une heure de nuit.
+#
+# Et 17 plutôt que 00 : les tâches système d'une distribution (renouvellement
+# de certificat, mises à jour automatiques) se groupent sur les heures rondes.
+# Une minute décalée évite de disputer les I/O disque à un `apt` au pire moment.
+OnCalendar=*-*-* 04:17:00
+
+# Si le serveur était éteint ou redémarrait à l'heure prévue, la sauvegarde est
+# rattrapée au démarrage suivant plutôt que purement et simplement sautée. Sans
+# ça, un redémarrage nocturne créerait un trou dans les archives sans qu'aucune
+# erreur ne soit produite — exactement le mode de défaillance silencieux que ce
+# ticket corrige.
+Persistent=true
+
+# Pas de RandomizedDelaySec : l'heure de déclenchement doit rester prévisible
+# pour que la vérification du lendemain (deploy/check-backup.sh) soit
+# interprétable sans ambiguïté.
+AccuracySec=1min
+
+Unit=medlink-backup.service
+
+[Install]
+WantedBy=timers.target

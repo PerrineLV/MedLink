@@ -55,6 +55,15 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    // ML-164 : suppression temporaire, à lever en ML-167.
+    // `resetInactivityTimers` appelle `setSessionExpiryWarning(false)` de façon
+    // synchrone, ce que la règle interdit (risque de rendus en cascade). Ici le
+    // défaut est bénin — la valeur vaut déjà `false` à ce stade et React
+    // court-circuite le rendu lorsqu'elle est inchangée — mais restructurer ce
+    // code touche à l'expiration de session, donc à un mécanisme de sécurité
+    // qui demande d'être testé pour de bon. Hors périmètre du ticket
+    // d'outillage qui a révélé cette violation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     resetInactivityTimers();
 
     return clearInactivityTimers;

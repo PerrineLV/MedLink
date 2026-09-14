@@ -46,7 +46,7 @@ class TreatmentIntake
     #[Groups(['treatment:read'])]
     private bool $taken = false;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
     #[Groups(['treatment:read'])]
     private ?\DateTimeImmutable $takenAt = null;
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import Badge from '../components/Badge';
 import { fetchHealthSummary } from '../services/adminService';
@@ -11,19 +11,31 @@ export default function AdminSupervisionPage() {
   const [summary, setSummary] = useState(null);
   const [loadError, setLoadError] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoadError(null);
-
-    try {
-      setSummary(await fetchHealthSummary());
-    } catch {
-      setLoadError(GENERIC_LOAD_ERROR);
-    }
-  }, []);
-
+  // ML-168 : forme commune de chargement au montage. La garde `cancelled`
+  // évite de poser l'état si l'utilisateur a quitté la page avant la fin de
+  // la requête.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      setLoadError(null);
+
+      try {
+        const fetched = await fetchHealthSummary();
+        if (!cancelled) {
+          setSummary(fetched);
+        }
+      } catch {
+        if (!cancelled) {
+          setLoadError(GENERIC_LOAD_ERROR);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <AppLayout>

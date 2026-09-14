@@ -42,34 +42,49 @@ export default function PatientJournalPage() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
 
-  const load = useCallback(async () => {
-    setError(null);
-    setEntries(null);
-    setTreatments(null);
-    setPatientName(null);
-
-    try {
-      const [patients, fetchedEntries, fetchedTreatments] = await Promise.all([
-        fetchPatients(),
-        fetchJournalEntries(patientId),
-        fetchTreatments(patientId),
-      ]);
-      const patient = patients.find((candidate) => String(candidate.id) === String(patientId));
-      setPatientName(patient ? `${patient.firstName} ${patient.lastName}` : null);
-      setEntries(fetchedEntries);
-      setTreatments(fetchedTreatments);
-    } catch (requestError) {
-      if (requestError.response?.status === 403) {
-        setError("Vous n'avez pas accès au journal de ce patient.");
-      } else {
-        setError('Impossible de charger ce journal. Vérifiez votre connexion.');
-      }
-    }
-  }, [patientId]);
-
+  // ML-168 : l'effet se rejoue à chaque changement de patient, donc plusieurs
+  // requêtes peuvent être en vol simultanément. Sans la garde ci-dessous, la
+  // réponse d'un patient précédemment ouvert peut arriver après celle du
+  // patient courant et s'afficher à sa place — sur un journal médical, c'est
+  // le pire endroit pour montrer les données de quelqu'un d'autre.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      setError(null);
+      setEntries(null);
+      setTreatments(null);
+      setPatientName(null);
+
+      try {
+        const [patients, fetchedEntries, fetchedTreatments] = await Promise.all([
+          fetchPatients(),
+          fetchJournalEntries(patientId),
+          fetchTreatments(patientId),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        const patient = patients.find((candidate) => String(candidate.id) === String(patientId));
+        setPatientName(patient ? `${patient.firstName} ${patient.lastName}` : null);
+        setEntries(fetchedEntries);
+        setTreatments(fetchedTreatments);
+      } catch (requestError) {
+        if (cancelled) {
+          return;
+        }
+        if (requestError.response?.status === 403) {
+          setError("Vous n'avez pas accès au journal de ce patient.");
+        } else {
+          setError('Impossible de charger ce journal. Vérifiez votre connexion.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [patientId]);
 
   const handleTreatmentCreated = useCallback((treatment) => {
     setTreatments((current) => [...(current ?? []), treatment]);

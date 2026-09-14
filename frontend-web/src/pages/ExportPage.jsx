@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Download, FileText } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import PatientAutocomplete from '../components/PatientAutocomplete';
@@ -62,37 +62,58 @@ export default function ExportPage() {
   const [error, setError] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const load = useCallback(async () => {
-    setError(null);
+  // ML-168 : forme commune de chargement au montage. La garde `cancelled`
+  // évite de poser l'état si l'utilisateur a quitté la page avant la fin de
+  // la requête.
+  useEffect(() => {
+    let cancelled = false;
 
-    try {
-      const fetchedPatients = await fetchPatients();
-      setPatients(fetchedPatients);
-      if (fetchedPatients.length === 1) {
-        setSelectedPatientId(fetchedPatients[0].id);
+    (async () => {
+      setError(null);
+
+      try {
+        const fetchedPatients = await fetchPatients();
+        if (cancelled) {
+          return;
+        }
+        setPatients(fetchedPatients);
+        if (fetchedPatients.length === 1) {
+          setSelectedPatientId(fetchedPatients[0].id);
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Impossible de charger vos données. Vérifiez votre connexion.');
+        }
       }
-    } catch {
-      setError('Impossible de charger vos données. Vérifiez votre connexion.');
-    }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Même forme que ci-dessus, appliquée au rechargement déclenché par le choix
+  // du patient. La garde existait déjà ici ; seule l'écriture change, pour que
+  // tout le front charge de la même façon.
   useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    if (!selectedPatientId) return;
+    if (!selectedPatientId) return undefined;
 
     let cancelled = false;
-    setEntries(null);
 
-    fetchJournalEntries(selectedPatientId)
-      .then((fetchedEntries) => {
-        if (!cancelled) setEntries(fetchedEntries);
-      })
-      .catch(() => {
-        if (!cancelled) setError('Impossible de charger le journal. Vérifiez votre connexion.');
-      });
+    (async () => {
+      setEntries(null);
+
+      try {
+        const fetchedEntries = await fetchJournalEntries(selectedPatientId);
+        if (!cancelled) {
+          setEntries(fetchedEntries);
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Impossible de charger le journal. Vérifiez votre connexion.');
+        }
+      }
+    })();
 
     return () => {
       cancelled = true;

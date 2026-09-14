@@ -43,7 +43,11 @@ export default function InvitationsScreen() {
   const { decrement: decrementPendingInvitationsCount } = useInvitationsBadge();
 
   const load = useCallback(async (isRefresh) => {
-    isRefresh ? setIsRefreshing(true) : setIsLoading(true);
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -51,7 +55,11 @@ export default function InvitationsScreen() {
     } catch {
       setError(GENERIC_LOAD_ERROR);
     } finally {
-      isRefresh ? setIsRefreshing(false) : setIsLoading(false);
+      if (isRefresh) {
+        setIsRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
     }
   }, []);
 

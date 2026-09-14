@@ -4,7 +4,16 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    branches: [main, develop, "epic*"]
+    # ML-164 : les motifs de branche de GitHub Actions sont sensibles à la
+    # casse. L'ancien filtre "epic*" ne correspondait pas à la branche réelle
+    # EPIC-21--evolutions-potentielles-corrections, si bien qu'aucune PR vers
+    # une branche d'epic ne déclenchait la CI — silencieusement, le ruleset
+    # correspondant souffrant de la même erreur de casse et n'exigeant donc
+    # aucun check. Classe de caractères plutôt que "epic*"/"EPIC*" pour couvrir
+    # aussi les casses mixtes (Epic-22, ePic-23...) : c'est une faute de frappe
+    # à la création d'une branche qui a causé ce défaut, la tolérer coûte moins
+    # cher que de le revivre.
+    branches: [main, develop, "[Ee][Pp][Ii][Cc]*"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -113,7 +122,13 @@ jobs:
         run: npm run format:check
 
       - name: npm audit
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
+
+      # ML-163 : placé après le lint et avant le build. Un test qui échoue doit
+      # arrêter le job avant qu'on ne dépense le temps de construction, et rien
+      # ne rend cette étape non bloquante — c'est tout l'intérêt.
+      - name: Tests unitaires (Vitest)
+        run: npm test
 
       - name: Build
         run: npm run build
@@ -146,7 +161,10 @@ jobs:
         run: npm run format:check
 
       - name: npm audit
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
+
+      - name: Tests unitaires (Jest)
+        run: npm run test:ci
 
       - name: Build (export)
         run: npm run build

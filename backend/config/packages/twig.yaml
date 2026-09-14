@@ -1,5 +1,12 @@
 twig:
     file_name_pattern: '*.twig'
+    # ML-158 : le serveur raisonne en UTC (date.timezone, docker/php.ini) et la
+    # base stocke des instants. Les gabarits, eux, s'adressent à des
+    # utilisateurs français : le filtre `date` convertit donc vers l'heure de
+    # Paris. Posé ici plutôt que sur chaque filtre, pour qu'un futur gabarit
+    # hérite du bon comportement sans avoir à y penser.
+    date:
+        timezone: Europe/Paris
 
 when@test:
     twig:

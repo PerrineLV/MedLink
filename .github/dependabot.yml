@@ -39,32 +39,43 @@ updates:
       # est classé "semver-minor" par Dependabot (pas "semver-major"), et
       # échappe donc à la règle générique ci-dessus. Dans les faits ce type de
       # saut équivaut à un bump majeur pour cet écosystème (breaking changes
-      # fréquents, dépendance stricte à la version Expo SDK — SDK 54 attend
-      # react-native ~0.81.x). Plage à relever manuellement quand on bump
-      # Expo SDK et qu'on veut rouvrir la fenêtre react-native.
+      # fréquents, dépendance stricte à la version Expo SDK). Plage à relever
+      # manuellement à chaque montée de SDK, en la calant juste au-dessus de la
+      # version que le SDK épingle.
+      # ML-159 : projet passé en Expo SDK 57, qui épingle react-native 0.86.3
+      # (bundledNativeModules.json du tag sdk-57). Borne relevée de 0.82.0 à
+      # 0.87.0 en conséquence — sans ce relèvement Dependabot resterait aveugle
+      # sur toute la branche 0.86.x.
       - dependency-name: "react-native"
-        versions: [">=0.82.0"]
+        versions: [">=0.87.0"]
       # ML-149 : autre dépendance 0.x du monorepo identifiée à cette
       # vérification, react-native-keyboard-aware-scroll-view (0.9.x) n'a
       # pas de plage d'ignore dédiée : contrairement à react-native, elle
       # n'est pas couplée à une contrainte externe stricte type Expo SDK et
       # n'a pas eu de bump depuis longtemps. Backend (composer) et
       # frontend-web n'ont aucune dépendance en versioning 0.x.
-      # PR #194 (groupe frontend-mobile-minor-patch) : react-native-screens
-      # 4.16.0 -> 4.27.0 casse "expo export" (Metro), reproduit en isolant ce
-      # seul paquet du groupe : SyntaxError sur
-      # node_modules/react-native-screens/src/fabric/SearchBarNativeComponent.ts
-      # ("React.ElementRef<> doit avoir un argument de type" — syntaxe Flow
-      # valide côté react-native-screens, invalide pour le parseur TS de
-      # Metro tel que figé sur Expo SDK 54). Contrairement à react-native
-      # (ML-149), ce n'est pas un artefact de versioning 0.x : un bump
-      # mineur légitime de react-native-screens s'est simplement avéré
-      # incompatible avec la chaîne d'outils figée sur SDK 54. Versions à
-      # partir de 4.17.0 ignorées par précaution (seule 4.27.0 testée et
-      # confirmée cassée) ; plage à relever manuellement quand on bump Expo
-      # SDK, comme pour react-native.
+      # ML-149 : PR #194 (groupe frontend-mobile-minor-patch) — le bump
+      # react-native-screens 4.16.0 -> 4.27.0 cassait "expo export" (Metro) sur
+      # Expo SDK 54 : SyntaxError sur SearchBarNativeComponent.ts, syntaxe Flow
+      # valide côté react-native-screens mais invalide pour le parseur TS de
+      # Metro tel que figé sur ce SDK. D'où une borne d'ignore à 4.17.0.
+      #
+      # ML-159 : ce défaut n'existe plus. Vérifié en installant réellement
+      # react-native-screens 4.27.0 sur le projet passé en SDK 57 — "expo
+      # export" bundle sans erreur (1396 modules), le Metro du SDK 57 acceptant
+      # cette syntaxe. La borne n'est donc plus maintenue pour cette raison.
+      #
+      # Elle est néanmoins conservée, calée juste au-dessus de la version que
+      # le SDK épingle (~4.26.0 d'après bundledNativeModules.json du tag
+      # sdk-57), et pour un motif différent : react-native-screens est un
+      # paquet géré par le SDK Expo, et laisser Dependabot proposer des
+      # versions au-dessus de cet épinglage reproduit le mode de défaillance de
+      # ML-153 et ML-154 (paquet de l'écosystème Expo résolu sur un SDK
+      # supérieur à celui du projet — build Android cassé, puis crash au
+      # lancement). Même politique que pour react-native ci-dessus : la borne
+      # suit l'épinglage du SDK et se relève à chaque montée.
       - dependency-name: "react-native-screens"
-        versions: [">=4.17.0"]
+        versions: [">=4.27.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

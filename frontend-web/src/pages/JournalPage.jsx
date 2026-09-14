@@ -28,32 +28,45 @@ export default function JournalPage() {
   const [patients, setPatients] = useState([]);
   const [error, setError] = useState(null);
 
-  const load = useCallback(async () => {
-    setError(null);
-    setEntries(null);
-    setTreatments(null);
-
-    try {
-      const [fetchedEntries, fetchedPatients, fetchedTreatments] = await Promise.all([
-        fetchJournalEntries(),
-        fetchPatients(),
-        fetchTreatments(),
-      ]);
-      setEntries(fetchedEntries);
-      setPatients(fetchedPatients);
-      setTreatments(fetchedTreatments);
-    } catch (requestError) {
-      if (requestError.response?.status === 403) {
-        setError("Vous n'avez pas accès à ce journal.");
-      } else {
-        setError('Impossible de charger le journal. Vérifiez votre connexion.');
-      }
-    }
-  }, []);
-
+  // ML-168 : forme commune de chargement au montage. La garde `cancelled`
+  // évite de poser l'état si l'utilisateur a quitté la page avant la fin de
+  // la requête.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      setError(null);
+      setEntries(null);
+      setTreatments(null);
+
+      try {
+        const [fetchedEntries, fetchedPatients, fetchedTreatments] = await Promise.all([
+          fetchJournalEntries(),
+          fetchPatients(),
+          fetchTreatments(),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        setEntries(fetchedEntries);
+        setPatients(fetchedPatients);
+        setTreatments(fetchedTreatments);
+      } catch (requestError) {
+        if (cancelled) {
+          return;
+        }
+        if (requestError.response?.status === 403) {
+          setError("Vous n'avez pas accès à ce journal.");
+        } else {
+          setError('Impossible de charger le journal. Vérifiez votre connexion.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleEntryCreated = useCallback((entry) => {
     setEntries((current) => [entry, ...(current ?? [])]);

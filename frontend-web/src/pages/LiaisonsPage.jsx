@@ -25,19 +25,31 @@ export default function LiaisonsPage() {
   const [pendingRevoke, setPendingRevoke] = useState(null);
   const listRef = useRef(null);
 
-  const load = useCallback(async () => {
-    setError(null);
-
-    try {
-      setLiaisons(await fetchLiaisons());
-    } catch {
-      setError('Impossible de charger vos liaisons. Vérifiez votre connexion.');
-    }
-  }, []);
-
+  // ML-168 : forme commune de chargement au montage. La garde `cancelled`
+  // évite de poser l'état si l'utilisateur a quitté la page avant la fin de
+  // la requête.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      setError(null);
+
+      try {
+        const fetched = await fetchLiaisons();
+        if (!cancelled) {
+          setLiaisons(fetched);
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Impossible de charger vos liaisons. Vérifiez votre connexion.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleInvited = useCallback((liaison) => {
     setLiaisons((current) => [liaison, ...(current ?? [])]);

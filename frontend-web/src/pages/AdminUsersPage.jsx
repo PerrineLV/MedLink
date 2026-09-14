@@ -37,20 +37,33 @@ export default function AdminUsersPage() {
   const [pendingDeactivation, setPendingDeactivation] = useState(null);
   const tableRef = useRef(null);
 
-  const load = useCallback(async () => {
-    setLoadError(null);
-
-    try {
-      const result = await fetchUsers({ role: roleFilter, status: statusFilter });
-      setUsers(result.items);
-    } catch {
-      setLoadError(GENERIC_LOAD_ERROR);
-    }
-  }, [roleFilter, statusFilter]);
-
+  // ML-168 : l'effet se rejoue à chaque changement de filtre, donc plusieurs
+  // requêtes peuvent être en vol simultanément. Sans la garde ci-dessous, la
+  // plus lente — donc la plus ancienne — peut arriver en dernier et écraser un
+  // résultat plus récent : l'admin verrait une liste ne correspondant pas au
+  // filtre sélectionné.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      setLoadError(null);
+
+      try {
+        const result = await fetchUsers({ role: roleFilter, status: statusFilter });
+        if (!cancelled) {
+          setUsers(result.items);
+        }
+      } catch {
+        if (!cancelled) {
+          setLoadError(GENERIC_LOAD_ERROR);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [roleFilter, statusFilter]);
 
   const handleUserUpdated = useCallback((updatedUser) => {
     setUsers((current) =>
