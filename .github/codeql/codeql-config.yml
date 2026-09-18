@@ -1,0 +1,31 @@
+name: "MedLink — configuration CodeQL"
+
+# ML-161.
+#
+# Contrairement à la crainte habituelle, il n'y a rien à exclure du côté des
+# dépendances : le dépôt ne versionne ni `backend/vendor/`, ni les deux
+# `node_modules/`, ni `backend/var/`, ni `frontend-mobile/.expo/`. Vérifié avec
+# `git ls-files` — zéro fichier suivi dans chacun. Le runner ne les récupère
+# donc pas au checkout, et CodeQL ne peut pas analyser ce qui n'est pas là.
+# Les exclure ici ne coûterait rien mais laisserait croire qu'ils étaient un
+# risque, ce qu'ils ne sont pas.
+#
+# Reste ce qui est réellement versionné et sans valeur pour du SAST.
+
+paths-ignore:
+  # 136 ko de blocs de documentation générés par Symfony pour l'autocomplétion
+  # des IDE : aucune logique exécutée, et le fichier est régénéré à chaque
+  # montée de bundle (il a encore bougé au bump Monolog de la PR #234).
+  - "backend/config/reference.php"
+
+# Volontairement NON exclus de ce premier passage :
+#
+#   - `backend/tests` (71 fichiers) et `backend/src/DataFixtures` : le ticket
+#     demande de TRIER les alertes qui en viendraient avant de décider de les
+#     écarter. Les exclure d'emblée reviendrait à préjuger de ce tri. Et du
+#     code de test porte régulièrement de vrais secrets en dur, qui méritent
+#     d'être vus une fois avant d'être ignorés pour toujours.
+#
+#   - `backend/resources/medications.json` (1,1 Mo) : c'est de la donnée, pas
+#     du code. CodeQL ne l'analysera pas au titre des deux langages déclarés,
+#     l'exclure serait du bruit dans ce fichier.
