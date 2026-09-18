@@ -235,7 +235,11 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
-          source: "deploy/backup.sh,deploy/install-backup.sh,deploy/check-backup.sh,deploy/systemd/medlink-backup.service,deploy/systemd/medlink-backup.timer"
+          # ML-143 : deploy/lib/archive-checks.sh est indispensable — backup.sh
+          # le source au démarrage et install-backup.sh refuse d'installer sans
+          # lui. L'oublier ici casserait le déploiement, pas seulement une
+          # fonctionnalité.
+          source: "deploy/backup.sh,deploy/install-backup.sh,deploy/check-backup.sh,deploy/lib/archive-checks.sh,deploy/systemd/medlink-backup.service,deploy/systemd/medlink-backup.timer"
           target: "${{ secrets.DEPLOY_PATH }}"
 
       - name: Reinstall systemd timer
