@@ -1,0 +1,92 @@
+name: CodeQL
+
+# ML-161 — Analyse statique de sécurité (SAST) du code du projet.
+#
+# Dependabot ne regarde que les dépendances tierces ; il ne lit jamais le code
+# écrit ici. Injection SQL, XSS, traversée de chemin, désérialisation non sûre,
+# secrets en dur : tout cela lui échappe par construction. C'est ce que ce
+# workflow couvre.
+#
+# Workflow séparé de ci.yml et non job supplémentaire : CodeQL a son propre
+# rythme (analyse hebdomadaire en plus des PR), sa propre durée, et reste ainsi
+# désactivable sans toucher à la CI fonctionnelle.
+#
+# Gratuit : l'analyse de code est offerte sur les dépôts publics, et
+# PerrineLV/MedLink en est un.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    # Aligné sur ci.yml, y compris la classe de caractères posée par ML-164 :
+    # les motifs de branche de GitHub Actions sont sensibles à la casse, et
+    # "epic*" ne correspondait pas à EPIC-21--… — aucune PR d'epic n'était
+    # analysée, silencieusement. Ne pas réintroduire ici l'erreur corrigée là.
+    branches: [main, develop, "[Ee][Pp][Ii][Cc]*"]
+  schedule:
+    # Mercredi 05h42 UTC. Le scan planifié sert à détecter les NOUVELLES règles
+    # CodeQL sur du code déjà mergé : sans lui, une règle publiée après le
+    # merge ne serait jamais appliquée au code existant.
+    #
+    # Mercredi pour ne pas croiser update-medications.yml (lundi 03h00 UTC), et
+    # minute décalée parce que les workflows planifiés de GitHub s'entassent sur
+    # les heures rondes, ce qui allonge la mise en file.
+    - cron: "42 5 * * 3"
+
+# Aucune permission par défaut : chaque job déclare ce dont il a besoin, et
+# rien de plus.
+permissions: {}
+
+jobs:
+  analyze:
+    name: Analyse CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    # Filet de sécurité : une analyse qui dépasse largement cette durée signale
+    # qu'on analyse quelque chose qu'on ne devrait pas.
+    timeout-minutes: 30
+
+    permissions:
+      security-events: write # publier les alertes dans Security → Code scanning
+      actions: read
+      contents: read
+
+    strategy:
+      # Sans ça, l'échec d'un langage annulerait l'analyse de l'autre et on
+      # perdrait des résultats déjà acquis.
+      fail-fast: false
+      matrix:
+        # `javascript-typescript` couvre d'un seul bloc frontend-web (React) et
+        # frontend-mobile (React Native). Les autres langages présents (CSS,
+        # HTML, Twig, Shell, Dockerfile) ne sont pas analysables par CodeQL ou
+        # ne portent pas de logique métier.
+        language: [php, javascript-typescript]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Initialisation CodeQL
+        # @v4 et non @v3 : v4 est la version courante de l'action, v3 ne reste
+        # maintenue que pour les GitHub Enterprise Server ≤ 3.19. Le ticket
+        # ML-161, rédigé le 13/09, prescrivait @v3 — épingler un majeur dépassé
+        # sur un workflow neuf n'aurait pas de sens. Le majeur suffit comme
+        # épinglage, Dependabot suivant déjà l'écosystème github-actions
+        # (ML-131).
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          # Suite élargie pour établir la ligne de base. À redescendre vers la
+          # suite par défaut si le volume d'alertes s'avère ingérable — ce sera
+          # tranché au tri du premier run, pas d'avance.
+          queries: security-extended
+          config-file: ./.github/codeql/codeql-config.yml
+
+      # Pas d'étape `autobuild` : PHP et JavaScript/TypeScript sont extraits
+      # directement depuis les sources, sans compilation. L'étape serait au
+      # mieux inutile, au pire une source de panne sur un projet qui n'a aucune
+      # cible de build à deviner.
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
