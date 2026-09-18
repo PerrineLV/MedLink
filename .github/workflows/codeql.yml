@@ -4,8 +4,11 @@ name: CodeQL
 #
 # Dependabot ne regarde que les dépendances tierces ; il ne lit jamais le code
 # écrit ici. Injection SQL, XSS, traversée de chemin, désérialisation non sûre,
-# secrets en dur : tout cela lui échappe par construction. C'est ce que ce
-# workflow couvre.
+# secrets en dur : tout cela lui échappe par construction.
+#
+# Ce workflow couvre ce manque **pour les deux front-ends uniquement**. Le
+# backend PHP n'est pas couvert — CodeQL ne sait pas l'analyser, voir le
+# commentaire de la matrice plus bas.
 #
 # Workflow séparé de ci.yml et non job supplémentaire : CodeQL a son propre
 # rythme (analyse hebdomadaire en plus des PR), sa propre durée, et reste ainsi
@@ -56,10 +59,24 @@ jobs:
       fail-fast: false
       matrix:
         # `javascript-typescript` couvre d'un seul bloc frontend-web (React) et
-        # frontend-mobile (React Native). Les autres langages présents (CSS,
-        # HTML, Twig, Shell, Dockerfile) ne sont pas analysables par CodeQL ou
-        # ne portent pas de logique métier.
-        language: [php, javascript-typescript]
+        # frontend-mobile (React Native).
+        #
+        # PHP EST ABSENT, ET CE N'EST PAS UN OUBLI. **CodeQL ne supporte pas
+        # PHP.** Le ticket ML-161 partait du principe inverse ; le premier run
+        # a tranché, le 18/09/2026 :
+        #
+        #     ##[error]Did not recognize the following languages: php
+        #
+        # C'est d'autant moins anodin que PHP est le plus gros langage du dépôt
+        # (660 ko contre 434 ko de JavaScript) et qu'il porte le backend
+        # Symfony — authentification, accès base, données de santé. Le SAST du
+        # backend demande donc un outil distinct ; ne pas remettre `php` ici en
+        # espérant que ça passe, ça ne passera pas.
+        #
+        # Les autres langages présents (CSS, HTML, Twig, Shell, Dockerfile,
+        # PLpgSQL) ne sont pas analysables par CodeQL ou ne portent pas de
+        # logique métier.
+        language: [javascript-typescript]
 
     steps:
       - name: Checkout
