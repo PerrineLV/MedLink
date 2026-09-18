@@ -1,0 +1,92 @@
+name: Semgrep
+
+# ML-172 — Analyse statique de sécurité du backend PHP.
+#
+# Complète CodeQL (ML-161), qui ne couvre que les deux front-ends : CodeQL ne
+# sait pas analyser PHP, alors que c'est le plus gros langage du dépôt et celui
+# qui porte l'authentification, les accès base et les données de santé.
+#
+# Les alertes sont téléversées en SARIF et atterrissent dans le MÊME onglet
+# Security → Code scanning que celles de CodeQL. C'est le critère qui a fait
+# retenir Semgrep : un second tableau de bord est un tableau de bord que
+# personne ne regarde.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    # Même motif que ci.yml et codeql.yml, classe de caractères comprise
+    # (ML-164) : les motifs de branche de GitHub Actions sont sensibles à la
+    # casse, et "epic*" ne correspondait à aucune branche réelle.
+    branches: [main, develop, "[Ee][Pp][Ii][Cc]*"]
+  schedule:
+    # Mercredi 06h17 UTC, une demi-heure après CodeQL (05h42) pour ne pas
+    # lancer les deux analyses en même temps. Rappel : GitHub n'exécute les
+    # workflows planifiés que depuis la branche par défaut — ce cron reste
+    # inerte tant que ce fichier n'est pas sur main.
+    - cron: "17 6 * * 3"
+
+permissions: {}
+
+jobs:
+  semgrep:
+    name: Analyse Semgrep (backend PHP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Image officielle. `semgrep scan` fonctionne sans jeton, contrairement à
+    # `semgrep ci` qui exige un SEMGREP_APP_TOKEN : aucun compte ni secret à
+    # gérer, et les règles publiques du registre suffisent.
+    container:
+      image: semgrep/semgrep
+
+    permissions:
+      security-events: write # publier les alertes dans Security → Code scanning
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # ATTENTION EN LISANT LE STATUT DE CE JOB : `semgrep scan` sort en 0
+      # qu'il trouve quelque chose ou non — vérifié le 18/09/2026, code retour
+      # 0 avec 1 alerte comme avec 0 alerte. **Un job vert ne signifie donc PAS
+      # « rien trouvé ».** Les résultats sont dans Security → Code scanning, et
+      # nulle part ailleurs. Faire échouer le job sur alerte demanderait
+      # `--error` ; c'est une décision à prendre avec celle d'ajouter ce scan
+      # aux checks requis, pas maintenant — un check bloquant dès la première
+      # alerte empêcherait tout merge avant qu'on ait trié le bruit initial.
+      #
+      # SECOND PIÈGE : Semgrep applique un `.semgrepignore` par défaut qui
+      # exclut `tests/`. Mesuré — 136 fichiers analysés, dont **0 de test**,
+      # les 71 fichiers de `backend/tests` étant écartés sans que rien ne le
+      # signale dans le résumé. ML-161 avait pourtant décidé de garder les
+      # tests dans le périmètre, du code de test pouvant porter de vrais
+      # secrets en dur. L'écart est assumé pour ce premier passage — le
+      # secret scanning de GitHub couvre mieux ce cas précis — mais il est
+      # écrit ici plutôt que subi. Le ramener dans le périmètre demanderait un
+      # `.semgrepignore` maison, qui devrait alors redéclarer toutes les
+      # exclusions par défaut.
+      - name: Analyse
+        run: |
+          semgrep scan \
+            --config=p/php \
+            --config=p/security-audit \
+            --config=p/owasp-top-ten \
+            --exclude=vendor \
+            --exclude=var \
+            --metrics=off \
+            --sarif --output=semgrep.sarif \
+            backend/
+
+      - name: Téléversement SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          # Catégorie distincte de celle de CodeQL, sans quoi le second
+          # téléversement écraserait les résultats du premier.
+          category: semgrep
+        # Les résultats doivent remonter même si l'étape précédente a échoué :
+        # une analyse partielle vaut mieux qu'aucune.
+        if: always()
