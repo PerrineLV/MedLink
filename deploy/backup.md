@@ -1,6 +1,6 @@
 # Sauvegarde de la base de production
 
-Référence : ML-74 (script), ML-169 (planification), ML-143 (notification d'échec, à venir).
+Référence : ML-74 (script), ML-169 (planification), ML-143 (validation de l'archive et surveillance Sentry).
 
 ## Pourquoi ce document existe
 
@@ -45,7 +45,8 @@ Dans le dépôt :
 
 | Fichier | Rôle |
 |---|---|
-| `deploy/backup.sh` | le script de sauvegarde (ML-74) |
+| `deploy/backup.sh` | le script de sauvegarde (ML-74), sa validation d'archive et ses check-ins Sentry (ML-143) |
+| `deploy/lib/archive-checks.sh` | contrôles de conformité d'une archive, partagés par les deux scripts (ML-143) |
 | `deploy/systemd/medlink-backup.service` | l'unité qui exécute le script |
 | `deploy/systemd/medlink-backup.timer` | le déclenchement quotidien |
 | `deploy/install-backup.sh` | installe ou réinstalle le tout, idempotent |
@@ -57,6 +58,7 @@ Sur le serveur, après installation :
 |---|---|
 | `/opt/medlink/deploy/` | les fichiers ci-dessus, tels que déposés par la CD |
 | `/opt/medlink/backup.sh` | la copie **installée**, celle que systemd exécute (0750 root:root) |
+| `/opt/medlink/lib/archive-checks.sh` | la bibliothèque installée, sourcée par `backup.sh` et `check-backup.sh` |
 | `/etc/systemd/system/medlink-backup.{service,timer}` | les unités installées |
 | `/var/backups/medlink/` | les archives |
 
@@ -140,14 +142,16 @@ gzip, **présence du marqueur de fin de `pg_dump`**, présence de tables, et
 application de la rétention. Code de retour 0 si tout passe, 1 sinon.
 
 Le marqueur de fin est le contrôle qui compte, et il n'est pas redondant avec
-`gzip -t`. Voir « Limite connue » plus bas : une archive peut être un gzip
-parfaitement valide *et* un dump amputé.
+`gzip -t`. Voir « Une archive publiée est une archive valide » plus bas : une
+archive peut être un gzip parfaitement valide *et* un dump amputé.
 
-**Ce script n'alerte personne.** Il faut le lancer pour savoir. La notification
-automatique en cas d'échec est le périmètre de ML-143 — dont la prémisse
-d'origine (« le script tourne quotidiennement, seul son échec passe inaperçu »)
-était fausse tant que rien ne le déclenchait, et reste à relire à cette
-lumière.
+**Ce script n'alerte personne** : il faut le lancer pour savoir. C'est
+volontaire, et ce n'est plus un manque depuis ML-143 — la surveillance
+automatique est assurée par les check-ins Sentry émis par `backup.sh`, qui
+alertent sans qu'on demande rien, y compris quand la sauvegarde ne se déclenche
+pas du tout. Ce script garde son utilité pour un diagnostic ponctuel, et parce
+qu'il regarde ce que Sentry ne voit pas : l'état du répertoire, la rétention,
+le journal systemd.
 
 Contrôles à la main, si besoin :
 
@@ -236,29 +240,89 @@ docker compose -f docker-compose.prod.yml start app
 DATABASE`, la restauration se superpose donc au schéma existant. Pour repartir
 propre, supprimer et recréer la base avant de restaurer.
 
-## Limite connue
+## Surveillance : Sentry Crons (ML-143)
 
-`backup.sh` redirige sa sortie vers le fichier d'archive **avant** de savoir si
-`pg_dump` a réussi. Un échec laisse donc derrière lui une archive incomplète,
-qui a l'air d'une sauvegarde et que la rétention conservera sept jours.
+`backup.sh` émet un **check-in** à Sentry au démarrage (`in_progress`), puis à
+la fin (`ok` ou `error`). Sentry alerte dans deux situations, et c'est
+délibérément deux et pas une :
 
-Et cette archive est plus trompeuse qu'il n'y paraît. Le script fait
-`pg_dump | gzip > archive` : si `pg_dump` meurt en cours de route, `gzip` reçoit
+| Situation | Ce qui la révèle |
+| --- | --- |
+| La sauvegarde a échoué | un check-in `error` arrive |
+| La sauvegarde **ne s'est pas déclenchée** | **aucun check-in n'arrive** dans la fenêtre attendue |
+
+Le second cas est celui qu'une alerte sur échec ne peut pas couvrir : un travail
+qui ne démarre pas ne produit aucune erreur à notifier. C'est exactement la
+panne de ML-169, restée invisible pendant des mois, et la raison pour laquelle
+un simple `OnFailure=` systemd n'aurait pas suffi.
+
+Le monitor est **créé et reconfiguré par le script lui-même**, via
+`monitor_config` dans le premier check-in : sa planification (04h17 UTC, marge
+de 30 min, durée maximale de 30 min) vit dans `backup.sh`, versionnée, plutôt
+que d'être cliquée dans l'interface Sentry — où elle disparaîtrait à la
+première réinstallation sans que personne ne sache ce qu'elle contenait.
+
+### Configurer `SENTRY_CRONS_URL`
+
+L'URL de check-in se dérive du DSN Sentry du projet, déjà présent sur le
+serveur. À exécuter **sur le serveur**, pour que le DSN n'en sorte pas :
+
+```bash
+DSN=$(grep '^SENTRY_DSN=' /opt/medlink/backend/.env | cut -d= -f2- | tr -d '"')
+KEY=$(echo "$DSN"  | sed -E 's#^https://([^@]+)@.*#\1#')
+HOST=$(echo "$DSN" | sed -E 's#^https://[^@]+@([^/]+)/.*#\1#')
+PROJ=$(echo "$DSN" | sed -E 's#.*/([0-9]+)$#\1#')
+
+echo "SENTRY_CRONS_URL=https://${HOST}/api/${PROJ}/cron/medlink-backup/${KEY}/" \
+  | sudo tee -a /opt/medlink/.env
+```
+
+`install-backup.sh` **refuse d'installer** si cette variable est absente ou
+vide. C'est voulu : à l'exécution, `backup.sh` tolère un Sentry injoignable —
+un incident de surveillance ne doit pas faire échouer une sauvegarde saine —
+mais à l'installation, la même tolérance produirait une sauvegarde qui tourne
+sans que personne ne surveille rien, en donnant l'impression du contraire.
+
+### Vérifier que la surveillance fonctionne
+
+Après installation, une exécution manuelle doit faire apparaître le monitor
+dans Sentry :
+
+```bash
+sudo systemctl start medlink-backup.service
+```
+
+Puis, dans Sentry, **Crons → `medlink-backup`** : le monitor doit exister et
+afficher un check-in réussi. S'il n'apparaît pas, le journal porte
+`AVERTISSEMENT : check-in Sentry ... non transmis` — l'URL est alors erronée,
+et la sauvegarde tourne sans surveillance.
+
+## Une archive publiée est une archive valide
+
+Depuis ML-143, `backup.sh` produit dans un fichier temporaire `.partial`, le
+valide, et ne le renomme à son nom définitif **qu'ensuite**. En cas d'échec, le
+fichier partiel est supprimé et rien n'est publié.
+
+Avant ça, la redirection shell créait et tronquait le fichier d'archive *avant*
+que `pg_dump` ne s'exécute : un échec laissait derrière lui une archive
+incomplète, que la rétention conservait sept jours.
+
+Et cette archive était plus trompeuse qu'il n'y paraît. Le script fait
+`pg_dump | gzip` : si `pg_dump` meurt en cours de route, `gzip` reçoit
 simplement EOF et referme proprement son flux. **Le fichier obtenu est un gzip
 parfaitement valide contenant un dump amputé.** Vérifié : un `pg_dump` simulé
 qui émet 30 tables puis sort en erreur produit un fichier que `gzip -t` accepte
-et où le comptage des `CREATE TABLE` en trouve bien 30. Ni l'un ni l'autre ne le
-distingue d'une sauvegarde saine.
+et où le comptage des `CREATE TABLE` en trouve bien 30.
 
 Le seul discriminant fiable est le marqueur `-- PostgreSQL database dump
-complete`, que `pg_dump` n'écrit qu'après avoir tout produit. `check-backup.sh`
-le contrôle, et c'est lui qui porte le verdict — les contrôles `gzip -t` et
-comptage de tables ne sont là que pour les cas grossiers (fichier corrompu,
-dump vide de 20 octets quand `pg_dump` échoue d'emblée).
+complete`, que `pg_dump` n'écrit qu'après avoir tout produit. C'est lui qui
+porte le verdict ; `gzip -t`, le comptage de tables et le plancher de taille ne
+couvrent que les cas grossiers.
 
-Le contrôle au sein même du script, et l'alerte qui va avec, relèvent de ML-143.
-Le périmètre de ML-169 était le déclenchement, pas la robustesse du script —
-volontairement, pour ne pas mélanger les deux.
+Ces contrôles vivent dans **`deploy/lib/archive-checks.sh`**, sourcé aussi bien
+par `backup.sh` — qui valide l'archive qu'il vient de produire — que par
+`check-backup.sh` — qui contrôle la plus récente du répertoire. Les écrire deux
+fois les aurait condamnés à diverger.
 
 ## Ce qui doit figurer en section 5.1 du dossier (ML-84)
 

@@ -39,9 +39,11 @@ step "Vérification des préalables"
 command -v systemctl >/dev/null 2>&1 || fail "systemctl introuvable — ce serveur n'utilise pas systemd, revoir ML-169 pour une variante cron"
 command -v docker >/dev/null 2>&1 || fail "docker introuvable, alors que backup.sh appelle 'docker compose'"
 
-for file in backup.sh systemd/medlink-backup.service systemd/medlink-backup.timer; do
+for file in backup.sh lib/archive-checks.sh systemd/medlink-backup.service systemd/medlink-backup.timer; do
   [ -f "${SOURCE_DIR}/${file}" ] || fail "fichier source manquant : ${SOURCE_DIR}/${file}"
 done
+
+command -v curl >/dev/null 2>&1 || fail "curl introuvable, alors que backup.sh s'en sert pour les check-ins Sentry"
 
 # backup.sh porte son propre DEPLOY_PATH en dur. S'il diverge de celui utilisé
 # ici, l'unité systemd pointerait vers un script qui, lui, irait chercher son
@@ -57,7 +59,18 @@ declared_path=$(grep -m1 '^DEPLOY_PATH=' "${SOURCE_DIR}/backup.sh" | cut -d'"' -
 [ -f "${DEPLOY_PATH}/docker-compose.prod.yml" ] || fail \
   "${DEPLOY_PATH}/docker-compose.prod.yml introuvable — backup.sh en a besoin pour joindre le conteneur db"
 
-echo "OK : root, systemd, docker, ${DEPLOY_PATH}/.env, docker-compose.prod.yml, sources présentes."
+# ML-143 : la surveillance Sentry est obligatoire, pas optionnelle.
+#
+# `backup.sh` ignore silencieusement les check-ins si la variable est vide, ce
+# qui est le bon comportement à l'exécution — un incident Sentry ne doit pas
+# faire échouer une sauvegarde saine. Mais à l'INSTALLATION, la même tolérance
+# produirait une sauvegarde qui tourne sans que personne ne surveille rien, en
+# donnant l'impression du contraire. C'est le motif exact de ML-169, et on
+# refuse de le reproduire : pas d'URL, pas d'installation.
+grep -q '^SENTRY_CRONS_URL=..*' "${DEPLOY_PATH}/.env" || fail \
+  "SENTRY_CRONS_URL absente ou vide dans ${DEPLOY_PATH}/.env — sans elle, la sauvegarde tournerait sans surveillance. Voir deploy/backup.md pour la construire depuis le DSN du projet Sentry."
+
+echo "OK : root, systemd, docker, curl, ${DEPLOY_PATH}/.env, SENTRY_CRONS_URL, docker-compose.prod.yml, sources présentes."
 
 # --- Installation ----------------------------------------------------------
 
@@ -65,6 +78,11 @@ step "Installation du script de sauvegarde"
 
 install -o root -g root -m 0750 "${SOURCE_DIR}/backup.sh" "${DEPLOY_PATH}/backup.sh"
 echo "Installé : ${DEPLOY_PATH}/backup.sh (0750 root:root)"
+
+# ML-143 : contrôles de conformité partagés entre backup.sh et check-backup.sh.
+install -d -o root -g root -m 0755 "${DEPLOY_PATH}/lib"
+install -o root -g root -m 0644 "${SOURCE_DIR}/lib/archive-checks.sh" "${DEPLOY_PATH}/lib/archive-checks.sh"
+echo "Installé : ${DEPLOY_PATH}/lib/archive-checks.sh"
 
 step "Installation des unités systemd"
 
