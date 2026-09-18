@@ -6,17 +6,35 @@
 # Rejoue à la demande les tests manuels du ticket. Strictement en lecture : ne
 # crée, ne supprime et ne restaure rien.
 #
-# Ce script n'alerte personne. Il faut le lancer pour savoir. La notification
-# automatique en cas d'échec relève de ML-143, à traiter après ce ticket —
-# sa prémisse d'origine (« le script tourne, seul son échec passe inaperçu »)
-# était fausse tant que rien ne le déclenchait.
+# Ce script reste un contrôle À LA DEMANDE : il faut le lancer pour savoir.
+# La surveillance automatique est assurée depuis ML-143 par les check-ins
+# Sentry Crons émis par `backup.sh` — c'est elle qui alerte sans qu'on demande
+# rien, y compris quand la sauvegarde ne se déclenche pas du tout. Ce script
+# garde son utilité pour un diagnostic ponctuel, et parce qu'il regarde ce que
+# Sentry ne voit pas : l'état du répertoire, la rétention, le journal systemd.
 #
 # Code de retour : 0 si tout passe, 1 si au moins un contrôle échoue.
 
 set -uo pipefail
 
+DEPLOY_PATH="${MEDLINK_DEPLOY_PATH:-/opt/medlink}"
 BACKUP_DIR="${MEDLINK_BACKUP_DIR:-/var/backups/medlink}"
 RETENTION_DAYS=7
+
+# ML-143 : les contrôles de conformité sont partagés avec `backup.sh`, qui les
+# applique à l'archive qu'il vient de produire. Les écrire deux fois les
+# aurait condamnés à diverger. On préfère la copie installée ; à défaut, celle
+# du dépôt, pour que le script reste exécutable depuis un clone.
+if [ -f "${DEPLOY_PATH}/lib/archive-checks.sh" ]; then
+  # shellcheck source=lib/archive-checks.sh
+  source "${DEPLOY_PATH}/lib/archive-checks.sh"
+elif [ -f "$(dirname "${BASH_SOURCE[0]}")/lib/archive-checks.sh" ]; then
+  # shellcheck source=lib/archive-checks.sh
+  source "$(dirname "${BASH_SOURCE[0]}")/lib/archive-checks.sh"
+else
+  echo "ERREUR : lib/archive-checks.sh introuvable — relancer deploy/install-backup.sh" >&2
+  exit 1
+fi
 # Le timer tourne à 04h17 : au-delà de 26 h sans archive, un déclenchement a été
 # manqué. La marge de 2 h absorbe un rattrapage Persistent=true après un
 # redémarrage, sans laisser passer une journée entière.
@@ -143,49 +161,14 @@ fi
 
 section "Intégrité de la plus récente"
 
-size=$(stat -c %s "$newest")
-echo "  Taille : ${size} octets"
-
-if gzip -t "$newest" 2>/dev/null; then
-  ok "gzip -t : fichier gzip non corrompu"
-
-  # ATTENTION : gzip -t ci-dessus ne prouve presque rien sur le dump lui-même.
-  # backup.sh fait `pg_dump | gzip > archive` : si pg_dump meurt en cours de
-  # route, gzip reçoit simplement EOF et referme proprement son flux. Le
-  # résultat est une archive gzip parfaitement valide contenant un dump amputé.
-  # Vérifié : un pg_dump simulé qui émet 30 tables puis sort en erreur produit
-  # un fichier que `gzip -t` accepte et où le comptage ci-dessous trouve bien
-  # 30 tables. Aucun des deux contrôles ne le distingue d'une sauvegarde saine.
-  #
-  # Le seul discriminant fiable est le marqueur de fin que pg_dump n'écrit
-  # qu'après avoir tout produit. C'est donc lui qui porte le verdict.
-  if zcat "$newest" 2>/dev/null | tail -5 | grep -q 'PostgreSQL database dump complete'; then
-    ok "marqueur de fin de pg_dump présent — le dump est allé à son terme"
-  else
-    ko "marqueur de fin de pg_dump absent — dump interrompu, l'archive est incomplète malgré un gzip valide"
-  fi
-
-  tables=$(zcat "$newest" 2>/dev/null | grep -c '^CREATE TABLE' || true)
-  echo "  Instructions CREATE TABLE : ${tables}"
-  if [ "$tables" -eq 0 ]; then
-    ko "dump vide — aucune table, l'archive ne restaurerait rien"
-  elif [ "$tables" -lt 5 ]; then
-    warn "seulement ${tables} table(s), le schéma MedLink en compte davantage : dump probablement partiel"
-  else
-    ok "le dump contient bien des tables"
-  fi
-
-  # Repère mesuré : la sauvegarde manuelle du 13/09/2026 pesait 20 091 octets
-  # sur la base de production. Un pg_dump qui échoue d'emblée produit, lui, un
-  # gzip vide de 20 octets — valide, et que seul ce plancher attrape.
-  [ "$size" -gt 1024 ] || ko "archive suspecte (moins de 1 ko, alors qu'un dump réel de cette base en pèse une vingtaine de fois plus)"
+# Contrôles délégués à la bibliothèque partagée avec `backup.sh` : taille,
+# intégrité gzip, marqueur de fin de pg_dump, présence de tables. Le détail de
+# ce que chacun attrape — et notamment pourquoi `gzip -t` ne suffit pas — est
+# documenté dans lib/archive-checks.sh.
+if archive_check "$newest"; then
+  ok "archive conforme"
 else
-  ko "gzip -t : fichier gzip corrompu ou tronqué"
-  # Sur un .gz réellement tronqué, zcat restitue quand même le préfixe déjà
-  # décodé : le comptage y trouverait assez de CREATE TABLE pour conclure
-  # « schéma présent » juste après un échec d'intégrité. Deux verdicts
-  # contradictoires dans le même rapport valent moins qu'un seul.
-  echo "  (contrôle du contenu ignoré : il n'a pas de sens sur un fichier corrompu)"
+  ko "archive non conforme (motifs ci-dessus)"
 fi
 
 # --- 6. La rétention fait-elle son travail ? -------------------------------
