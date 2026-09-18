@@ -172,14 +172,28 @@ dans l'instance de production — même en visant une base de test, on ajouterai
 de la charge et du volume à la base réelle.
 
 ```bash
-ARCHIVE=/var/backups/medlink/medlink_2026-09-15_04h17.sql.gz
+ARCHIVE=/var/backups/medlink/medlink_2026-09-18_04h17.sql.gz
 
 # Même image que la prod, pour que le test prouve quelque chose
 docker run --rm -d --name medlink_restore_test \
   -e POSTGRES_USER=medlink -e POSTGRES_DB=medlink -e POSTGRES_PASSWORD=test \
   postgres:16-alpine
 
-until docker exec medlink_restore_test pg_isready -U medlink -d medlink; do sleep 1; done
+# NE PAS attendre avec `pg_isready` : l'image officielle démarre un serveur
+# TEMPORAIRE pour initdb, puis l'arrête et relance le vrai. `pg_isready` répond
+# « accepting connections » sur le serveur temporaire, la restauration part
+# aussitôt et tombe sur « FATAL: the database system is shutting down ».
+# Constaté le 18/09/2026 — c'est exactement l'erreur que cette procédure
+# contenait au départ.
+#
+# On attend donc le marqueur que l'entrypoint n'écrit qu'après avoir relancé le
+# vrai serveur, puis on teste une vraie connexion plutôt qu'un indicateur
+# approchant. Boucle bornée à 60 s pour ne pas tourner indéfiniment.
+until docker logs medlink_restore_test 2>&1 | grep -q "init process complete"; do sleep 1; done
+for i in $(seq 1 60); do
+  docker exec medlink_restore_test psql -U medlink -d medlink -c 'SELECT 1' >/dev/null 2>&1 && break
+  sleep 1
+done
 
 # Le dump est du SQL brut (pg_dump sans -F) : c'est psql qui restaure, pas pg_restore
 zcat "$ARCHIVE" | docker exec -i medlink_restore_test psql -U medlink -d medlink
@@ -193,6 +207,15 @@ docker exec medlink_restore_test psql -U medlink -d medlink \
 
 docker stop medlink_restore_test
 ```
+
+Une restauration réussie affiche les `CREATE TABLE`, les `COPY <n>` par table, les
+`CREATE INDEX`, les `ALTER TABLE` de clés étrangères **et une série de `setval`** —
+ces derniers comptent : sans eux les séquences repartiraient de zéro et les
+prochaines insertions entreraient en collision avec les identifiants restaurés.
+
+**Dernière restauration d'essai réussie : le 18/09/2026**, depuis
+`medlink_2026-09-18_04h17.sql.gz`, une archive produite par le timer et non à la
+main. Résultat : 14 tables, 20 comptes, 15 entrées de journal, 9 rendez-vous.
 
 Restaurer une archive **produite automatiquement**, pas une archive créée à la
 main pour l'occasion : c'est le résultat du déclenchement réel qu'on valide.
