@@ -1,0 +1,64 @@
+name: Expo Doctor
+
+# ML-171 — Contrôle hebdomadaire, NON BLOQUANT, de l'ensemble des 21
+# vérifications d'expo-doctor sur frontend-mobile.
+#
+# expo-doctor exige la toute dernière version publiée pour chaque paquet du
+# SDK, pas seulement une version dans le mineur attendu. C'est plus strict que
+# la politique du projet (jamais au-dessus du mineur suivant, patch antérieur
+# toléré — voir .github/dependabot.yml et
+# frontend-mobile/scripts/check-sdk-alignment.mjs), donc CE JOB PEUT ÉCHOUER
+# SANS QUE RIEN NE SOIT CASSÉ. Un échec ici veut dire « des correctifs Expo
+# plus récents existent », pas « le projet est mal aligné » — ce second
+# diagnostic est celui du check bloquant de ci.yml, qui, lui, ne remonte que
+# de vrais désalignements.
+#
+# NE JAMAIS ajouter ce job aux checks requis d'un ruleset. C'est justement
+# pour ça qu'il vit dans un workflow séparé plutôt que dans ci.yml : un check
+# requis qui peut devenir rouge à chaque publication Expo, sans action
+# possible de l'auteur de la PR, reproduit exactement le problème qu'on
+# corrige en le sortant de ci.yml.
+#
+# Les 20 autres contrôles d'expo-doctor (config app.json/eas.json cohérente,
+# permissions natives déclarées, etc.) gardent toute leur valeur : c'est eux
+# que ce job existe pour surveiller, pas seulement l'alignement de version.
+
+on:
+  schedule:
+    # Mercredi 07h00 UTC, après CodeQL (05h42) et Semgrep (06h17) : les trois
+    # analyses hebdomadaires du dépôt restent espacées. Rappel : GitHub
+    # n'exécute les workflows planifiés que depuis la branche par défaut — ce
+    # cron reste inerte tant que ce fichier n'est pas sur main.
+    - cron: "0 7 * * 3"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  expo-doctor:
+    name: expo-doctor (informatif, non bloquant)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend-mobile
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend-mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: expo-doctor (21 contrôles)
+        run: npx expo-doctor

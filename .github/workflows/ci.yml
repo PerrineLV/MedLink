@@ -154,6 +154,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ML-171 : seul contrôle qui signale qu'un paquet ne correspond pas au
+      # SDK Expo installé. Son absence est ce qui a laissé passer les PR #235
+      # et #252, vertes de bout en bout — `expo export` ne rattrape pas,
+      # ML-160 ayant établi qu'un bundle réussit même sur une application
+      # cassée au runtime. Étape bloquante, et placée avant les tests et le
+      # build : un désalignement SDK invalide tout ce qui suit.
+      #
+      # Script maison plutôt que `npx expo-doctor` : expo-doctor exige la
+      # toute dernière version publiée pour chaque paquet du SDK, ce qui
+      # échoue dès qu'Expo publie un correctif que le projet n'a pas encore
+      # absorbé — sans qu'aucun auteur de PR n'en soit responsable. Constaté
+      # le 21/09/2026 sur ce projet, pourtant aligné. Un check requis ne doit
+      # échouer que pour une raison que l'auteur de la PR contrôle. Le détail
+      # de la politique appliquée est documenté en tête du script.
+      #
+      # expo-doctor garde toute sa valeur pour ses 20 autres contrôles, en
+      # hebdomadaire et non bloquant : voir expo-doctor.yml.
+      - name: Alignement SDK (paquets gérés par Expo)
+        run: node scripts/check-sdk-alignment.mjs
+
       - name: ESLint
         run: npm run lint
 
