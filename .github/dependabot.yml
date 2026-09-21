@@ -35,47 +35,57 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-      # ML-149 : react-native est en versioning 0.x, donc un bump 0.81 -> 0.86
-      # est classé "semver-minor" par Dependabot (pas "semver-major"), et
-      # échappe donc à la règle générique ci-dessus. Dans les faits ce type de
-      # saut équivaut à un bump majeur pour cet écosystème (breaking changes
-      # fréquents, dépendance stricte à la version Expo SDK). Plage à relever
-      # manuellement à chaque montée de SDK, en la calant juste au-dessus de la
-      # version que le SDK épingle.
-      # ML-159 : projet passé en Expo SDK 57, qui épingle react-native 0.86.3
-      # (bundledNativeModules.json du tag sdk-57). Borne relevée de 0.82.0 à
-      # 0.87.0 en conséquence — sans ce relèvement Dependabot resterait aveugle
-      # sur toute la branche 0.86.x.
+      # ML-171 : POLITIQUE D'ALIGNEMENT SUR LE SDK EXPO.
+      #
+      # Les paquets ci-dessous sont listés dans le `bundledNativeModules.json`
+      # du SDK Expo : c'est le SDK qui décide de leur version, pas Dependabot.
+      # Laisser proposer au-delà de cet épinglage reproduit le mode de
+      # défaillance de ML-153 et ML-154 — paquet de l'écosystème Expo résolu
+      # au-dessus du SDK du projet, build Android cassé puis crash au
+      # lancement. Constaté deux fois en une semaine (PR #235 le 14/09, PR #252
+      # le 20/09), la dérive s'aggravant à chaque passage.
+      #
+      # La borne est calée sur le MINEUR SUIVANT et non sur le patch suivant :
+      # un patch à l'intérieur de la plage du SDK reste proposé, ce qui laisse
+      # arriver les correctifs de sécurité. Les conditions d'ignore de
+      # Dependabot s'appliquant aussi aux mises à jour de sécurité, un ignore
+      # total masquerait une faille sur react-native ou @sentry/react-native —
+      # inacceptable sur une application manipulant des données de santé.
+      #
+      # À CHAQUE MONTÉE DE SDK, ces bornes se recalent. La commande qui les
+      # régénère est dans frontend-mobile/README-sdk.md ; ne pas les corriger
+      # une par une à la main.
+      #
+      # NE PAS ajouter ici : `expo` lui-même (c'est le SDK, ses patches 57.x
+      # sont souhaitables), `@react-navigation/*`, `axios`,
+      # `react-native-keyboard-aware-scroll-view` — aucun n'est piloté par le
+      # SDK, ils doivent continuer d'être suivis normalement.
+      - dependency-name: "@react-native-community/datetimepicker"
+        versions: [">=9.2.0"] # SDK 57 : 9.1.0
+      - dependency-name: "@sentry/react-native"
+        versions: [">=7.12.0"] # SDK 57 : ~7.11.0
+      - dependency-name: "eslint-config-expo"
+        versions: [">=57.1.0"] # SDK 57 : ~57.0.2
+      - dependency-name: "expo-constants"
+        versions: [">=57.1.0"] # SDK 57 : ~57.0.18
+      - dependency-name: "expo-file-system"
+        versions: [">=57.1.0"] # SDK 57 : ~57.0.7
+      - dependency-name: "expo-sharing"
+        versions: [">=57.1.0"] # SDK 57 : ~57.0.19
+      - dependency-name: "expo-status-bar"
+        versions: [">=57.1.0"] # SDK 57 : ~57.0.1
+      - dependency-name: "jest-expo"
+        versions: [">=57.1.0"] # SDK 57 : ~57.0.5
+      - dependency-name: "react"
+        versions: [">=19.3.0"] # SDK 57 : 19.2.3
       - dependency-name: "react-native"
-        versions: [">=0.87.0"]
-      # ML-149 : autre dépendance 0.x du monorepo identifiée à cette
-      # vérification, react-native-keyboard-aware-scroll-view (0.9.x) n'a
-      # pas de plage d'ignore dédiée : contrairement à react-native, elle
-      # n'est pas couplée à une contrainte externe stricte type Expo SDK et
-      # n'a pas eu de bump depuis longtemps. Backend (composer) et
-      # frontend-web n'ont aucune dépendance en versioning 0.x.
-      # ML-149 : PR #194 (groupe frontend-mobile-minor-patch) — le bump
-      # react-native-screens 4.16.0 -> 4.27.0 cassait "expo export" (Metro) sur
-      # Expo SDK 54 : SyntaxError sur SearchBarNativeComponent.ts, syntaxe Flow
-      # valide côté react-native-screens mais invalide pour le parseur TS de
-      # Metro tel que figé sur ce SDK. D'où une borne d'ignore à 4.17.0.
-      #
-      # ML-159 : ce défaut n'existe plus. Vérifié en installant réellement
-      # react-native-screens 4.27.0 sur le projet passé en SDK 57 — "expo
-      # export" bundle sans erreur (1396 modules), le Metro du SDK 57 acceptant
-      # cette syntaxe. La borne n'est donc plus maintenue pour cette raison.
-      #
-      # Elle est néanmoins conservée, calée juste au-dessus de la version que
-      # le SDK épingle (~4.26.0 d'après bundledNativeModules.json du tag
-      # sdk-57), et pour un motif différent : react-native-screens est un
-      # paquet géré par le SDK Expo, et laisser Dependabot proposer des
-      # versions au-dessus de cet épinglage reproduit le mode de défaillance de
-      # ML-153 et ML-154 (paquet de l'écosystème Expo résolu sur un SDK
-      # supérieur à celui du projet — build Android cassé, puis crash au
-      # lancement). Même politique que pour react-native ci-dessus : la borne
-      # suit l'épinglage du SDK et se relève à chaque montée.
+        versions: [">=0.87.0"] # SDK 57 : 0.86.3
+      - dependency-name: "react-native-gesture-handler"
+        versions: [">=2.33.0"] # SDK 57 : ~2.32.0
+      - dependency-name: "react-native-safe-area-context"
+        versions: [">=5.8.0"] # SDK 57 : ~5.7.0
       - dependency-name: "react-native-screens"
-        versions: [">=4.27.0"]
+        versions: [">=4.27.0"] # SDK 57 : ~4.26.0
 
   - package-ecosystem: "github-actions"
     directory: "/"
