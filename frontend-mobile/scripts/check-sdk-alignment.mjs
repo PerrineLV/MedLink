@@ -26,50 +26,50 @@
 // expo-doctor garde toute sa valeur pour ses 20 autres contrôles : voir
 // .github/workflows/expo-doctor.yml, hebdomadaire, non bloquant.
 
-import { readFileSync, existsSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync, existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function readJson(relativePath) {
   const absolutePath = path.join(rootDir, relativePath);
   if (!existsSync(absolutePath)) {
     return null;
   }
-  return JSON.parse(readFileSync(absolutePath, "utf8"));
+  return JSON.parse(readFileSync(absolutePath, 'utf8'));
 }
 
 // Un fichier de référence absent ne doit jamais se lire comme "rien à
 // signaler" : voir deploy/lib/archive-checks.sh (ML-143) pour le même
 // principe appliqué ailleurs sur ce projet — un contrôle qui ne trouve pas sa
 // donnée de référence échoue bruyamment, il ne rend jamais 0 en silence.
-const manifest = readJson("node_modules/expo/bundledNativeModules.json");
+const manifest = readJson('node_modules/expo/bundledNativeModules.json');
 if (!manifest) {
   console.error(
-    "ERREUR : node_modules/expo/bundledNativeModules.json introuvable. " +
+    'ERREUR : node_modules/expo/bundledNativeModules.json introuvable. ' +
       "Le SDK Expo n'est pas installé (npm ci a-t-il tourné ?) — impossible de " +
       "vérifier l'alignement.",
   );
   process.exit(1);
 }
 
-const pkg = readJson("package.json");
+const pkg = readJson('package.json');
 if (!pkg) {
-  console.error("ERREUR : package.json introuvable.");
+  console.error('ERREUR : package.json introuvable.');
   process.exit(1);
 }
 
 // Extrait "major.minor" d'un épinglage SDK, qu'il soit préfixé (~57.0.19,
 // ^15.0.2) ou exact (2.2.0, 19.2.3).
 function sdkMajorMinor(pin) {
-  const numeric = pin.replace(/^[~^]/, "");
-  const [major, minor] = numeric.split(".").map(Number);
+  const numeric = pin.replace(/^[~^]/, '');
+  const [major, minor] = numeric.split('.').map(Number);
   return { major, minor };
 }
 
 function installedVersion(packageName) {
-  const installed = readJson(path.join("node_modules", packageName, "package.json"));
+  const installed = readJson(path.join('node_modules', packageName, 'package.json'));
   return installed ? installed.version : null;
 }
 
@@ -80,8 +80,10 @@ const dependencyNames = new Set([
 
 const managedByExpo = Object.keys(manifest).filter((name) => dependencyNames.has(name));
 
-const expoVersion = readJson("node_modules/expo/package.json")?.version ?? "?";
-console.log(`SDK Expo installé : ${expoVersion}. Paquets gérés par ce SDK et présents dans ce projet : ${managedByExpo.length}`);
+const expoVersion = readJson('node_modules/expo/package.json')?.version ?? '?';
+console.log(
+  `SDK Expo installé : ${expoVersion}. Paquets gérés par ce SDK et présents dans ce projet : ${managedByExpo.length}`,
+);
 
 const failures = [];
 
@@ -90,7 +92,9 @@ for (const name of managedByExpo) {
   const installed = installedVersion(name);
 
   if (!installed) {
-    failures.push(`${name} : déclaré dans package.json mais absent de node_modules (npm ci incomplet ?)`);
+    failures.push(
+      `${name} : déclaré dans package.json mais absent de node_modules (npm ci incomplet ?)`,
+    );
     continue;
   }
 
@@ -110,14 +114,14 @@ for (const name of managedByExpo) {
 }
 
 if (failures.length > 0) {
-  console.error("\nDésalignement SDK détecté :\n");
+  console.error('\nDésalignement SDK détecté :\n');
   for (const failure of failures) {
     console.error(`  [ÉCHEC] ${failure}`);
   }
   console.error(
     "\nCes paquets sont au-dessus de ce que le SDK Expo installé attend d'eux. " +
       "C'est le mode de défaillance des PR #235 et #252 : build cassé ou crash au " +
-      "runtime malgré une CI verte de bout en bout.",
+      'runtime malgré une CI verte de bout en bout.',
   );
   process.exit(1);
 }

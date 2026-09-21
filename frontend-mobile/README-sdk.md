@@ -10,10 +10,10 @@ republie le paquet concerné.
 
 Deux contrôles appliquent cette même règle à deux moments différents :
 
-| Contrôle | Moment | Rôle |
-|---|---|---|
-| `.github/dependabot.yml` (bloc `ignore` de `/frontend-mobile`) | à la proposition | empêche Dependabot de proposer une PR qui dépasserait la borne |
-| `scripts/check-sdk-alignment.mjs`, lancé en CI bloquante (`ci.yml`) | à chaque PR | attrape l'erreur humaine si une version désalignée arrive quand même (bump manuel, résolution transitive...) |
+| Contrôle                                                            | Moment           | Rôle                                                                                                         |
+| ------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------ |
+| `.github/dependabot.yml` (bloc `ignore` de `/frontend-mobile`)      | à la proposition | empêche Dependabot de proposer une PR qui dépasserait la borne                                               |
+| `scripts/check-sdk-alignment.mjs`, lancé en CI bloquante (`ci.yml`) | à chaque PR      | attrape l'erreur humaine si une version désalignée arrive quand même (bump manuel, résolution transitive...) |
 
 Le script CI lit `bundledNativeModules.json` **à l'exécution** : il n'a rien à
 régénérer, il se recale tout seul à chaque changement de SDK. **Seules les
